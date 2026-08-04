@@ -1,0 +1,30 @@
+name: Sync Upstream
+
+on:
+  schedule:
+    - cron: '0 */2 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  sync-upstream:
+    name: Sync with Upstream Repository
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+
+      - name: Sync with Upstream
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git remote add upstream https://github.com/wszqkzqk/PvZ-Portable.git || git remote set-url upstream https://github.com/wszqkzqk/PvZ-Portable.git
+          git fetch upstream main
+          git checkout main
+          git merge upstream/main --no-edit -m "chore: auto sync with upstream wszqkzqk/PvZ-Portable" || (git merge --abort && exit 1)
+          git push origin main

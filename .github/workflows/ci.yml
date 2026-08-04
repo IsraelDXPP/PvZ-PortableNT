@@ -584,10 +584,66 @@ jobs:
           build-wasm/pvz-portable.js
           build-wasm/pvz-portable.wasm
 
+  build-nintendo-switch:
+    name: Build for Nintendo Switch
+    runs-on: ubuntu-latest
+    container: devkitpro/devketa64:latest
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Install Switch Dependencies
+      run: |
+        dkp-pacman -Syu --noconfirm
+        dkp-pacman -S --noconfirm \
+          switch-dev \
+          switch-sdl2 \
+          switch-libpng \
+          switch-libjpeg-turbo \
+          switch-zlib \
+          switch-libogg \
+          switch-libvorbis \
+          switch-mpg123 \
+          switch-libopenmpt \
+          switch-glad \
+          switch-mesa \
+          switch-tools \
+          ninja \
+          cmake
+
+    - name: Build PvZ-Portable for Nintendo Switch
+      run: |
+        source /etc/profile.d/devkit-env.sh || true
+        export DEVKITPRO=/opt/devkitpro
+        export DEVKITARM=/opt/devkitpro/devkitARM
+        export DEVKITA64=/opt/devkitpro/devkitA64
+
+        mkdir build-switch
+        cmake -G Ninja -B build-switch \
+          -DCMAKE_TOOLCHAIN_FILE=/opt/devkitpro/cmake/Switch.cmake \
+          -DNINTENDO_SWITCH=ON \
+          -DCMAKE_BUILD_TYPE=Release
+        cmake --build build-switch
+
+        mkdir -p dist
+        if [ -f build-switch/pvz-portable.nro ]; then
+          cp build-switch/pvz-portable.nro dist/
+        fi
+        if [ -f build-switch/pvz-portable.nacp ]; then
+          cp build-switch/pvz-portable.nacp dist/
+        fi
+
+    - name: Upload Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: pvz-portable-nintendo-switch
+        path: dist/
+
   release:
     name: Release
-    needs: ['build-archlinux', 'build-windows-msys2-ucrt64', 'build-windows-msvc-x64', 'build-windows-msvc-x86', 'build-macos', 'build-android', 'build-ios', 'build-wasm']
-    if: github.ref_type == 'tag'
+    needs: ['build-archlinux', 'build-windows-msys2-ucrt64', 'build-windows-msvc-x64', 'build-windows-msvc-x86', 'build-macos', 'build-android', 'build-ios', 'build-wasm', 'build-nintendo-switch']
+    if: github.ref_type == 'tag' || github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -631,6 +687,11 @@ jobs:
         zip -r ../../release_files/pvz-portable-wasm.zip .
         cd ../..
 
+        echo "Preparing Nintendo Switch file..."
+        if [ -f artifacts/pvz-portable-nintendo-switch/pvz-portable.nro ]; then
+          mv artifacts/pvz-portable-nintendo-switch/pvz-portable.nro release_files/pvz-portable-nintendo-switch.nro
+        fi
+
         echo "Final files:"
         ls -lh release_files/
 
@@ -638,9 +699,11 @@ jobs:
       uses: softprops/action-gh-release@v2
       with:
         files: release_files/*
+        tag_name: ${{ github.ref_type == 'tag' && github.ref_name || 'latest' }}
+        name: ${{ github.ref_type == 'tag' && github.ref_name || 'Latest Release' }}
         generate_release_notes: true
         draft: false
-        prerelease: false
+        prerelease: ${{ github.ref_type != 'tag' }}
 
   aur-publish:
     name: Publish to AUR

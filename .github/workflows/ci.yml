@@ -593,25 +593,6 @@ jobs:
       with:
         fetch-depth: 0
 
-    - name: Install Switch Dependencies
-      run: |
-        dkp-pacman -Syu --noconfirm
-        dkp-pacman -S --noconfirm \
-          switch-dev \
-          switch-sdl2 \
-          switch-libpng \
-          switch-libjpeg-turbo \
-          switch-zlib \
-          switch-libogg \
-          switch-libvorbis \
-          switch-mpg123 \
-          switch-libopenmpt \
-          switch-glad \
-          switch-mesa \
-          switch-tools \
-          ninja \
-          cmake
-
     - name: Build PvZ-Portable for Nintendo Switch
       run: |
         source /etc/profile.d/devkit-env.sh || true

@@ -587,7 +587,7 @@ jobs:
   build-nintendo-switch:
     name: Build for Nintendo Switch
     runs-on: ubuntu-latest
-    container: devkitpro/devketa64:latest
+    container: devkitpro/devkita64:latest
     steps:
     - uses: actions/checkout@v4
       with:

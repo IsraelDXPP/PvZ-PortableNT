@@ -689,6 +689,7 @@ jobs:
   aur-publish:
     name: Publish to AUR
     needs: release
+    if: ${{ secrets.AUR_SSH_PRIVATE_KEY != '' }}
     runs-on: ubuntu-latest
     container:
       image: archlinux:base-devel

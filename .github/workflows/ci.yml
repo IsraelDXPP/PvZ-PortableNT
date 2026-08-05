@@ -531,7 +531,7 @@ jobs:
 
   build-ios-ipad-mini-1:
     name: Build for iOS 9 (iPad Mini 1 - 32-bit armv7)
-    runs-on: macos-13
+    runs-on: macos-latest
     env:
       IOS_DEPLOY_TARGET: "9.0"
     steps:

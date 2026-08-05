@@ -530,61 +530,123 @@ jobs:
         path: dist/
 
   build-ios-ipad-mini-1:
-    name: Build for iOS 9 (iPad Mini 1 - 32-bit armv7)
-    runs-on: macos-latest
+    name: Build for iOS armv7 (iPad mini 1 / A5 chip)
+    runs-on: macos-14
     env:
-      IOS_DEPLOY_TARGET: "9.0"
+      IOS10_SDK_TAG: iPhoneOS10.3.sdk
+      IOS10_SDK_REPO: theos/sdks
     steps:
     - uses: actions/checkout@v6
       with:
         fetch-depth: 0
 
-    - name: Get toolchain ID for cache key
-      run: |
-        CLANG_VER=$(clang --version | head -1 | sed -nE 's/.*version ([0-9.]+).*/\1/p')
-        echo "VCPKG_TC=clang-${CLANG_VER:-unknown}" >> "$GITHUB_ENV"
-
-    - name: Restore vcpkg binary cache
-      uses: actions/cache@v4
+    - name: Setup ccache
+      uses: hendrikmuhs/ccache-action@v1.2.14
       with:
-        path: vcpkg-cache
-        key: vcpkg-ios-armv7-${{ env.VCPKG_TC }}-${{ hashFiles('vcpkg.json', 'vcpkg-configuration.json') }}
-        restore-keys: |
-          vcpkg-ios-armv7-${{ env.VCPKG_TC }}-
-          vcpkg-ios-armv7-
+        key: ${{ runner.os }}-ios-ipadmini1
+
+    - name: Select Xcode 15
+      run: sudo xcode-select -s /Applications/Xcode_15.4.app/Contents/Developer
+
+    - name: Inject iOS 10.3 SDK into Xcode
+      run: |
+        SDKS_DIR="$(xcode-select -p)/Platforms/iPhoneOS.platform/Developer/SDKs"
+        echo "Xcode SDKs dir: $SDKS_DIR"
+        echo "Available SDKs before injection:"
+        ls "$SDKS_DIR"
+
+        IOS10_SYSROOT="$SDKS_DIR/${{ env.IOS10_SDK_TAG }}"
+        echo "IOS10_SYSROOT=$IOS10_SYSROOT" >> $GITHUB_ENV
+
+        if [ ! -d "$IOS10_SYSROOT" ]; then
+          echo "Cloning ${{ env.IOS10_SDK_TAG }} from ${{ env.IOS10_SDK_REPO }} via sparse checkout..."
+          git clone --depth 1 --filter=blob:none --sparse https://github.com/${{ env.IOS10_SDK_REPO }} ios-sdks-repo
+          cd ios-sdks-repo
+          git sparse-checkout set ${{ env.IOS10_SDK_TAG }}
+          cd ..
+          sudo mv ios-sdks-repo/${{ env.IOS10_SDK_TAG }} "$SDKS_DIR/"
+
+          # Fix missing C++ headers in legacy SDK by copying them from the modern SDK
+          sudo cp -R "$SDKS_DIR/iPhoneOS.sdk/usr/include/c++/" "$SDKS_DIR/${{ env.IOS10_SDK_TAG }}/usr/include/c++/"
+        fi
+
+        echo "Available SDKs after injection:"
+        ls "$SDKS_DIR"
+
+        if [ ! -d "$SDKS_DIR/${{ env.IOS10_SDK_TAG }}" ]; then
+          echo "ERROR: SDK injection failed!"
+          exit 1
+        fi
+        echo "iOS 10.3 SDK successfully injected."
 
     - name: Setup vcpkg
       uses: lukka/run-vcpkg@v11
       with:
         vcpkgJsonGlob: vcpkg.json
 
-    - name: Build PvZ-Portable for iPad Mini 1 (iOS 9 / armv7)
+    - name: Build PvZ-Portable for iPad mini 1 (armv7, iOS 9.0)
       run: |
-        BUILD_DIR=build-ios-armv7
+        BUILD_DIR=build-ios-ipadmini1
 
         cmake -B $BUILD_DIR \
           -DCMAKE_TOOLCHAIN_FILE=$VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake \
           -DVCPKG_TARGET_TRIPLET=armv7-ios \
-          -DVCPKG_OVERLAY_TRIPLETS=$GITHUB_WORKSPACE/ios/triplets \
+          -DVCPKG_OVERLAY_TRIPLETS="$GITHUB_WORKSPACE/ios/triplets" \
           -DCMAKE_SYSTEM_NAME=iOS \
-          -DIOS_DEPLOYMENT_TARGET=$IOS_DEPLOY_TARGET \
-          -DCMAKE_OSX_DEPLOYMENT_TARGET=$IOS_DEPLOY_TARGET \
+          -DCMAKE_OSX_DEPLOYMENT_TARGET=9.0 \
           -DCMAKE_OSX_ARCHITECTURES=armv7 \
+          -DCMAKE_OSX_SYSROOT="$IOS10_SYSROOT" \
+          -DIOS_DEPLOYMENT_TARGET=9.0 \
           -DCMAKE_BUILD_TYPE=Release \
-          -G Xcode
+          -DCMAKE_C_COMPILER_LAUNCHER=ccache \
+          -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
+          -G Ninja
 
-        cmake --build $BUILD_DIR --config Release -- \
-          -sdk iphoneos \
-          CODE_SIGN_IDENTITY="-" \
-          CODE_SIGNING_ALLOWED=NO
+        cmake --build $BUILD_DIR --config Release > build_log.txt 2>&1 || (tail -n 100 build_log.txt && exit 1)
 
-    - name: Create unsigned IPA
+    - name: Create unsigned IPA for iPad mini 1
       run: |
-        APP_PATH=$(find build-ios-armv7 -name "pvz-portable.app" -path "*Release*" | head -1)
+        APP_PATH=$(find build-ios-ipadmini1 -name "pvz-portable.app" | head -1)
+        if [ -z "$APP_PATH" ]; then
+          echo "ERROR: .app bundle not found!"
+          exit 1
+        fi
+        echo "Found app at: $APP_PATH"
+
+        echo "Binary architectures:"
+        lipo -info "$APP_PATH/pvz-portable" || true
+
+        # Compile Assets.xcassets -> Assets.car
+        echo "Compiling asset catalog..."
+        rm -rf "$APP_PATH/Assets.xcassets"
+        xcrun actool \
+          --compile "$APP_PATH" \
+          --platform iphoneos \
+          --minimum-deployment-target 9.0 \
+          --target-device ipad \
+          --app-icon AppIcon \
+          --output-format human-readable-text \
+          --output-partial-info-plist /tmp/actool-partial.plist \
+          ios/Assets.xcassets || echo "actool warning (non-fatal)"
+
+        cp ios/Assets.xcassets/AppIcon.appiconset/AppIcon.png "$APP_PATH/Icon.png" || true
+
+        # Compile LaunchScreen.storyboard
+        echo "Compiling launch screen storyboard..."
+        rm -f "$APP_PATH/LaunchScreen.storyboard"
+        xcrun ibtool \
+          --compile "$APP_PATH/LaunchScreen.storyboardc" \
+          --sdk "$IOS10_SYSROOT" \
+          ios/LaunchScreen.storyboard || echo "ibtool warning (non-fatal)"
+
+        # Ad-hoc sign
+        echo "Ad-hoc signing app bundle..."
+        codesign --force --deep --sign - "$APP_PATH" || true
+
         mkdir -p dist/Payload
         cp -R "$APP_PATH" dist/Payload/
         cd dist
-        zip -r -y pvz-portable-ios-9-ipad-mini-1.ipa Payload/
+        zip -r -y pvz-portable-ios-armv7-ipadmini1.ipa Payload/
         rm -rf Payload
 
     - name: Upload Artifact
@@ -755,8 +817,8 @@ jobs:
         mv artifacts/pvz-portable-ios/pvz-portable-ios-arm64.ipa release_files/pvz-portable-ios-arm64.ipa
 
         echo "Preparing iOS 9 (iPad Mini 1 32-bit) file..."
-        if [ -f artifacts/pvz-portable-ios-ipad-mini-1/pvz-portable-ios-9-ipad-mini-1.ipa ]; then
-          mv artifacts/pvz-portable-ios-ipad-mini-1/pvz-portable-ios-9-ipad-mini-1.ipa release_files/pvz-portable-ios-9-ipad-mini-1.ipa
+        if [ -f artifacts/pvz-portable-ios-ipad-mini-1/pvz-portable-ios-armv7-ipadmini1.ipa ]; then
+          mv artifacts/pvz-portable-ios-ipad-mini-1/pvz-portable-ios-armv7-ipadmini1.ipa release_files/pvz-portable-ios-armv7-ipadmini1.ipa
         fi
 
         echo "Preparing WebAssembly file..."

@@ -33,7 +33,13 @@
 #include <cstdint>
 #include <cstdarg>
 #include <ctime>
-#include <filesystem>
+// std::filesystem requires iOS 13.0+; skip it on older targets
+#if !defined(__APPLE__) || !defined(__IPHONE_OS_VERSION_MIN_REQUIRED) || __IPHONE_OS_VERSION_MIN_REQUIRED >= 130000
+#	include <filesystem>
+#	define SEXYAPP_HAS_FILESYSTEM 1
+#else
+#	define SEXYAPP_HAS_FILESYSTEM 0
+#endif
 #include <string_view>
 #include <type_traits>
 #include <bit>
@@ -347,8 +353,9 @@ inline bool IsAutoBreakChar(char32_t theChar)
 		(theChar >= 0x20000 && theChar <= 0x2FA1F);  // CJK Extension B-F & Supplements
 }
 
-// UTF-8 path conversion helpers for Windows Unicode path support
-#ifdef _WIN32
+// UTF-8 path conversion helpers
+#if SEXYAPP_HAS_FILESYSTEM
+#	ifdef _WIN32
 inline std::filesystem::path PathFromU8(std::string_view s)
 {
 	return std::filesystem::path(std::u8string_view(reinterpret_cast<const char8_t*>(s.data()), s.size()));
@@ -359,9 +366,16 @@ inline std::string PathToU8(const std::filesystem::path& p)
 	auto u8 = p.generic_u8string();
 	return std::string(u8.begin(), u8.end());
 }
-#else
+#	else
 inline std::filesystem::path PathFromU8(std::string_view s) { return std::filesystem::path(s); }
 inline std::string PathToU8(const std::filesystem::path& p) { return p.string(); }
+#	endif
+#else
+// Fallback for platforms without std::filesystem (e.g. iOS < 13)
+// Paths are just plain std::string on these targets
+using path_string = std::string;
+inline std::string PathFromU8(std::string_view s) { return std::string(s); }
+inline std::string PathToU8(const std::string& p) { return p; }
 #endif
 
 // Byte swap helpers

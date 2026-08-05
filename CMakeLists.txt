@@ -302,7 +302,7 @@ elseif (IOS)
 	)
 
 	if(NOT DEFINED IOS_DEPLOYMENT_TARGET)
-		set(IOS_DEPLOYMENT_TARGET "9.0" CACHE STRING "iOS Deployment Target")
+		set(IOS_DEPLOYMENT_TARGET "15.0" CACHE STRING "iOS Deployment Target")
 	endif()
 
 	configure_file(ios/Info.plist.in "${CMAKE_CURRENT_BINARY_DIR}/Info.plist" @ONLY)

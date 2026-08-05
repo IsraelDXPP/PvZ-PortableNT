@@ -50,35 +50,16 @@ file(GLOB SOURCES CONFIGURE_DEPENDS
 
 set(LOW_MEMORY OFF CACHE BOOL "Enable low memory mode")
 if(NINTENDO_SWITCH)
-	find_library(OGG_LIBRARY NAMES ogg libogg)
-	find_library(VORBIS_LIBRARY NAMES vorbis libvorbis)
-	find_library(VORBISFILE_LIBRARY NAMES vorbisfile libvorbisfile)
-	find_library(OPENMPT_LIBRARY NAMES openmpt libopenmpt)
-	find_library(MPG123_LIBRARY NAMES mpg123 libmpg123)
+	find_library(OGG_LIBRARY NAMES ogg libogg REQUIRED)
+	find_library(VORBIS_LIBRARY NAMES vorbis libvorbis REQUIRED)
+	find_library(VORBISFILE_LIBRARY NAMES vorbisfile libvorbisfile REQUIRED)
+	find_library(OPENMPT_LIBRARY NAMES openmpt libopenmpt REQUIRED)
+	find_library(MPG123_LIBRARY NAMES mpg123 libmpg123 REQUIRED)
 
-	if(VORBISFILE_LIBRARY AND VORBIS_LIBRARY)
-		set(VORBIS_LIB ${VORBISFILE_LIBRARY} ${VORBIS_LIBRARY})
-	else()
-		set(VORBIS_LIB vorbisfile vorbis)
-	endif()
-
-	if(OGG_LIBRARY)
-		set(OGG_LIB ${OGG_LIBRARY})
-	else()
-		set(OGG_LIB ogg)
-	endif()
-
-	if(OPENMPT_LIBRARY)
-		set(OPENMPT_LIB ${OPENMPT_LIBRARY})
-	else()
-		set(OPENMPT_LIB openmpt)
-	endif()
-
-	if(MPG123_LIBRARY)
-		set(MPG123_LIB ${MPG123_LIBRARY})
-	else()
-		set(MPG123_LIB mpg123)
-	endif()
+	set(VORBIS_LIB ${VORBISFILE_LIBRARY} ${VORBIS_LIBRARY})
+	set(OGG_LIB ${OGG_LIBRARY})
+	set(OPENMPT_LIB ${OPENMPT_LIBRARY})
+	set(MPG123_LIB ${MPG123_LIBRARY})
 
 	list(APPEND SOURCES
 		${CMAKE_CURRENT_SOURCE_DIR}/src/SexyAppFramework/platform/switch/Window.cpp
@@ -320,6 +301,10 @@ elseif (IOS)
 		"-framework Metal"
 	)
 
+	if(NOT DEFINED IOS_DEPLOYMENT_TARGET)
+		set(IOS_DEPLOYMENT_TARGET "9.0" CACHE STRING "iOS Deployment Target")
+	endif()
+
 	configure_file(ios/Info.plist.in "${CMAKE_CURRENT_BINARY_DIR}/Info.plist" @ONLY)
 	set_target_properties(pvz-portable PROPERTIES
 		MACOSX_BUNDLE TRUE
@@ -327,7 +312,7 @@ elseif (IOS)
 		MACOSX_BUNDLE_BUNDLE_NAME "PvZ Portable"
 		MACOSX_BUNDLE_INFO_PLIST "${CMAKE_CURRENT_BINARY_DIR}/Info.plist"
 		XCODE_ATTRIBUTE_TARGETED_DEVICE_FAMILY "1,2"
-		XCODE_ATTRIBUTE_IPHONEOS_DEPLOYMENT_TARGET "15.0"
+		XCODE_ATTRIBUTE_IPHONEOS_DEPLOYMENT_TARGET "${IOS_DEPLOYMENT_TARGET}"
 		XCODE_ATTRIBUTE_PRODUCT_BUNDLE_IDENTIFIER "io.github.wszqkzqk.pvz-portable"
 		XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY "-"
 		XCODE_ATTRIBUTE_ASSETCATALOG_COMPILER_APPICON_NAME "AppIcon"

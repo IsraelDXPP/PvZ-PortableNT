@@ -529,6 +529,70 @@ jobs:
         name: pvz-portable-ios
         path: dist/
 
+  build-ios-ipad-mini-1:
+    name: Build for iOS 9 (iPad Mini 1 - 32-bit armv7)
+    runs-on: macos-13
+    env:
+      IOS_DEPLOY_TARGET: "9.0"
+    steps:
+    - uses: actions/checkout@v6
+      with:
+        fetch-depth: 0
+
+    - name: Get toolchain ID for cache key
+      run: |
+        CLANG_VER=$(clang --version | head -1 | sed -nE 's/.*version ([0-9.]+).*/\1/p')
+        echo "VCPKG_TC=clang-${CLANG_VER:-unknown}" >> "$GITHUB_ENV"
+
+    - name: Restore vcpkg binary cache
+      uses: actions/cache@v4
+      with:
+        path: vcpkg-cache
+        key: vcpkg-ios-armv7-${{ env.VCPKG_TC }}-${{ hashFiles('vcpkg.json', 'vcpkg-configuration.json') }}
+        restore-keys: |
+          vcpkg-ios-armv7-${{ env.VCPKG_TC }}-
+          vcpkg-ios-armv7-
+
+    - name: Setup vcpkg
+      uses: lukka/run-vcpkg@v11
+      with:
+        vcpkgJsonGlob: vcpkg.json
+
+    - name: Build PvZ-Portable for iPad Mini 1 (iOS 9 / armv7)
+      run: |
+        BUILD_DIR=build-ios-armv7
+
+        cmake -B $BUILD_DIR \
+          -DCMAKE_TOOLCHAIN_FILE=$VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake \
+          -DVCPKG_TARGET_TRIPLET=armv7-ios \
+          -DVCPKG_OVERLAY_TRIPLETS=$GITHUB_WORKSPACE/ios/triplets \
+          -DCMAKE_SYSTEM_NAME=iOS \
+          -DIOS_DEPLOYMENT_TARGET=$IOS_DEPLOY_TARGET \
+          -DCMAKE_OSX_DEPLOYMENT_TARGET=$IOS_DEPLOY_TARGET \
+          -DCMAKE_OSX_ARCHITECTURES=armv7 \
+          -DCMAKE_BUILD_TYPE=Release \
+          -G Xcode
+
+        cmake --build $BUILD_DIR --config Release -- \
+          -sdk iphoneos \
+          CODE_SIGN_IDENTITY="-" \
+          CODE_SIGNING_ALLOWED=NO
+
+    - name: Create unsigned IPA
+      run: |
+        APP_PATH=$(find build-ios-armv7 -name "pvz-portable.app" -path "*Release*" | head -1)
+        mkdir -p dist/Payload
+        cp -R "$APP_PATH" dist/Payload/
+        cd dist
+        zip -r -y pvz-portable-ios-9-ipad-mini-1.ipa Payload/
+        rm -rf Payload
+
+    - name: Upload Artifact
+      uses: actions/upload-artifact@v7
+      with:
+        name: pvz-portable-ios-ipad-mini-1
+        path: dist/
+
   build-wasm:
     name: Build for WebAssembly (Emscripten)
     runs-on: ubuntu-latest
@@ -650,7 +714,7 @@ jobs:
 
   release:
     name: Release
-    needs: ['build-archlinux', 'build-windows-msys2-ucrt64', 'build-windows-msvc-x64', 'build-windows-msvc-x86', 'build-macos', 'build-android', 'build-ios', 'build-wasm', 'build-nintendo-switch']
+    needs: ['build-archlinux', 'build-windows-msys2-ucrt64', 'build-windows-msvc-x64', 'build-windows-msvc-x86', 'build-macos', 'build-android', 'build-ios', 'build-ios-ipad-mini-1', 'build-wasm', 'build-nintendo-switch']
     if: github.ref_type == 'tag' || github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     permissions:
@@ -687,8 +751,13 @@ jobs:
         echo "Preparing Android file..."
         mv artifacts/pvz-portable-android/pvz-portable-android-arm64-v8a.apk release_files/pvz-portable-android-arm64-v8a.apk
 
-        echo "Preparing iOS file..."
+        echo "Preparing iOS 15 file..."
         mv artifacts/pvz-portable-ios/pvz-portable-ios-arm64.ipa release_files/pvz-portable-ios-arm64.ipa
+
+        echo "Preparing iOS 9 (iPad Mini 1 32-bit) file..."
+        if [ -f artifacts/pvz-portable-ios-ipad-mini-1/pvz-portable-ios-9-ipad-mini-1.ipa ]; then
+          mv artifacts/pvz-portable-ios-ipad-mini-1/pvz-portable-ios-9-ipad-mini-1.ipa release_files/pvz-portable-ios-9-ipad-mini-1.ipa
+        fi
 
         echo "Preparing WebAssembly file..."
         cd artifacts/pvz-portable-wasm

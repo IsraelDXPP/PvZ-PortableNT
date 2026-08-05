@@ -50,7 +50,17 @@ file(GLOB SOURCES CONFIGURE_DEPENDS
 
 set(LOW_MEMORY OFF CACHE BOOL "Enable low memory mode")
 if(NINTENDO_SWITCH)
-	set(VORBIS_LIB vorbisfile vorbis)
+	find_library(OGG_LIBRARY NAMES ogg libogg REQUIRED)
+	find_library(VORBIS_LIBRARY NAMES vorbis libvorbis REQUIRED)
+	find_library(VORBISFILE_LIBRARY NAMES vorbisfile libvorbisfile REQUIRED)
+	find_library(OPENMPT_LIBRARY NAMES openmpt libopenmpt REQUIRED)
+	find_library(MPG123_LIBRARY NAMES mpg123 libmpg123 REQUIRED)
+
+	set(VORBIS_LIB ${VORBISFILE_LIBRARY} ${VORBIS_LIBRARY})
+	set(OGG_LIB ${OGG_LIBRARY})
+	set(OPENMPT_LIB ${OPENMPT_LIBRARY})
+	set(MPG123_LIB ${MPG123_LIBRARY})
+
 	list(APPEND SOURCES
 		${CMAKE_CURRENT_SOURCE_DIR}/src/SexyAppFramework/platform/switch/Window.cpp
 		${CMAKE_CURRENT_SOURCE_DIR}/src/SexyAppFramework/platform/switch/Input.cpp

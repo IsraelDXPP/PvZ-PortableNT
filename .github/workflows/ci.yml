@@ -593,37 +593,60 @@ jobs:
       with:
         fetch-depth: 0
 
-    - name: Install Switch Audio Portlibs (Optional)
+    - name: Cache libopenmpt (Switch)
+      id: cache-switch-libopenmpt
+      uses: actions/cache@v4
+      with:
+        path: |
+          /opt/devkitpro/portlibs/switch/include/libopenmpt
+          /opt/devkitpro/portlibs/switch/lib/libopenmpt.a
+        key: ${{ runner.os }}-switch-libopenmpt-v1
+        restore-keys: |
+          ${{ runner.os }}-switch-libopenmpt-
+
+    - name: Install Switch dependencies
       run: |
-        dkp-pacman -S --noconfirm switch-libopenmpt switch-libvorbis switch-libogg switch-mpg123 || true
+        dkp-pacman -S --needed --noconfirm \
+          switch-sdl2 \
+          switch-libogg \
+          switch-libvorbis \
+          switch-mpg123 \
+          switch-libpng \
+          switch-libjpeg-turbo \
+          switch-zlib \
+          switch-cmake
+
+    - name: Compile libopenmpt for Switch
+      if: steps.cache-switch-libopenmpt.outputs.cache-hit != 'true'
+      shell: bash
+      run: |
+        if [ -f "/opt/devkitpro/portlibs/switch/lib/libopenmpt.a" ]; then
+          echo "libopenmpt is already cached, skipping."
+        else
+          source $DEVKITPRO/switchvars.sh
+          git clone --depth 1 https://github.com/OpenMPT/openmpt
+          cd openmpt
+          make CONFIG=gcc SHARED_LIB=0 DYNLINK=0 EXAMPLES=0 OPENMPT123=0 TEST=0 PREFIX=$PORTLIBS_PREFIX CC="aarch64-none-elf-gcc" CXX="aarch64-none-elf-g++" install
+        fi
 
     - name: Build PvZ-Portable for Nintendo Switch
+      shell: bash
       run: |
-        if [ -f /etc/profile.d/devkit-env.sh ]; then . /etc/profile.d/devkit-env.sh; fi
-        export DEVKITPRO=/opt/devkitpro
-        export DEVKITARM=/opt/devkitpro/devkitARM
-        export DEVKITA64=/opt/devkitpro/devkitA64
-
-        mkdir build-switch
-        cmake -G Ninja -B build-switch \
-          -DCMAKE_TOOLCHAIN_FILE=/opt/devkitpro/cmake/Switch.cmake \
+        source $DEVKITPRO/switchvars.sh
+        mkdir -p build-switch
+        cmake -B build-switch \
+          -DCMAKE_TOOLCHAIN_FILE=$DEVKITPRO/cmake/Switch.cmake \
           -DNINTENDO_SWITCH=ON \
           -DCMAKE_BUILD_TYPE=Release
         cmake --build build-switch
 
-        mkdir -p dist
-        if [ -f build-switch/pvz-portable.nro ]; then
-          cp build-switch/pvz-portable.nro dist/
-        fi
-        if [ -f build-switch/pvz-portable.nacp ]; then
-          cp build-switch/pvz-portable.nacp dist/
-        fi
-
     - name: Upload Artifact
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: pvz-portable-nintendo-switch
-        path: dist/
+        path: |
+          build-switch/pvz-portable.nro
+          build-switch/pvz-portable.elf
 
   release:
     name: Release
@@ -672,9 +695,12 @@ jobs:
         zip -r ../../release_files/pvz-portable-wasm.zip .
         cd ../..
 
-        echo "Preparing Nintendo Switch file..."
+        echo "Preparing Nintendo Switch files..."
         if [ -f artifacts/pvz-portable-nintendo-switch/pvz-portable.nro ]; then
           mv artifacts/pvz-portable-nintendo-switch/pvz-portable.nro release_files/pvz-portable-nintendo-switch.nro
+        fi
+        if [ -f artifacts/pvz-portable-nintendo-switch/pvz-portable.elf ]; then
+          mv artifacts/pvz-portable-nintendo-switch/pvz-portable.elf release_files/pvz-portable-nintendo-switch.elf
         fi
 
         echo "Final files:"

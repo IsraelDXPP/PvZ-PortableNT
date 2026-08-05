@@ -689,7 +689,7 @@ jobs:
   aur-publish:
     name: Publish to AUR
     needs: release
-    if: ${{ secrets.AUR_SSH_PRIVATE_KEY != '' }}
+    if: github.repository == 'wszqkzqk/PvZ-Portable'
     runs-on: ubuntu-latest
     container:
       image: archlinux:base-devel

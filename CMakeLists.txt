@@ -50,16 +50,35 @@ file(GLOB SOURCES CONFIGURE_DEPENDS
 
 set(LOW_MEMORY OFF CACHE BOOL "Enable low memory mode")
 if(NINTENDO_SWITCH)
-	find_library(OGG_LIBRARY NAMES ogg libogg REQUIRED)
-	find_library(VORBIS_LIBRARY NAMES vorbis libvorbis REQUIRED)
-	find_library(VORBISFILE_LIBRARY NAMES vorbisfile libvorbisfile REQUIRED)
-	find_library(OPENMPT_LIBRARY NAMES openmpt libopenmpt REQUIRED)
-	find_library(MPG123_LIBRARY NAMES mpg123 libmpg123 REQUIRED)
+	find_library(OGG_LIBRARY NAMES ogg libogg)
+	find_library(VORBIS_LIBRARY NAMES vorbis libvorbis)
+	find_library(VORBISFILE_LIBRARY NAMES vorbisfile libvorbisfile)
+	find_library(OPENMPT_LIBRARY NAMES openmpt libopenmpt)
+	find_library(MPG123_LIBRARY NAMES mpg123 libmpg123)
 
-	set(VORBIS_LIB ${VORBISFILE_LIBRARY} ${VORBIS_LIBRARY})
-	set(OGG_LIB ${OGG_LIBRARY})
-	set(OPENMPT_LIB ${OPENMPT_LIBRARY})
-	set(MPG123_LIB ${MPG123_LIBRARY})
+	if(VORBISFILE_LIBRARY AND VORBIS_LIBRARY)
+		set(VORBIS_LIB ${VORBISFILE_LIBRARY} ${VORBIS_LIBRARY})
+	else()
+		set(VORBIS_LIB vorbisfile vorbis)
+	endif()
+
+	if(OGG_LIBRARY)
+		set(OGG_LIB ${OGG_LIBRARY})
+	else()
+		set(OGG_LIB ogg)
+	endif()
+
+	if(OPENMPT_LIBRARY)
+		set(OPENMPT_LIB ${OPENMPT_LIBRARY})
+	else()
+		set(OPENMPT_LIB openmpt)
+	endif()
+
+	if(MPG123_LIBRARY)
+		set(MPG123_LIB ${MPG123_LIBRARY})
+	else()
+		set(MPG123_LIB mpg123)
+	endif()
 
 	list(APPEND SOURCES
 		${CMAKE_CURRENT_SOURCE_DIR}/src/SexyAppFramework/platform/switch/Window.cpp

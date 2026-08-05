@@ -593,9 +593,13 @@ jobs:
       with:
         fetch-depth: 0
 
+    - name: Install Switch Audio Portlibs (Optional)
+      run: |
+        dkp-pacman -S --noconfirm switch-libopenmpt switch-libvorbis switch-libogg switch-mpg123 || true
+
     - name: Build PvZ-Portable for Nintendo Switch
       run: |
-        source /etc/profile.d/devkit-env.sh || true
+        if [ -f /etc/profile.d/devkit-env.sh ]; then . /etc/profile.d/devkit-env.sh; fi
         export DEVKITPRO=/opt/devkitpro
         export DEVKITARM=/opt/devkitpro/devkitARM
         export DEVKITA64=/opt/devkitpro/devkitA64

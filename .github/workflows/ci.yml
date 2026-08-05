@@ -517,6 +517,15 @@ jobs:
     - name: Create unsigned IPA
       run: |
         APP_PATH=$(find build-ios -name "pvz-portable.app" -path "*Release*" | head -1)
+        if [ -f "build-ios/Info.plist" ]; then
+          cp build-ios/Info.plist "$APP_PATH/Info.plist"
+        fi
+        sed -i '' 's/\$(PRODUCT_BUNDLE_IDENTIFIER)/io.github.wszqkzqk.pvz-portable/g' "$APP_PATH/Info.plist" || true
+        sed -i '' 's/\$(EXECUTABLE_NAME)/pvz-portable/g' "$APP_PATH/Info.plist" || true
+        sed -i '' 's/\$(PRODUCT_NAME)/PvZ Portable/g' "$APP_PATH/Info.plist" || true
+
+        codesign --force --deep --sign - "$APP_PATH" || true
+
         mkdir -p dist/Payload
         cp -R "$APP_PATH" dist/Payload/
         cd dist
@@ -642,7 +651,15 @@ jobs:
           --sdk "$IOS10_SYSROOT" \
           ios/LaunchScreen.storyboard || echo "ibtool warning (non-fatal)"
 
-        # Ad-hoc sign
+        # Copy and clean Info.plist inside app bundle
+        if [ -f "build-ios-ipadmini1/Info.plist" ]; then
+          cp build-ios-ipadmini1/Info.plist "$APP_PATH/Info.plist"
+        fi
+        sed -i '' 's/\$(PRODUCT_BUNDLE_IDENTIFIER)/io.github.wszqkzqk.pvz-portable/g' "$APP_PATH/Info.plist" || true
+        sed -i '' 's/\$(EXECUTABLE_NAME)/pvz-portable/g' "$APP_PATH/Info.plist" || true
+        sed -i '' 's/\$(PRODUCT_NAME)/PvZ Portable/g' "$APP_PATH/Info.plist" || true
+
+        # Ad-hoc sign the binary so iOS mobile_installation_proxy accepts it
         echo "Ad-hoc signing app bundle..."
         codesign --force --deep --sign - "$APP_PATH" || true
 

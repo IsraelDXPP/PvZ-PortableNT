@@ -606,9 +606,10 @@ jobs:
           -DCMAKE_OSX_ARCHITECTURES=armv7 \
           -DCMAKE_OSX_SYSROOT="$IOS10_SYSROOT" \
           -DIOS_DEPLOYMENT_TARGET=9.0 \
+          -DIOS_IPADMINI1=ON \
           -DCMAKE_CXX_FLAGS="-D_LIBCPP_DISABLE_AVAILABILITY" \
           -DCMAKE_C_FLAGS="-D_LIBCPP_DISABLE_AVAILABILITY" \
-          -DCMAKE_EXE_LINKER_FLAGS="-F$GITHUB_WORKSPACE/dummy_frameworks -Wl,-undefined,dynamic_lookup" \
+          -DCMAKE_EXE_LINKER_FLAGS="-F$GITHUB_WORKSPACE/dummy_frameworks -lobjc -Wl,-undefined,dynamic_lookup" \
           -DCMAKE_BUILD_TYPE=Release \
           -DCMAKE_C_COMPILER_LAUNCHER=ccache \
           -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \

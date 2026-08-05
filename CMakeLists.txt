@@ -301,6 +301,11 @@ elseif (IOS)
 		"-framework Metal"
 	)
 
+	if(IOS_IPADMINI1)
+		target_compile_definitions(pvz-portable PRIVATE _LIBCPP_DISABLE_AVAILABILITY)
+		target_link_options(pvz-portable PRIVATE "-F${CMAKE_CURRENT_SOURCE_DIR}/dummy_frameworks" "-lobjc" "-Wl,-undefined,dynamic_lookup")
+	endif()
+
 	if(NOT DEFINED IOS_DEPLOYMENT_TARGET)
 		set(IOS_DEPLOYMENT_TARGET "15.0" CACHE STRING "iOS Deployment Target")
 	endif()

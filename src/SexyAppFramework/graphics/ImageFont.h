@@ -1,7 +1,7 @@
 /*
  * Portions of this file are based on the PopCap Games Framework
  * Copyright (C) 2005-2009 PopCap Games, Inc.
- * 
+ *
  * Copyright (C) 2026 Zhou Qiankang <wszqkzqk@qq.com>
  *
  * SPDX-License-Identifier: LGPL-3.0-or-later AND LicenseRef-PopCap
@@ -57,17 +57,16 @@ typedef std::map<char32_t, CharData> CharDataMap;
 
 class FontLayer
 {
-public:	
+public:
 	FontData*				mFontData;
 	std::map<std::string, std::string>	mExtendedInfo;
 	std::string				mLayerName;
 	std::vector<std::string>	mRequiredTags;
 	std::vector<std::string>	mExcludedTags;
-	//CharData				mCharData[256];	
 	CharDataMap				mCharDataMap;
 	Color					mColorMult;
 	Color					mColorAdd;
-	SharedImageRef			mImage;	
+	SharedImageRef			mImage;
 	int						mDrawMode;
 	Point					mOffset;
 	int						mSpacing;
@@ -76,8 +75,8 @@ public:
 	int						mPointSize;
 	int						mAscent;
 	int						mAscentPadding; // How much space is above the avg uppercase char
-	int						mHeight;		// 	
-	int						mDefaultHeight; // Max height of font character image rects	
+	int						mHeight;		//
+	int						mDefaultHeight; // Max height of font character image rects
 	int						mLineSpacingOffset; // This plus height should get added between lines
 	int						mBaseOrder;
 	bool					mUseAlphaCorrection;
@@ -99,7 +98,7 @@ class FontData : public DescParser
 public:
 	bool					mInitialized;
 	std::atomic<int>		mRefCount;
-	SexyAppBase*			mApp;		
+	SexyAppBase*			mApp;
 
 	int						mDefaultPointSize;
 	CharMap					mCharMap;
@@ -107,7 +106,7 @@ public:
 	FontLayerMap			mFontLayerMap;
 
 	std::string				mSourceFile;
-	std::string				mFontErrorHeader;	
+	std::string				mFontErrorHeader;
 
 public:
 	bool					Error(const std::string& theError) override;
@@ -163,7 +162,7 @@ typedef std::multimap<int, RenderCommand> RenderCommandMap;
 
 class ImageFont : public _Font
 {
-public:	
+public:
 	FontData*				mFontData;
 	int						mPointSize;
 	std::vector<std::string>	mTagVector;
@@ -187,7 +186,7 @@ public:
 	// Deprecated
 	ImageFont(Image* theFontImage, const std::string& theFontDescFileName);
 	//ImageFont(const ImageFont& theImageFont, Image* theImage);
-	
+
 	int						CharWidth(char32_t theChar) override;
 	int						CharWidthKern(char32_t theChar, char32_t thePrevChar) override;
 	int						StringWidth(std::string_view theString) override;
@@ -199,7 +198,7 @@ public:
 	virtual int				GetPointSize();
 	virtual void			SetScale(double theScale);
 	virtual int				GetDefaultPointSize();
-	virtual bool			AddTag(const std::string& theTagName);	
+	virtual bool			AddTag(const std::string& theTagName);
 	virtual bool			RemoveTag(const std::string& theTagName);
 	virtual bool			HasTag(const std::string& theTagName);
 	virtual std::string		GetDefine(const std::string& theName);

@@ -110,10 +110,6 @@ void EffectSystem::Update()
 			aReanim->Update();
 }
 
-// #################################################################################################### //
-// #################################################################################################### //
-// #################################################################################################### //
-
 static TriVertex		gPvzpVertexReservoir[64];
 static unsigned int		gPvzpVertexReservoirUsed = 0;
 
@@ -159,7 +155,7 @@ static inline void Pvzp_tClip(TriVertex& dst, const TriVertex& on, const TriVert
 	dst.y = off.y + (on.y - off.y) * delta;
 	dst.u = off.u + (on.u - off.u) * delta;
 	dst.v = off.v + (on.v - off.v) * delta;
-	dst.color = 
+	dst.color =
 		((int)((off.color >> 24 & 0xff) + ((on.color >> 24 & 0xff) - (off.color >> 24  & 0xff)) * delta) << 24) |
 		((int)((off.color >> 16 & 0xff) + ((on.color >> 16 & 0xff) - (off.color >> 16  & 0xff)) * delta) << 16) |
 		((int)((off.color >>  8 & 0xff) + ((on.color >>  8 & 0xff) - (off.color >>  8  & 0xff)) * delta) <<  8) |
@@ -172,7 +168,7 @@ static inline void Pvzp_bClip(TriVertex& dst, const TriVertex& on, const TriVert
 	dst.y = off.y + (on.y - off.y) * delta;
 	dst.u = off.u + (on.u - off.u) * delta;
 	dst.v = off.v + (on.v - off.v) * delta;
-	dst.color = 
+	dst.color =
 		((int)((off.color >> 24 & 0xff) + ((on.color >> 24 & 0xff) - (off.color >> 24  & 0xff)) * delta) << 24) |
 		((int)((off.color >> 16 & 0xff) + ((on.color >> 16 & 0xff) - (off.color >> 16  & 0xff)) * delta) << 16) |
 		((int)((off.color >>  8 & 0xff) + ((on.color >>  8 & 0xff) - (off.color >>  8  & 0xff)) * delta) <<  8) |
@@ -374,7 +370,7 @@ void PvzpTriangleGroup::DrawGroup(Graphics* g)
 {
 	if (mImage && mTriangleCount)
 	{
-		// @Patoke: do we want this? if 3D acceleration is off then blending is messed up
+		// without 3D acceleration, additive blending is messed up
 		if (!gSexyAppBase->Is3DAccelerated() && mDrawMode == Graphics::DRAWMODE_ADDITIVE)
 			gPvzpTriangleDrawAdditive = true;
 		PvzpSandImageIfNeeded(mImage);
@@ -442,13 +438,13 @@ void PvzpTriangleGroup::AddTriangle(Graphics* g, Image* theImage, const SexyMatr
 		if ((
 				theClipRect.mX == 0 && theClipRect.mY == 0 && theClipRect.mWidth == BOARD_WIDTH && theClipRect.mHeight == BOARD_HEIGHT && gSexyAppBase->Is3DAccelerated()
 			) || (
-				theClipRect.mX <= tp[0].x && theClipRect.mX + theClipRect.mWidth >= tp[0].x && 
+				theClipRect.mX <= tp[0].x && theClipRect.mX + theClipRect.mWidth >= tp[0].x &&
 				theClipRect.mX <= tp[1].x && theClipRect.mX + theClipRect.mWidth >= tp[1].x &&
-				theClipRect.mX <= tp[2].x && theClipRect.mX + theClipRect.mWidth >= tp[2].x && 
+				theClipRect.mX <= tp[2].x && theClipRect.mX + theClipRect.mWidth >= tp[2].x &&
 				theClipRect.mX <= tp[3].x && theClipRect.mX + theClipRect.mWidth >= tp[3].x &&
-				theClipRect.mY <= tp[0].y && theClipRect.mY + theClipRect.mHeight >= tp[0].y && 
+				theClipRect.mY <= tp[0].y && theClipRect.mY + theClipRect.mHeight >= tp[0].y &&
 				theClipRect.mY <= tp[1].y && theClipRect.mY + theClipRect.mHeight >= tp[1].y &&
-				theClipRect.mY <= tp[2].y && theClipRect.mY + theClipRect.mHeight >= tp[2].y && 
+				theClipRect.mY <= tp[2].y && theClipRect.mY + theClipRect.mHeight >= tp[2].y &&
 				theClipRect.mY <= tp[3].y && theClipRect.mY + theClipRect.mHeight >= tp[3].y
 			))
 		{
@@ -501,7 +497,7 @@ void PvzpTriangleGroup::AddTriangle(Graphics* g, Image* theImage, const SexyMatr
 		float clipY0 = theClipRect.mY;
 		float clipX1 = theClipRect.mX + theClipRect.mWidth;
 		float clipY1 = theClipRect.mY + theClipRect.mHeight;
-		
+
 		for (int i = 0; i < 2; i++)
 		{
 			int vCount = Pvzp_clipShape(clipped, aTriRef[i], clipX0, clipX1, clipY0, clipY1);

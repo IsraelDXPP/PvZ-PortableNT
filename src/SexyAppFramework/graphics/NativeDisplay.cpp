@@ -1,7 +1,7 @@
 /*
  * Portions of this file are based on the PopCap Games Framework
  * Copyright (C) 2005-2009 PopCap Games, Inc.
- * 
+ *
  * Copyright (C) 2026 Zhou Qiankang <wszqkzqk@qq.com>
  *
  * SPDX-License-Identifier: LGPL-3.0-or-later AND LicenseRef-PopCap
@@ -26,8 +26,6 @@
 
 using namespace Sexy;
 
-///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
 NativeDisplay::NativeDisplay()
 {
 	mRGBBits = 0;
@@ -45,8 +43,6 @@ NativeDisplay::NativeDisplay()
 	mBlueShift = 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
 NativeDisplay::~NativeDisplay()
 {
 }

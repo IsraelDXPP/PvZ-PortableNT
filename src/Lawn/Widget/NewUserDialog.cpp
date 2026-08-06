@@ -25,15 +25,14 @@
 #include "../LawnCommon.h"
 #include "widget/WidgetManager.h"
 
-// GOTY @Patoke: 0x460F20
 NewUserDialog::NewUserDialog(LawnApp* theApp, bool isRename) : LawnDialog(
-	theApp, 
-	isRename ? Dialogs::DIALOG_RENAMEUSER : Dialogs::DIALOG_CREATEUSER, 
-	true, 
-	// @Patoke: these locals don't exist
-	isRename ? theApp->GetString("RENAME_USER", "RENAME USER") : theApp->GetString("NEW_USER", "NEW USER"), 
-	theApp->GetString("PLEASE_ENTER_NAME", "Please enter your name:"), 
-	"[DIALOG_BUTTON_OK]", 
+	theApp,
+	isRename ? Dialogs::DIALOG_RENAMEUSER : Dialogs::DIALOG_CREATEUSER,
+	true,
+	// these localization strings don't exist
+	isRename ? theApp->GetString("RENAME_USER", "RENAME USER") : theApp->GetString("NEW_USER", "NEW USER"),
+	theApp->GetString("PLEASE_ENTER_NAME", "Please enter your name:"),
+	"[DIALOG_BUTTON_OK]",
 	Dialog::BUTTONS_OK_CANCEL)
 {
 	mApp = theApp;

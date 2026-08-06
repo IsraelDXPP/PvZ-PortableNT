@@ -32,7 +32,7 @@
 constexpr const int IMITATER_DIALOG_WIDTH = 500;
 constexpr const int IMITATER_DIALOG_HEIGHT = 600;
 
-ImitaterDialog::ImitaterDialog() : 
+ImitaterDialog::ImitaterDialog() :
 	LawnDialog(gLawnApp, Dialogs::DIALOG_IMITATER, true, "[CHOOSE_SEED_TO_COPY]", "", "[DIALOG_BUTTON_OK]", Dialog::BUTTONS_YES_NO)
 {
 	CalcSize(IMITATER_DIALOG_WIDTH - mWidth, IMITATER_DIALOG_HEIGHT - mHeight);
@@ -117,7 +117,7 @@ void ImitaterDialog::ShowToolTip()
 		RemoveToolTip();
 		return;
 	}
-	
+
 	SeedType aSeedType = SeedHitTest(mApp->mWidgetManager->mLastMouseX - mX, mApp->mWidgetManager->mLastMouseY - mY);
 	if (aSeedType == SeedType::SEED_NONE)
 	{
@@ -127,11 +127,11 @@ void ImitaterDialog::ShowToolTip()
 	{
 		RemoveToolTip();
 		uint aRecFlags = mApp->mSeedChooserScreen->SeedNotRecommendedToPick(aSeedType);
-		if (mApp->mSeedChooserScreen->SeedNotAllowedToPick(aSeedType))  // 如果不能携带
+		if (mApp->mSeedChooserScreen->SeedNotAllowedToPick(aSeedType))
 		{
 			mToolTip->SetWarningText("[NOT_ALLOWED_ON_THIS_LEVEL]");
 		}
-		else if (aRecFlags)  // 如果不推荐携带
+		else if (aRecFlags)
 		{
 			if (TestBit(aRecFlags, NotRecommend::NOT_RECOMMENDED_NOCTURNAL))
 			{

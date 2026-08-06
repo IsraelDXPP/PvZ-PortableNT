@@ -93,7 +93,7 @@ GameButton::~GameButton()
 }
 
 bool GameButton::HaveButtonImage(Image* theImage, Rect& theRect)
-{ 
+{
 	return theImage != nullptr || theRect.mWidth != 0;
 }
 
@@ -108,7 +108,7 @@ void GameButton::DrawButtonImage(Graphics* g, Image* theImage, Rect& theRect, in
 }
 
 void GameButton::SetDisabled(bool theDisabled)
-{ 
+{
 	mDisabled = theDisabled;
 }
 
@@ -116,16 +116,15 @@ void GameButton::SetFont(_Font* theFont)
 {
 	if (mFont)
 		delete mFont;
-	
+
 	mFont = theFont->Duplicate();
 }
 
 bool GameButton::IsButtonDown()
-{ 
+{
 	return mIsDown && mIsOver && !mDisabled && !mBtnNoDraw;
 }
 
-// GOTY @Patoke: 0x44AAC0
 void GameButton::Draw(Graphics* g)
 {
 	if (mBtnNoDraw)
@@ -143,7 +142,7 @@ void GameButton::Draw(Graphics* g)
 	g->mTransY += mY;
 	if (!mFont && mLabel.size() > 0)
 		mFont = FONT_PICO129->Duplicate();
-	
+
 	int aFontX = mTextOffsetX;
 	int aFontY = mTextOffsetY;
 	if (mFont)
@@ -163,7 +162,7 @@ void GameButton::Draw(Graphics* g)
 			DrawButtonImage(g, mDisabledImage, mDisabledRect, 0, 0);
 		else if (mOverAlpha > 0.0f && HaveButtonImage(mOverImage, mOverRect))
 		{
-			if (HaveButtonImage(mButtonImage, mNormalRect) && mOverAlpha < 1.0f)  // 未完全过渡结束
+			if (HaveButtonImage(mButtonImage, mNormalRect) && mOverAlpha < 1.0f)  // fade transition not finished
 				DrawButtonImage(g, mButtonImage, mNormalRect, 0, 0);
 
 			g->SetColorizeImages(true);
@@ -194,7 +193,7 @@ void GameButton::Draw(Graphics* g)
 			DrawButtonImage(g, mOverImage, mOverRect, 1, 1);
 		else
 			DrawButtonImage(g, mButtonImage, mNormalRect, 1, 1);
-		
+
 		g->SetColor(mColors[GameButton::COLOR_LABEL_HILITE]);
 		g->DrawString(mLabel, aFontX + 1, aFontY + 1);
 
@@ -210,7 +209,7 @@ void GameButton::Draw(Graphics* g)
 }
 
 void GameButton::Resize(int theX, int theY, int theWidth, int theHeight)
-{ 
+{
 	mX = theX;
 	mY = theY;
 	mWidth = theWidth;
@@ -237,7 +236,6 @@ bool GameButton::IsMouseOver()
 	return Rect(mX, mY, mWidth, mHeight).Contains(aMouseX, aMouseY);
 }
 
-// GOTY @Patoke: 0x44AF50
 void GameButton::Update()
 {
 	WidgetManager* aManager = mApp->mWidgetManager;
@@ -252,7 +250,7 @@ void GameButton::Update()
 	if (!mIsDown && !mIsOver && mOverAlpha > 0)
 	{
 		if (mOverAlphaSpeed < 0)
-		{ 
+		{
 			mOverAlpha = 0;
 			return;
 		}
@@ -310,7 +308,6 @@ LawnStoneButton* MakeButton(int theId, ButtonListener* theListener, std::string_
 	return aButton;
 }
 
-// GOTY @Patoke: 0x44B2B0
 NewLawnButton::NewLawnButton(Image* theComponentImage, int theId, ButtonListener* theListener) : DialogButton(theComponentImage, theId, theListener)
 {
 	mHiliteFont = nullptr;
@@ -328,7 +325,6 @@ NewLawnButton::~NewLawnButton()
 	//	delete mHiliteFont;
 }
 
-// GOTY @Patoke: 0x44B383
 void NewLawnButton::Draw(Graphics* g)
 {
 	if (mBtnNoDraw)
@@ -355,7 +351,7 @@ void NewLawnButton::Draw(Graphics* g)
 			DrawButtonImage(g, mDisabledImage, mDisabledRect, mButtonOffsetX, mButtonOffsetY);
 		else if (mOverAlpha > 0.0f && HaveButtonImage(mOverImage, mOverRect))
 		{
-			if (HaveButtonImage(mButtonImage, mNormalRect) && mOverAlpha < 1.0f)  // 未完全过渡结束
+			if (HaveButtonImage(mButtonImage, mNormalRect) && mOverAlpha < 1.0f)  // fade transition not finished
 				DrawButtonImage(g, mButtonImage, mNormalRect, mButtonOffsetX, mButtonOffsetY);
 
 			g->mColor.mAlpha = mOverAlpha * 255;
@@ -396,7 +392,6 @@ void NewLawnButton::Draw(Graphics* g)
 	}
 }
 
-// GOTY @Patoke: 0x44B7C0
 bool NewLawnButton::IsPointVisible(int x, int y)
 {
 	if (!mUsePolygonShape)
@@ -405,7 +400,6 @@ bool NewLawnButton::IsPointVisible(int x, int y)
 	return PvzpIsPointInPolygon(mPolygonShape, 4, SexyVector2(x, y));
 }
 
-// GOTY @Patoke: 0x44B810
 NewLawnButton* MakeNewButton(int theId, ButtonListener* theListener, std::string_view theText, _Font* theFont, Image* theImageNormal, Image* theImageOver, Image* theImageDown)
 {
 	NewLawnButton* aButton = new NewLawnButton(nullptr, theId, theListener);

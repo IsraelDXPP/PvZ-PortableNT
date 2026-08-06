@@ -1,7 +1,7 @@
 /*
  * Portions of this file are based on the PopCap Games Framework
  * Copyright (C) 2005-2009 PopCap Games, Inc.
- * 
+ *
  * Copyright (C) 2026 Zhou Qiankang <wszqkzqk@qq.com>
  *
  * SPDX-License-Identifier: LGPL-3.0-or-later AND LicenseRef-PopCap
@@ -60,7 +60,7 @@ std::string PakInterface::NormalizePakPath(std::string_view theFileName)
 		{
 			std::filesystem::path aResPath = Sexy::PathFromU8(aResourceFolder);
 			auto [aResEnd, aFileIt] = std::mismatch(aResPath.begin(), aResPath.end(),
-			                                       aFilePath.begin(), aFilePath.end());
+												   aFilePath.begin(), aFilePath.end());
 			if (aResEnd == aResPath.end())
 			{
 				std::filesystem::path aRelativePath;
@@ -75,10 +75,10 @@ std::string PakInterface::NormalizePakPath(std::string_view theFileName)
 
 	if (aResult.size() >= 2 && aResult[0] == '.' && aResult[1] == '/')
 		aResult = aResult.substr(2);
-	
+
 	std::transform(aResult.begin(), aResult.end(), aResult.begin(),
-	               [](unsigned char c) { return std::toupper(c); });
-	
+				   [](unsigned char c) { return std::toupper(c); });
+
 	return aResult;
 }
 
@@ -149,7 +149,7 @@ bool PakInterface::AddPakFile(const std::string& theFileName)
 		FRead(&aNameWidth, 1, 1, aFP);
 		FRead(aName, 1, aNameWidth, aFP);
 		aName[aNameWidth] = 0;
-		
+
 		int aSrcSize = 0;
 		FRead(&aSrcSize, sizeof(int), 1, aFP);
 		aSrcSize = static_cast<int>(Sexy::FromLE32(static_cast<uint32_t>(aSrcSize)));
@@ -243,7 +243,6 @@ int PakInterface::FSeek(PFILE* theFile, long theOffset, int theOrigin)
 		else if (theOrigin == SEEK_CUR)
 			theFile->mPos += theOffset;
 
-		// 当前指针位置不能超过整个文件的大小，且不能小于 0
 		theFile->mPos = std::clamp(theFile->mPos, 0, theFile->mRecord->mSize);
 		return 0;
 	}
@@ -256,25 +255,23 @@ int PakInterface::FTell(PFILE* theFile)
 	if (theFile->mRecord != nullptr)
 		return theFile->mPos;
 	else
-		return ftell(theFile->mFP);	
+		return ftell(theFile->mFP);
 }
 
 size_t PakInterface::FRead(void* thePtr, int theElemSize, int theCount, PFILE* theFile)
 {
 	if (theFile->mRecord != nullptr)
 	{
-		// 实际读取的字节数不能超过当前资源文件剩余可读取的字节数
 		int aSizeBytes = std::min(theElemSize*theCount, theFile->mRecord->mSize - theFile->mPos);
 
-		// 取得在整个 pak 中开始读取的位置的指针
 		uchar* src = (uchar*) theFile->mRecord->mCollection->mDataPtr + theFile->mRecord->mStartPos + theFile->mPos;
 		uchar* dest = (uchar*) thePtr;
 		memcpy(dest, src, aSizeBytes);
-		theFile->mPos += aSizeBytes;  // 读取完成后，移动当前读取位置的指针
-		return aSizeBytes / theElemSize;  // 返回实际读取的项数
+		theFile->mPos += aSizeBytes;
+		return aSizeBytes / theElemSize;
 	}
-	
-	return fread(thePtr, theElemSize, theCount, theFile->mFP);	
+
+	return fread(thePtr, theElemSize, theCount, theFile->mFP);
 }
 
 int PakInterface::FGetC(PFILE* theFile)
@@ -284,7 +281,7 @@ int PakInterface::FGetC(PFILE* theFile)
 		for (;;)
 		{
 			if (theFile->mPos >= theFile->mRecord->mSize)
-				return EOF;		
+				return EOF;
 			char aChar = *((char*) theFile->mRecord->mCollection->mDataPtr + theFile->mRecord->mStartPos + theFile->mPos++);
 			if (aChar != '\r')
 				return (uchar) aChar;

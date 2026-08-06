@@ -43,16 +43,15 @@ void				PvzpTraceAndLogLn(const char* theFormat, ...);
 void				PvzpTraceWithoutSpamming(const char* theFormat, ...);
 void				PvzpHesitationTrace(...);
 void				PvzpAssertFailed(const char* theCondition, const char* theFile, int theLine, const char* theMsg = "", ...);
-/*inline*/ void		PvzpErrorMessageBox(const char* theMessage, const char* theTitle);
+void		PvzpErrorMessageBox(const char* theMessage, const char* theTitle);
 
-/*inline*/ void*	PvzpMalloc(int theSize);
-/*inline*/ void		PvzpFree(void* theBlock);
+void*	PvzpMalloc(int theSize);
+void		PvzpFree(void* theBlock);
 void				PvzpAssertInitForApp();
 
 #ifdef PVZ_DEBUG
 #define PVZP_ASSERT(condition, ...) { \
 if (!bool(condition)) { PvzpAssertFailed(""#condition, __FILE__, __LINE__, ##__VA_ARGS__); \
-/*if (IsDebuggerPresent()) { __debugbreak(); }*/\
 PvzpTraceMemory(); }\
 }
 #else

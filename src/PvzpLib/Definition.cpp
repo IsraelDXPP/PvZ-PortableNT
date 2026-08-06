@@ -26,7 +26,7 @@
 #include <cstring>
 #include <stddef.h>
 #include <sys/stat.h>
-#include <filesystem>
+// filesystem included via Common.h (with ghc::filesystem fallback for iOS 9)
 #include <fstream>
 #include <memory>
 #include "PvzpDebug.h"

@@ -23,7 +23,7 @@
  */
 
 #include <algorithm>
-#include <filesystem>
+// filesystem included via Common.h (with ghc::filesystem fallback for iOS 9)
 #include "Common.h"
 #include "PakInterface.h"
 #include "fcaseopen/fcaseopen.h"

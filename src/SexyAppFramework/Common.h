@@ -34,12 +34,15 @@
 #include <cstdarg>
 #include <ctime>
 #if defined(__APPLE__) && defined(__IPHONE_OS_VERSION_MIN_REQUIRED) && __IPHONE_OS_VERSION_MIN_REQUIRED < 130000
-// Legacy iOS (iOS < 13) has an old libc++.dylib in /usr/lib that lacks std::filesystem symbols.
-// Disable std::filesystem availability checks and use header-only filesystem helpers.
-#	define _LIBCPP_DISABLE_AVAILABILITY 1
+// Legacy iOS (iOS < 13) has an old libc++.dylib in /usr/lib that lacks std::filesystem and std::variant symbols.
+// Use header-only ghc::filesystem to eliminate runtime libc++.dylib dependencies.
+#	include "ghc/filesystem.hpp"
+namespace std {
+	namespace filesystem = ::ghc::filesystem;
+}
+#else
+#	include <filesystem>
 #endif
-
-#include <filesystem>
 #include <string_view>
 #include <type_traits>
 #include <bit>

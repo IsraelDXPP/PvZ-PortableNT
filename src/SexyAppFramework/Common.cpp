@@ -27,7 +27,7 @@
 #include <algorithm>
 #include <cctype>
 #include <cstdlib>
-#include <filesystem>
+// filesystem included via Common.h (with ghc::filesystem fallback for iOS 9)
 #include <chrono>
 #include <cstdarg>
 #include <cstdio>

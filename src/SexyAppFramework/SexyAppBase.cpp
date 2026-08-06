@@ -38,7 +38,7 @@
 #include <cstring>
 #include <chrono>
 #include <charconv>
-#include <filesystem>
+// filesystem included via Common.h (with ghc::filesystem fallback for iOS 9)
 #include <system_error>
 #include <tuple>
 

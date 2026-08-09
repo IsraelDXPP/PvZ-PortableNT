@@ -82,7 +82,7 @@ void PvzpAssertFailed(const char* theCondition, const char* theFile, int theLine
 	else
 		aBuffer = Sexy::StrFormat("\n%s(%d)\nassertion failed: %s", theFile, theLine, aFormattedMsg.c_str());
 
-	PvzpTrace("%s", aBuffer.c_str());
+	PvzpTraceAndLogLn("%s", aBuffer.c_str());
 	PvzpErrorMessageBox(aBuffer.c_str(), "Assertion failed");
 	exit(0);
 }

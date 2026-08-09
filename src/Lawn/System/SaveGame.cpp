@@ -480,7 +480,7 @@ static void SyncImagePortable(PortableSaveContext& theContext, Image*& theImage)
 	{
 		ResourceId aResID;
 		theContext.SyncInt32(reinterpret_cast<int32_t&>(aResID));
-		if (aResID == Sexy::ResourceId::RESOURCE_ID_MAX)
+		if (static_cast<int32_t>(aResID) < 0 || static_cast<int32_t>(aResID) >= static_cast<int32_t>(Sexy::ResourceId::RESOURCE_ID_MAX))
 		{
 			theImage = nullptr;
 		}
@@ -2824,7 +2824,7 @@ void SaveGameContext::SyncImage(Image*& theImage)
 	{
 		ResourceId aResID;
 		SyncInt((int&)aResID);
-		if (aResID == Sexy::ResourceId::RESOURCE_ID_MAX)
+		if ((int)aResID < 0 || (int)aResID >= (int)Sexy::ResourceId::RESOURCE_ID_MAX)
 		{
 			theImage = nullptr;
 		}

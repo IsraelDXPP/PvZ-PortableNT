@@ -139,7 +139,7 @@ Zombie::Zombie()
 {
 }
 
-void Zombie::ZombieInitialize(int theRow, ZombieType theType, bool theVariant, Zombie* theParentZombie, int theFromWave)
+void Zombie::ZombieInitialize(int theRow, ZombieType theType, bool theVariant, Zombie* theParentZombie, int theFromWave, bool theAnimateBush)
 {
 	PVZP_ASSERT(theType >= 0 && theType <= ZombieType::NUM_ZOMBIE_TYPES);
 
@@ -157,7 +157,7 @@ void Zombie::ZombieInitialize(int theRow, ZombieType theType, bool theVariant, Z
 
 	mFromWave = theFromWave;
 	mRow = theRow;
-	mPosX = 780 + Rand(ZOMBIE_START_RANDOM_OFFSET);
+	mPosX = 780 + Rand(ZOMBIE_START_RANDOM_OFFSET) + BOARD_ADDITIONAL_WIDTH;
 	mPosY = GetPosYBasedOnRow(theRow);
 	mVelX = 0.0f;
 	mVelZ = 0.0f;
@@ -369,6 +369,7 @@ void Zombie::ZombieInitialize(int theRow, ZombieType theType, bool theVariant, Z
 			PlayZombieReanim("anim_dig", ReanimLoopType::REANIM_LOOP_FULL_LAST_FRAME, 0, 12.0f);
 			PickRandomSpeed();
 		}
+		theAnimateBush = false;
 
 		break;
 	}
@@ -421,6 +422,7 @@ void Zombie::ZombieInitialize(int theRow, ZombieType theType, bool theVariant, Z
 		mZombieRect = Rect(-17, -38, 125, 154);
 		mZombieAttackRect = Rect(-30, -38, 89, 154);
 		mVariant = false;
+		theAnimateBush = false;
 		aRenderOffset = 8;
 		mHasObject = true;
 
@@ -654,7 +656,7 @@ void Zombie::ZombieInitialize(int theRow, ZombieType theType, bool theVariant, Z
 		{
 			mZombiePhase = ZombiePhase::PHASE_DANCER_DANCING_IN;
 			mVelX = 0.5f;
-			mPhaseCounter = 300 + Rand(12);
+			mPhaseCounter = 300 + Rand(12) + (theAnimateBush ? 100 : 0);
 			PlayZombieReanim("anim_moonwalk", ReanimLoopType::REANIM_LOOP, 0, 24.0f);
 		}
 		mBodyHealth = 500;
@@ -669,6 +671,7 @@ void Zombie::ZombieInitialize(int theRow, ZombieType theType, bool theVariant, Z
 		}
 		mZombiePhase = ZombiePhase::PHASE_DANCER_DANCING_LEFT;
 		mVariant = false;
+		theAnimateBush = false;
 		break;
 
 	case ZombieType::ZOMBIE_IMP:
@@ -683,8 +686,8 @@ void Zombie::ZombieInitialize(int theRow, ZombieType theType, bool theVariant, Z
 		break;
 
 	case ZombieType::ZOMBIE_BOSS:
-		mPosX = 0.0f;
-		mPosY = 0.0f;
+		mPosX = BOARD_ADDITIONAL_WIDTH;
+		mPosY = BOARD_OFFSET_Y;
 		mZombieRect = Rect(700, 80, 90, 430);
 		mZombieAttackRect = Rect(0, 0, 0, 0);
 		aRenderLayer = RenderLayer::RENDER_LAYER_TOP;
@@ -899,6 +902,8 @@ void Zombie::ZombieInitialize(int theRow, ZombieType theType, bool theVariant, Z
 	{
 		PlayZombieAppearSound();
 		StartZombieSound();
+		if (theAnimateBush)
+			mBoard->AnimateBush(theRow);
 	}
 
 	UpdateReanim();
@@ -1574,7 +1579,7 @@ void Zombie::UpdateZombieCatapult()
 {
 	if (mZombiePhase == ZombiePhase::PHASE_ZOMBIE_NORMAL)
 	{
-		if (mPosX <= 650 && FindCatapultTarget() && mSummonCounter > 0)
+		if (mPosX <= 650 + BOARD_ADDITIONAL_WIDTH && FindCatapultTarget() && mSummonCounter > 0)
 		{
 			mZombiePhase = ZombiePhase::PHASE_CATAPULT_LAUNCHING;
 			mPhaseCounter = 300;
@@ -1659,7 +1664,7 @@ void Zombie::LandFlyer(unsigned int theDamageFlags)
 
 void Zombie::UpdateZombieFlyer()
 {
-	if (mApp->mGameMode == GameMode::GAMEMODE_CHALLENGE_HIGH_GRAVITY && mPosX < 720.0f)
+	if (mApp->mGameMode == GameMode::GAMEMODE_CHALLENGE_HIGH_GRAVITY && mPosX < 720.0f + BOARD_ADDITIONAL_WIDTH)
 	{
 		mAltitude -= 0.1f;
 		if (mAltitude < -35.0f)
@@ -1816,7 +1821,7 @@ void Zombie::UpdateZombieDolphinRider()
 	bool aBackwards = IsWalkingBackwards();
 	if (mZombiePhase == ZombiePhase::PHASE_DOLPHIN_WALKING && !aBackwards)
 	{
-		if (mX > 700 && mX <= 720)
+		if (mX > 700 + BOARD_ADDITIONAL_WIDTH && mX <= 720 + BOARD_ADDITIONAL_WIDTH)
 		{
 			mZombiePhase = ZombiePhase::PHASE_DOLPHIN_INTO_POOL;
 			PlayZombieReanim("anim_jumpinpool", ReanimLoopType::REANIM_PLAY_ONCE_AND_HOLD, 20, 16.0f);
@@ -1844,7 +1849,7 @@ void Zombie::UpdateZombieDolphinRider()
 	}
 	else if (mZombiePhase == ZombiePhase::PHASE_DOLPHIN_RIDING)
 	{
-		if (mX <= 10)
+		if (mX <= 10 + BOARD_ADDITIONAL_WIDTH)
 		{
 			mAltitude = -40.0f;
 			mZombieHeight = ZombieHeight::HEIGHT_OUT_OF_POOL;
@@ -1916,7 +1921,7 @@ void Zombie::UpdateZombieDolphinRider()
 	}
 	else if (mZombiePhase == ZombiePhase::PHASE_DOLPHIN_WALKING_IN_POOL)
 	{
-		if ((mX <= 10 && !aBackwards) || (mX > 680 && aBackwards))
+		if ((mX <= 10 + BOARD_ADDITIONAL_WIDTH && !aBackwards) || (mX > 680 + BOARD_ADDITIONAL_WIDTH && aBackwards))
 		{
 			mAltitude = -40.0f;
 			mZombieHeight = ZombieHeight::HEIGHT_OUT_OF_POOL;
@@ -1934,7 +1939,7 @@ void Zombie::UpdateZombieSnorkel()
 	bool aBackwards = IsWalkingBackwards();
 	if (mZombiePhase == ZombiePhase::PHASE_SNORKEL_WALKING && !aBackwards)
 	{
-		if (mX > 700 && mX <= 720)
+		if (mX > 700 + BOARD_ADDITIONAL_WIDTH && mX <= 720 + BOARD_ADDITIONAL_WIDTH)
 		{
 			mVelX = 0.2f;
 			mZombiePhase = ZombiePhase::PHASE_SNORKEL_INTO_POOL;
@@ -1967,7 +1972,7 @@ void Zombie::UpdateZombieSnorkel()
 		{
 			TakeDamage(1800, 9U);
 		}
-		else if (mX <= 25 && !aBackwards)
+		else if (mX <= 25 + BOARD_ADDITIONAL_WIDTH && !aBackwards)
 		{
 			mAltitude = -90.0f;
 			mPosX -= 15.0f;
@@ -1977,7 +1982,7 @@ void Zombie::UpdateZombieSnorkel()
 			PoolSplash(false);
 			StartWalkAnim(0);
 		}
-		else if (mX > 640 && aBackwards)
+		else if (mX > 640 + BOARD_ADDITIONAL_WIDTH && aBackwards)
 		{
 			mAltitude = -90.0f;
 			mPosX += 15.0f;
@@ -2147,7 +2152,7 @@ void Zombie::UpdateZombieGargantuar()
 		return;
 	}
 
-	float aThrowingDistance = mPosX - 360.0f;
+	float aThrowingDistance = mPosX - 360.0f - BOARD_ADDITIONAL_WIDTH;
 	if (mZombiePhase == ZombiePhase::PHASE_GARGANTUAR_THROWING)
 	{
 		Reanimation* aBodyReanim = mApp->ReanimationGet(mBodyReanimID);
@@ -2712,7 +2717,7 @@ void Zombie::UpdateZombieDigger()
 {
 	if (mZombiePhase == ZombiePhase::PHASE_DIGGER_TUNNELING)
 	{
-		if (mPosX < 10.0f)
+		if (mPosX < 10.0f + BOARD_ADDITIONAL_WIDTH)
 		{
 			mAltitude = -120.0f;
 			mZombiePhase = ZombiePhase::PHASE_DIGGER_RISING;
@@ -2958,7 +2963,7 @@ void Zombie::UpdateZombieDancer()
 		mSummonCounter--;
 		if (mSummonCounter == 0)
 		{
-			if (GetDancerFrame() == 12 && mHasHead && mPosX < 700.0f)
+			if (GetDancerFrame() == 12 && mHasHead && mPosX < 700.0f + BOARD_ADDITIONAL_WIDTH)
 			{
 				mZombiePhase = ZombiePhase::PHASE_DANCER_SNAPPING_FINGERS_WITH_LIGHT;
 				PlayZombieReanim("anim_point", ReanimLoopType::REANIM_PLAY_ONCE_AND_HOLD, 20, 24.0f);
@@ -3186,7 +3191,7 @@ void Zombie::UpdateZombiquarium()
 	{
 		aIsOutOfBounds = true;
 	}
-	else if (mPosX > 680.0f && aVelX > 0.0f)
+	else if (mPosX > BOARD_WIDTH - 120 && aVelX > 0.0f)
 	{
 		aIsOutOfBounds = true;
 	}
@@ -3194,7 +3199,7 @@ void Zombie::UpdateZombiquarium()
 	{
 		aIsOutOfBounds = true;
 	}
-	else if (mPosY > 400.0f && aVelY > 0.0f)
+	else if (mPosY > BOARD_HEIGHT - 200 && aVelY > 0.0f)
 	{
 		aIsOutOfBounds = true;
 	}
@@ -3216,7 +3221,7 @@ void Zombie::UpdateZombiquarium()
 			mVelZ = 0.0f;
 		}
 
-		if (mPosX > 550.0f && aVelX > 0.0f)
+		if (mPosX > BOARD_WIDTH - 250 && aVelX > 0.0f)
 		{
 			mVelZ = PI;
 		}
@@ -4022,9 +4027,9 @@ bool Zombie::ZombieNotWalking()
 
 void Zombie::UpdateZamboni()
 {
-	if (mPosX > 400.0f && !mFlatTires)
+	if (mPosX > 400.0f + BOARD_ADDITIONAL_WIDTH && !mFlatTires)
 	{
-		mVelX = PvzpAnimateCurveFloat(700, 300, mPosX, 0.25f, 0.05f, PvzpCurves::CURVE_LINEAR);
+		mVelX = PvzpAnimateCurveFloat(700 + BOARD_ADDITIONAL_WIDTH, 300 + BOARD_ADDITIONAL_WIDTH, mPosX, 0.25f, 0.05f, PvzpCurves::CURVE_LINEAR);
 	}
 	else if (mFlatTires && mVelX > 0.0005f)
 	{
@@ -4034,14 +4039,14 @@ void Zombie::UpdateZamboni()
 	int anIceX = mPosX + 118;
 	if (mBoard->StageHasRoof())
 	{
-		anIceX = std::max(anIceX, 500);
+		anIceX = std::max(anIceX, 500 + BOARD_ADDITIONAL_WIDTH);
 	}
 	else
 	{
-		anIceX = std::max(anIceX, 25);
+		anIceX = std::max(anIceX, 25 + BOARD_ADDITIONAL_WIDTH);
 	}
 	mBoard->mIceMinX[mRow] = std::min(mBoard->mIceMinX[mRow], anIceX);
-	if (anIceX < 800)
+	if (anIceX < BOARD_ICE_START)
 	{
 		mBoard->mIceTimer[mRow] = 3000;
 		if (mApp->mGameMode == GameMode::GAMEMODE_CHALLENGE_BOBSLED_BONANZA)
@@ -4260,7 +4265,7 @@ void Zombie::UpdateZombiePosition()
 	if (mBlowingAway)
 	{
 		mPosX += 10.0f;
-		if (mX > 850)
+		if (mX > 850 + BOARD_ADDITIONAL_WIDTH)
 		{
 			DieWithLoot();
 			return;
@@ -4536,7 +4541,7 @@ void Zombie::UpdateActions()
 
 void Zombie::CheckForBoardEdge()
 {
-	if (IsWalkingBackwards() && mPosX > 850.0f)
+	if (IsWalkingBackwards() && mPosX > BOARD_WIDTH + 50)
 	{
 		DieNoLoot();
 		return;
@@ -5881,7 +5886,7 @@ void Zombie::DrawBungeeCord(Graphics* g, int theOffsetX)
 		}
 	}
 
-	for (float y = aPosY - aCordCelHeight; y > -aCordCelHeight; y -= aCordCelHeight)
+	for (float y = aPosY - aCordCelHeight; y > -aCordCelHeight - BOARD_OFFSET_Y; y -= aCordCelHeight)
 	{
 		PvzpDrawImageScaledF(g, IMAGE_BUNGEECORD, theOffsetX + 61.0f - 4.0f / mScaleZombie, y - mPosY, mScaleZombie, mScaleZombie);
 	}
@@ -6298,6 +6303,9 @@ void Zombie::Draw(Graphics* g)
 	if (mApp->mGameScene == GameScenes::SCENE_ZOMBIES_WON && !SetupDrawZombieWon(g))
 		return;
 
+	if (IsOnBoard() && mApp->mGameScene == GameScenes::SCENE_PLAYING && mApp->mGameMode != GameMode::GAMEMODE_CHALLENGE_ZOMBIQUARIUM)
+		g->SetClipRect(-mX, -mY, ZOMBIE_CLIPRECT_WIDTH, BOARD_HEIGHT);
+
 	if (mIceTrapCounter > 0)
 	{
 		DrawIceTrap(g, aDrawPos, false);
@@ -6505,7 +6513,7 @@ void Zombie::ZamboniDeath(unsigned int theDamageFlags)
 		mApp->AddPvzpParticle(mPosX + 29.0f, mPosY + 114.0f, mRenderOrder + 1, ParticleEffect::PARTICLE_ZAMBONI_TIRE);
 		mVelX = 0.0f;
 
-		if (Rand(4) == 0 && mPosX < 600.0f)
+		if (Rand(4) == 0 && mPosX < 600.0f + BOARD_ADDITIONAL_WIDTH)
 		{
 			PlayZombieReanim("anim_wheelie2", ReanimLoopType::REANIM_PLAY_ONCE_AND_HOLD, 10, 10.0f);
 			mPhaseCounter = 280;
@@ -6935,7 +6943,7 @@ void Zombie::CheckForPool()
 	bool aIsPoolSquare =
 		mBoard->IsPoolSquare(mBoard->PixelToGridX(mX + 75, mY), mRow) &&
 		mBoard->IsPoolSquare(mBoard->PixelToGridX(mX + 45, mY), mRow) &&
-		mX < 680;
+		mX < 680 + BOARD_ADDITIONAL_WIDTH;
 
 	if (!mInPool && aIsPoolSquare)
 	{
@@ -9344,15 +9352,15 @@ bool Zombie::SetupDrawZombieWon(Graphics* g)
 	{
 	case BackgroundType::BACKGROUND_1_DAY:
 	case BackgroundType::BACKGROUND_2_NIGHT:
-		g->ClipRect(-123 - mX, -mY, BOARD_WIDTH, BOARD_HEIGHT);
+		g->ClipRect(-123 + BOARD_ADDITIONAL_WIDTH - mX, -mY, BOARD_WIDTH, BOARD_HEIGHT);
 		break;
 	case BackgroundType::BACKGROUND_3_POOL:
 	case BackgroundType::BACKGROUND_4_FOG:
-		g->ClipRect(-172 - mX, -mY, BOARD_WIDTH, BOARD_HEIGHT);
+		g->ClipRect(-172 + BOARD_ADDITIONAL_WIDTH - mX, -mY, BOARD_WIDTH, BOARD_HEIGHT);
 		break;
 	case BackgroundType::BACKGROUND_5_ROOF:
 	case BackgroundType::BACKGROUND_6_BOSS:
-		g->ClipRect(-220 - mX, -mY, BOARD_WIDTH, 187);
+		g->ClipRect(-220 + BOARD_ADDITIONAL_WIDTH - mX, -mY, BOARD_WIDTH, 187 + BOARD_OFFSET_Y);
 		break;
 	default:
 		break;
@@ -9368,8 +9376,8 @@ void Zombie::DrawShadow(Graphics* g)
 	if (mApp->mGameScene == GameScenes::SCENE_ZOMBIES_WON && !SetupDrawZombieWon(g))
 		return;
 
-	// shadows look really dumb in Zombiquarium
-	if (mApp->mGameMode == GAMEMODE_CHALLENGE_ZOMBIQUARIUM) return;
+	if (IsOnBoard() && mApp->mGameScene == GameScenes::SCENE_PLAYING && mApp->mGameMode != GameMode::GAMEMODE_CHALLENGE_ZOMBIQUARIUM)
+		g->SetClipRect(-mX, -mY, ZOMBIE_CLIPRECT_WIDTH, BOARD_HEIGHT);
 
 	int aShadowType = 0;
 	float aShadowOffsetX = aDrawPos.mImageOffsetX;
@@ -9626,6 +9634,7 @@ void Zombie::UpdateZombieChimney()
 {
 	if (mBoard->mBackground == BackgroundType::BACKGROUND_5_ROOF || mBoard->mBackground == BackgroundType::BACKGROUND_6_BOSS)
 	{
+		mPosY = 250 + BOARD_OFFSET_Y;
 		mAltitude = PvzpAnimateCurve(4000, 5000, mBoard->mCutScene->mCutsceneTime, 200, 0, PvzpCurves::CURVE_EASE_IN);
 	}
 }
@@ -9645,7 +9654,7 @@ void Zombie::WalkIntoHouse()
 	if (mBoard->mBackground == BackgroundType::BACKGROUND_1_DAY || mBoard->mBackground == BackgroundType::BACKGROUND_2_NIGHT ||
 		mBoard->mBackground == BackgroundType::BACKGROUND_3_POOL || mBoard->mBackground == BackgroundType::BACKGROUND_4_FOG)
 	{
-		mPosY = 290.0f;
+		mPosY = 290.0f + BOARD_OFFSET_Y;
 		mRenderOrder = Board::MakeRenderOrder(RenderLayer::RENDER_LAYER_ZOMBIE, 2, 0);
 
 		if (mZombieType == ZombieType::ZOMBIE_GARGANTUAR || mZombieType == ZombieType::ZOMBIE_REDEYE_GARGANTUAR)
@@ -9675,8 +9684,8 @@ void Zombie::WalkIntoHouse()
 	}
 	else if (mBoard->mBackground == BackgroundType::BACKGROUND_5_ROOF || mBoard->mBackground == BackgroundType::BACKGROUND_6_BOSS)
 	{
-		mPosX = -180.0f;
-		mPosY = 250.0f;
+		mPosX = -180.0f + BOARD_ADDITIONAL_WIDTH;
+		mPosY = 250.0f + BOARD_OFFSET_Y;
 		mZombieHeight = ZombieHeight::HEIGHT_IN_TO_CHIMNEY;
 		mRenderOrder = Board::MakeRenderOrder(RenderLayer::RENDER_LAYER_GRAVE_STONE, 0, 2);
 
@@ -9723,6 +9732,8 @@ void Zombie::DrawBossFireBall(Graphics* g)
 		g->SetDrawMode(Graphics::DRAWMODE_NORMAL);
 		aFireBallReanim->DrawRenderGroup(g, RENDER_GROUP_BOSS_FIREBALL_TOP);
 	}
+
+	g->Translate(mX, mY);
 }
 
 void Zombie::DrawBossBackArm(Graphics* g, const ZombieDrawPosition& theDrawPos)
@@ -9854,7 +9865,7 @@ void Zombie::BossSpawnContact()
 	}
 
 	Zombie* aZombie = mBoard->AddZombieInRow(aZombieType, mTargetRow, 0);
-	aZombie->mPosX = 600.0f;
+	aZombie->mPosX = 600.0f + BOARD_ADDITIONAL_WIDTH;
 }
 
 void Zombie::BossStompAttack()
@@ -10118,7 +10129,7 @@ void Zombie::BossHeadSpitContact()
 	Reanimation* aFireBallReanim;
 	if (mIsFireBall)
 	{
-		aFireBallReanim = mApp->AddReanimation(455.0f, aPosY, mRenderOrder + 1, ReanimationType::REANIM_BOSS_FIREBALL);
+		aFireBallReanim = mApp->AddReanimation(455.0f + BOARD_ADDITIONAL_WIDTH, aPosY, mRenderOrder + 1, ReanimationType::REANIM_BOSS_FIREBALL);
 		aFireBallReanim->PlayReanim("anim_form", ReanimLoopType::REANIM_PLAY_ONCE_AND_HOLD, 0, 16.0f);
 		aFireBallReanim->mIsAttachment = true;
 		aFireBallReanim->AssignRenderGroupToTrack("additive", RENDER_GROUP_BOSS_FIREBALL_ADDITIVE);
@@ -10126,7 +10137,7 @@ void Zombie::BossHeadSpitContact()
 	}
 	else
 	{
-		aFireBallReanim = mApp->AddReanimation(455.0f, aPosY, mRenderOrder + 1, ReanimationType::REANIM_BOSS_ICEBALL);
+		aFireBallReanim = mApp->AddReanimation(455.0f + BOARD_ADDITIONAL_WIDTH, aPosY, mRenderOrder + 1, ReanimationType::REANIM_BOSS_ICEBALL);
 		aFireBallReanim->PlayReanim("anim_form", ReanimLoopType::REANIM_PLAY_ONCE_AND_HOLD, 0, 16.0f);
 		aFireBallReanim->mIsAttachment = true;
 		aFireBallReanim->AssignRenderGroupToTrack("ice_highlight", RENDER_GROUP_BOSS_FIREBALL_ADDITIVE);
@@ -10149,7 +10160,7 @@ void Zombie::UpdateBossFireball()
 	float aPosY = mBoard->GetPosYBasedOnRow(aPosX + 75.0f, mFireballRow) - 90.0f;
 	aFireballReanim->mOverlayMatrix.m12 = aPosY;
 
-	if (aPosX < -180.0f)
+	if (aPosX < -180.0f + BOARD_ADDITIONAL_WIDTH)
 	{
 		aFireballReanim->ReanimationDie();
 		mBossFireBallReanimID = ReanimationID::REANIMATIONID_NULL;

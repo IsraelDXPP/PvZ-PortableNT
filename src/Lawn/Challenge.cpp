@@ -464,7 +464,7 @@ void Challenge::StartLevel()
 		{
 			if (mBoard->mPlantRow[i] != PLANTROW_POOL)
 			{
-				mBoard->mIceMinX[i] = 400;
+				mBoard->mIceMinX[i] = 400 + BOARD_ADDITIONAL_WIDTH;
 				mBoard->mIceTimer[i] = 0x7FFFFFFF;
 			}
 		}
@@ -1937,7 +1937,7 @@ void Challenge::UpdateRainingSeeds()
 
 	mChallengeStateCounter = RandRangeInt(500, 999);
 
-	Coin* aCoin = mBoard->AddCoin(RandRangeInt(100, 649), 60, COIN_USABLE_SEED_PACKET, COIN_MOTION_FROM_SKY_SLOW);
+	Coin* aCoin = mBoard->AddCoin(RandRangeInt(100 + BOARD_ADDITIONAL_WIDTH, 649 + BOARD_ADDITIONAL_WIDTH), 60, COIN_USABLE_SEED_PACKET, COIN_MOTION_FROM_SKY_SLOW);
 
 	SeedType aSeedType;
 	do
@@ -2405,21 +2405,21 @@ void Challenge::DrawBackdrop(Graphics* g)
 
 	if (mApp->IsWallnutBowlingLevel() && mShowBowlingLine)
 	{
-		g->DrawImage(Sexy::IMAGE_WALLNUT_BOWLINGSTRIPE, 268, 77);
+		g->DrawImage(Sexy::IMAGE_WALLNUT_BOWLINGSTRIPE, 268 + BOARD_ADDITIONAL_WIDTH, 77 + BOARD_OFFSET_Y);
 	}
 	if (mApp->mGameMode == GAMEMODE_PUZZLE_I_ZOMBIE_1 || mApp->mGameMode == GAMEMODE_PUZZLE_I_ZOMBIE_2 || mApp->mGameMode == GAMEMODE_PUZZLE_I_ZOMBIE_3 ||
 		mApp->mGameMode == GAMEMODE_PUZZLE_I_ZOMBIE_4 || mApp->mGameMode == GAMEMODE_PUZZLE_I_ZOMBIE_5)
 	{
-		g->DrawImage(Sexy::IMAGE_WALLNUT_BOWLINGSTRIPE, 352, 73);
+		g->DrawImage(Sexy::IMAGE_WALLNUT_BOWLINGSTRIPE, 352 + BOARD_ADDITIONAL_WIDTH, 73 + BOARD_OFFSET_Y);
 	}
 	if (mApp->mGameMode == GAMEMODE_PUZZLE_I_ZOMBIE_6 || mApp->mGameMode == GAMEMODE_PUZZLE_I_ZOMBIE_7 || mApp->mGameMode == GAMEMODE_PUZZLE_I_ZOMBIE_8 ||
 		mApp->mGameMode == GAMEMODE_PUZZLE_I_ZOMBIE_ENDLESS)
 	{
-		g->DrawImage(Sexy::IMAGE_WALLNUT_BOWLINGSTRIPE, 432, 73);
+		g->DrawImage(Sexy::IMAGE_WALLNUT_BOWLINGSTRIPE, 432 + BOARD_ADDITIONAL_WIDTH, 73 + BOARD_OFFSET_Y);
 	}
 	if (mApp->mGameMode == GAMEMODE_PUZZLE_I_ZOMBIE_9)
 	{
-		g->DrawImage(Sexy::IMAGE_WALLNUT_BOWLINGSTRIPE, 512, 73);
+		g->DrawImage(Sexy::IMAGE_WALLNUT_BOWLINGSTRIPE, 512 + BOARD_ADDITIONAL_WIDTH, 73 + BOARD_OFFSET_Y);
 	}
 
 	if (aGameMode == GAMEMODE_CHALLENGE_SLOT_MACHINE)
@@ -3172,7 +3172,7 @@ void Challenge::UpdatePortal(GridItem* thePortal)
 		{
 			Rect aZombieRect = aZombie->GetZombieRect();
 			int aZombieX = aZombieRect.mX + aZombieRect.mWidth / 2;
-			int aPortalX = thePortal->mGridX * 80 + 25;
+			int aPortalX = thePortal->mGridX * 80 + 25 + BOARD_ADDITIONAL_WIDTH;
 			if (abs(aZombieX - aPortalX) <= 45)
 			{
 				int aDiffX = aZombieX - aZombie->mX;
@@ -3222,10 +3222,10 @@ void Challenge::UpdatePortal(GridItem* thePortal)
 		if (aLawnMower->mMowerState == MOWER_TRIGGERED && aLawnMower->mRow == thePortal->mGridY && aLawnMower->mLastPortalX != thePortal->mGridX)
 		{
 			int aMowerX = aLawnMower->mPosX + 45;
-			int aPortalX = thePortal->mGridX * 80 + 25;
+			int aPortalX = thePortal->mGridX * 80 + 25 + BOARD_ADDITIONAL_WIDTH;
 			if (abs(aMowerX - aPortalX) <= 20)
 			{
-				aLawnMower->mPosX = anOtherPortal->mGridX * 80 + 25;
+				aLawnMower->mPosX = anOtherPortal->mGridX * 80 + 25 + BOARD_ADDITIONAL_WIDTH;
 				aLawnMower->mRow = anOtherPortal->mGridY;
 				aLawnMower->mPosY = (anOtherPortal->mGridY - thePortal->mGridY) * 100;
 				aLawnMower->mLastPortalX = anOtherPortal->mGridX;
@@ -3464,8 +3464,8 @@ int Challenge::CanTargetZombieWithPortals(Plant* thePlant, Zombie* theZombie)
 		GridItem* aPortal = GetPortalToRight(aGridX, aGridY);
 		if (aGridY == theZombie->mRow)
 		{
-			int aRangeLeft = aGridX * 80;
-			int aRangeRight = aPortal ? aPortal->mGridX * 80 : 800;
+			int aRangeLeft = aGridX * 80 + BOARD_ADDITIONAL_WIDTH;
+			int aRangeRight = aPortal ? aPortal->mGridX * 80 + BOARD_ADDITIONAL_WIDTH : 800 + BOARD_ADDITIONAL_WIDTH;
 			if (theZombie->mX > aRangeLeft&& theZombie->mX < aRangeRight)
 				return true;
 		}
@@ -3560,8 +3560,8 @@ int Challenge::BeghouledCanClearCrater()
 Zombie* Challenge::ZombiquariumSpawnSnorkle()
 {
 	Zombie* aZombie = mBoard->AddZombieInRow(ZOMBIE_SNORKEL, 0, 0);
-	aZombie->mPosX = RandRangeFloat(50, 650);
-	aZombie->mPosY = RandRangeFloat(100, 400);
+	aZombie->mPosX = RandRangeFloat(50, BOARD_WIDTH - 150);
+	aZombie->mPosY = RandRangeFloat(100, BOARD_HEIGHT - 200);
 	return aZombie;
 }
 
@@ -3612,7 +3612,7 @@ void Challenge::ZombiquariumDropBrain(int x, int y)
 
 void Challenge::ZombiquariumMouseDown(int x, int y)
 {
-	if (x < 80 || x > 720 || y < 90 || y > 430)
+	if (x < 80 || x > BOARD_WIDTH - 80 || y < 90 || y > BOARD_HEIGHT - 170)
 		return;
 
 	int aBrainsCount = 0;
@@ -3687,7 +3687,7 @@ void Challenge::ZombiquariumUpdate()
 		{
 			aGridItem->mGridItemCounter++;
 			aGridItem->mPosY += 0.15f;
-			if (aGridItem->mPosY >= 500.0f)
+			if (aGridItem->mPosY >= BOARD_HEIGHT - 100)
 			{
 				aGridItem->GridItemDie();
 			}
@@ -4806,7 +4806,7 @@ GridItem* Challenge::IZombieGetBrainTarget(Zombie* theZombie)
 		aZombieRect.mX += 25;
 	}
 
-	if (aZombieRect.mX > 20)
+	if (aZombieRect.mX > 20 + BOARD_ADDITIONAL_WIDTH)
 		return nullptr;
 
 	GridItem* aBrain = mBoard->GetGridItemAt(GRIDITEM_IZOMBIE_BRAIN, 0, theZombie->mRow);
@@ -5086,23 +5086,23 @@ void Challenge::UpdateRain()
 	mRainCounter--;
 	if (mRainCounter < 0 && !mBoard->mCutScene->IsBeforePreloading())
 	{
-		float aPosX = RandRangeFloat(40.0f, 740.0f);
-		float aPosY = RandRangeFloat(90.0f, 240.0f);
+		float aPosX = RandRangeFloat(40.0f, 740.0f) + BOARD_ADDITIONAL_WIDTH;
+		float aPosY = RandRangeFloat(90.0f, 240.0f) + BOARD_OFFSET_Y;
 		Reanimation* aSplashReanim = mApp->AddReanimation(aPosX, aPosY, RENDER_LAYER_GROUND, REANIM_RAIN_SPLASH);
 		aSplashReanim->mColorOverride = Color(255, 255, 255, RandRangeInt(100, 200));
 		float aScale = RandRangeFloat(0.7f, 1.2f);
 		aSplashReanim->OverrideScale(aScale, aScale);
 
-		aPosX = RandRangeFloat(40.0f, 740.0f);
-		aPosY = RandRangeFloat(290.0f, 410.0f);
+		aPosX = RandRangeFloat(40.0f, 740.0f) + BOARD_ADDITIONAL_WIDTH;
+		aPosY = RandRangeFloat(290.0f, 410.0f) + BOARD_OFFSET_Y;
 		Reanimation* aCircleReanim = mApp->AddReanimation(aPosX, aPosY, RENDER_LAYER_GROUND, REANIM_RAIN_CIRCLE);
 		(void)aCircleReanim; // unused
 		aSplashReanim->mColorOverride = Color(255, 255, 255, RandRangeInt(50, 150));
 		aScale = RandRangeFloat(0.7f, 1.1f);
 		aSplashReanim->OverrideScale(aScale, aScale);
 
-		aPosX = RandRangeFloat(40.0f, 740.0f);
-		aPosY = RandRangeFloat(450.0f, 580.0f);
+		aPosX = RandRangeFloat(40.0f, 740.0f) + BOARD_ADDITIONAL_WIDTH;
+		aPosY = RandRangeFloat(450.0f, 580.0f) + BOARD_OFFSET_Y;
 		Reanimation* aRainReanim = mApp->AddReanimation(aPosX, aPosY, RENDER_LAYER_GROUND, REANIM_RAIN_SPLASH);
 		(void)aRainReanim; // unused
 		aSplashReanim->mColorOverride = Color(255, 255, 255, RandRangeInt(100, 200));
@@ -5124,12 +5124,12 @@ void Challenge::LastStandUpdate()
 		if (mSurvivalStage == 0)
 		{
 			aButton->SetLabel("[START_ONSLAUGHT]");
-			aButton->Resize(300, 559, 210, 46);
+			aButton->Resize(300 + BOARD_ADDITIONAL_WIDTH, BOARD_HEIGHT - 41, 210, 46);
 		}
 		else
 		{
 			aButton->SetLabel("[CONTINUE_ONSLAUGHT]");
-			aButton->Resize(270, 559, 257, 46);
+			aButton->Resize(270 + BOARD_ADDITIONAL_WIDTH, BOARD_HEIGHT - 41, 257, 46);
 		}
 	}
 
@@ -5199,9 +5199,12 @@ void Challenge::TreeOfWisdomDraw(Graphics* g)
 
 	Reanimation* aReanimTree = mApp->ReanimationGet(mReanimChallenge);
 	aReanimTree->mEnableExtraOverlayDraw = false;
+	aReanimTree->OverrideScale(1.25f, 1.25f);
+	aReanimTree->SetPosition(BOARD_ADDITIONAL_WIDTH / 2, 0);
 	aReanimTree->DrawRenderGroup(g, 0);  // draw the background
 	for (int i = 0; i < 6; i++)
 	{
+		mApp->ReanimationGet(mReanimClouds[i])->SetPosition(BOARD_ADDITIONAL_WIDTH / 2, 0);
 		mApp->ReanimationGet(mReanimClouds[i])->DrawRenderGroup(g, 0);
 	}
 
@@ -5250,6 +5253,8 @@ void Challenge::TreeOfWisdomDraw(Graphics* g)
 			aPosY = 52;
 		}
 
+		aPosX += BOARD_ADDITIONAL_WIDTH;
+		aPosY += BOARD_OFFSET_Y;
 		g->DrawImage(Sexy::IMAGE_STORE_SPEECHBUBBLE2, aPosX, aPosY);
 		std::string aText = StrFormat("[TREE_OF_WISDOM_%d]", mTreeOfWisdomTalkIndex);
 		auto aWrapEnum = static_cast<DrawStringJustification>(mApp->GetInteger("TREE_OF_WISDOM_TEXT_WRAP_ENUM", DS_ALIGN_CENTER_VERTICAL_MIDDLE));
@@ -5273,7 +5278,7 @@ void Challenge::TreeOfWisdomDraw(Graphics* g)
 		float aStrHeight = Sexy::FONT_HOUSEOFTERROR16->mAscent * aScale;
 
 		SexyTransform2D aMatrix;
-		PvzpScaleTransformMatrix(aMatrix, 400.0f - aStrWidth * 0.5f, 20.0f + aStrHeight * 0.5f, aScale, aScale);
+		PvzpScaleTransformMatrix(aMatrix, 400.0f - aStrWidth * 0.5f + BOARD_ADDITIONAL_WIDTH - 15, 20.0f + aStrHeight * 0.5f, aScale, aScale);
 		PvzpDrawStringMatrix(g, Sexy::FONT_HOUSEOFTERROR16, aMatrix, aSizeStr, Color(255, 255, 255));
 	}
 }
@@ -5352,13 +5357,13 @@ void Challenge::TreeOfWisdomGrow()
 void Challenge::TreeOfWisdomFertilize()
 {
 	GridItem* aTreeFood = mBoard->mGridItems.DataArrayAlloc();
-	aTreeFood->mPosX = 340.0f;
-	aTreeFood->mPosY = 300.0f;
+	aTreeFood->mPosX = 340.0f + BOARD_ADDITIONAL_WIDTH;
+	aTreeFood->mPosY = 300.0f + BOARD_OFFSET_Y;
 	aTreeFood->mGridItemType = GRIDITEM_ZEN_TOOL;
 	aTreeFood->mGridX = 0;
 	aTreeFood->mGridY = 0;
 	aTreeFood->mRenderOrder = Board::MakeRenderOrder(RENDER_LAYER_ABOVE_UI, 0, 0);
-	Reanimation* aReanim = mApp->AddReanimation(340.0f, 300.0f, 0, REANIM_TREEOFWISDOM_TREEFOOD);
+	Reanimation* aReanim = mApp->AddReanimation(aTreeFood->mPosX, aTreeFood->mPosY, 0, REANIM_TREEOFWISDOM_TREEFOOD);
 	aReanim->mLoopType = REANIM_PLAY_ONCE_AND_HOLD;
 	aTreeFood->mGridItemReanimID = mApp->ReanimationGetID(aReanim);
 	aTreeFood->mGridItemState = GRIDITEM_STATE_ZEN_TOOL_FERTILIZER;
@@ -5559,10 +5564,11 @@ int Challenge::TreeOfWisdomHitTest(int theX, int theY, HitResult* theHitResult)
 {
 	Rect aTreeRect;
 	int aTreeSize = TreeOfWisdomGetSize();
-	if (aTreeSize <= 1)			aTreeRect = Rect(310, 275, 175, 175);
-	else if (aTreeSize < 7)		aTreeRect = Rect(290, 255, 205, 195);
-	else if (aTreeSize < 12)	aTreeRect = Rect(290, 215, 205, 225);
-	else						aTreeRect = Rect(280, 155, 225, 305);
+	int aOffsetY = BOARD_OFFSET_Y * 2;
+	if (aTreeSize <= 1)			aTreeRect = Rect(310 + BOARD_ADDITIONAL_WIDTH, 275 - aOffsetY, 175, 175 + aOffsetY);
+	else if (aTreeSize < 7)		aTreeRect = Rect(290 + BOARD_ADDITIONAL_WIDTH, 255 - aOffsetY, 205, 195 + aOffsetY);
+	else if (aTreeSize < 12)	aTreeRect = Rect(290 + BOARD_ADDITIONAL_WIDTH, 215 - aOffsetY, 205, 225 + aOffsetY);
+	else						aTreeRect = Rect(280 + BOARD_ADDITIONAL_WIDTH, 155 - aOffsetY, 225, 305 + aOffsetY);
 
 	if (aTreeRect.Contains(theX, theY))
 	{

@@ -35,6 +35,7 @@
 #include "Coin.h"
 #include "LawnMower.h"
 #include "GridItem.h"
+#include "Bush.h"
 
 using namespace Sexy;
 
@@ -92,6 +93,7 @@ public:
 		Reanimation*				mReanimation;
 		GridItem*					mGridItem;
 		LawnMower*					mMower;
+		Bush*						mBush;
 		BossPart					mBossPart;
 		int							mBoardGridY;
 	};
@@ -133,6 +135,8 @@ public:
 	DataArray<Coin>					mCoins;
 	DataArray<LawnMower>			mLawnMowers;
 	DataArray<GridItem>				mGridItems;
+	DataArray<Bush>					mBushes;
+	Bush*							mBushList[MAX_GRID_SIZE_Y];
 	CursorObject*					mCursorObject;
 	CursorPreview*					mCursorPreview;
 	MessageWidget*					mAdvice;
@@ -168,6 +172,8 @@ public:
 	int32_t							mShakeAmountX;
 	int32_t							mShakeAmountY;
 	BackgroundType					mBackground;
+	int32_t							mRoofPoleOffset;
+	int32_t							mRoofTreeOffset;
 	int32_t							mLevel;
 	int32_t							mSodPosition;
 	int32_t							mPrevMouseX;
@@ -196,6 +202,8 @@ public:
 	bool							mFinalBossKilled;
 	bool							mShowShovel;
 	int32_t							mCoinBankFadeCount;
+	int32_t							mCoinBankX;
+	int32_t							mCoinBankY;
 	DebugTextMode					mDebugTextMode;
 	bool							mLevelComplete;
 	int32_t							mBoardFadeOutCounter;
@@ -271,7 +279,7 @@ public:
 	ZombieType						PickGraveRisingZombieType();
 	ZombieType						PickZombieType(int theZombiePoints, int theWaveIndex, ZombiePicker* theZombiePicker);
 	int								PickRowForNewZombie(ZombieType theZombieType);
-	Zombie*				AddZombie(ZombieType theZombieType, int theFromWave);
+	Zombie*				AddZombie(ZombieType theZombieType, int theFromWave, bool skipBushAnimation = false);
 	void							SpawnZombieWave();
 	void							RemoveAllZombies();
 	void							RemoveCutsceneZombies();
@@ -346,6 +354,7 @@ public:
 	void					ShowCoinBank(int theDuration = 1000);
 	void							FadeOutLevel();
 	void							DrawFadeOut(Graphics* g);
+	void							DrawCover(Graphics* g);
 	void							DrawIce(Graphics* g, int theGridY);
 	bool							IsIceAt(int theGridX, int theGridY);
 	ZombieID				ZombieGetID(Zombie* theZombie);
@@ -357,7 +366,10 @@ public:
 	bool					CanAddBobSled();
 	void					ShakeBoard(int theShakeAmountX, int theShakeAmountY);
 	int								CountUntriggerLawnMowers();
-	Zombie*				AddZombieInRow(ZombieType theZombieType, int theRow, int theFromWave);
+	Zombie*				AddZombieInRow(ZombieType theZombieType, int theRow, int theFromWave, bool skipBushAnimation = false);
+	void							AddBushes();
+	void							AnimateBush(int theRow);
+	bool							StageHasBushes();
 	bool					IsPoolSquare(int theGridX, int theGridY);
 	void							PickZombieWaves();
 	void							StopAllZombieSounds();

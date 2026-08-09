@@ -84,8 +84,8 @@ constexpr int ZOMBATAR_START_TEXT_Y = 185;
 constexpr int ZOMBATAR_START_TEXT_WIDTH = 500;
 constexpr int ZOMBATAR_START_TEXT_HEIGHT = 100;
 
-constexpr int ZOMBATAR_BACK_X = 278;
-constexpr int ZOMBATAR_BACK_Y = 528;
+constexpr int ZOMBATAR_BACK_X = 372;
+constexpr int ZOMBATAR_BACK_Y = 533;
 constexpr int ZOMBATAR_VIEW_X = 65;
 constexpr int ZOMBATAR_VIEW_Y = 472;
 constexpr int ZOMBATAR_FINISHED_X = 445;
@@ -982,7 +982,7 @@ void ZombatarWidget::Draw(Graphics* g)
 
 void ZombatarWidget::DrawMainBackground(Graphics* g)
 {
-	g->DrawImage(IMAGE_ZOMBATAR_MAIN_BG, 0, 0);
+	g->DrawImage(IMAGE_ZOMBATAR_MAIN_BG, 0, -42);
 }
 
 void ZombatarWidget::DrawList(Graphics* g)

@@ -60,6 +60,7 @@
 #include "Lawn/Widget/ContinueDialog.h"
 #include "Lawn/System/ReanimationLawn.h"
 #include "Lawn/Widget/ChallengeScreen.h"
+#include "Lawn/Widget/ChallengePagesDialog.h"
 #include "Lawn/Widget/NewOptionsDialog.h"
 #include "Lawn/Widget/ZombatarTOS.h"
 #include "Lawn/Widget/SeedChooserScreen.h"
@@ -612,6 +613,19 @@ void LawnApp::KillChallengeScreen()
 		SafeDeleteWidget(mChallengeScreen);
 		mChallengeScreen = nullptr;
 	}
+}
+
+void LawnApp::DoChallengePagesDialog()
+{
+	if (mChallengeScreen == nullptr)
+		return;
+
+	KillDialog(Dialogs::DIALOG_CHALLENGE_PAGES);
+
+	ChallengePagesDialog* aDialog = new ChallengePagesDialog(this);
+	CenterDialog(aDialog, aDialog->mWidth, aDialog->mHeight);
+	AddDialog(Dialogs::DIALOG_CHALLENGE_PAGES, aDialog);
+	mWidgetManager->SetFocus(aDialog);
 }
 
 StoreScreen* LawnApp::ShowStoreScreen()
@@ -1328,7 +1342,10 @@ bool LawnApp::ChangeDirHook(const char* /*theIntendedPath*/)
 void LawnApp::Start()
 {
 	if (mLoadingFailed)
+	{
+		PvzpLogLn("LawnApp::Start aborted: mLoadingFailed");
 		return;
+	}
 
 	SexyAppBase::Start();
 }
@@ -1689,6 +1706,7 @@ void LawnApp::LoadGroup(const char* theGroupName, int theGroupAveMsToLoad)
 
 	if (mResourceManager->HadError() || !ExtractResourcesByName(mResourceManager, theGroupName))
 	{
+		PvzpLogLn("LoadGroup '%s' FAILED: %s", theGroupName, mResourceManager->GetErrorText().c_str());
 		ShowResourceError();
 		mLoadingFailed = true;
 	}
@@ -2526,7 +2544,7 @@ void LawnApp::CrazyDaveEnter()
 	PVZP_ASSERT(mCrazyDaveState == CRAZY_DAVE_OFF);
 	PVZP_ASSERT(!ReanimationTryToGet(mCrazyDaveReanimID));
 
-	Reanimation* aCrazyDaveReanim = AddReanimation(0.0f, 0.0f, 0, ReanimationType::REANIM_CRAZY_DAVE);
+	Reanimation* aCrazyDaveReanim = AddReanimation(BOARD_ADDITIONAL_WIDTH, BOARD_OFFSET_Y, 0, ReanimationType::REANIM_CRAZY_DAVE);
 	aCrazyDaveReanim->mIsAttachment = true;
 	aCrazyDaveReanim->SetBasePoseFromAnim("anim_idle_handing");
 	mCrazyDaveReanimID = ReanimationGetID(aCrazyDaveReanim);
@@ -2963,8 +2981,8 @@ void LawnApp::DrawCrazyDave(Graphics* g)
 	if (mCrazyDaveMessageText.size())
 	{
 		Image* aBubbleImage = IMAGE_STORE_SPEECHBUBBLE2;
-		int aPosX = 285;
-		int aPosY = 20;
+		int aPosX = 285 + BOARD_ADDITIONAL_WIDTH;
+		int aPosY = 20 + BOARD_OFFSET_Y;
 		if (GetDialog(Dialogs::DIALOG_STORE))
 		{
 			aBubbleImage = IMAGE_STORE_SPEECHBUBBLE;
@@ -2973,8 +2991,8 @@ void LawnApp::DrawCrazyDave(Graphics* g)
 		}
 		else if (mGameMode == GameMode::GAMEMODE_UPSELL)
 		{
-			aPosX += 130;
-			aPosY += 70;
+			aPosX += 130 - BOARD_ADDITIONAL_WIDTH;
+			aPosY += 70 - BOARD_OFFSET_Y;
 		}
 		g->DrawImage(aBubbleImage, aPosX, aPosY);
 
@@ -3162,6 +3180,18 @@ int LawnApp::GetNumTrophies(ChallengePage thePage)
 	}
 
 	return aNumTrophies;
+}
+
+int LawnApp::GetTotalTrophies(ChallengePage thePage)
+{
+	int aTotalTrophies = 0;
+	for (int i = 0; i < NUM_CHALLENGE_MODES; i++)
+	{
+		const ChallengeDefinition& aDef = GetChallengeDefinition(i);
+		if (aDef.mPage == thePage && aDef.mHasTrophy)
+			aTotalTrophies++;
+	}
+	return aTotalTrophies;
 }
 
 int LawnApp::TrophiesNeedForGoldSunflower()

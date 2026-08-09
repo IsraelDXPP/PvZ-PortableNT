@@ -45,15 +45,15 @@
 #include "AchievementsScreen.h"
 #include <algorithm>
 
-constexpr const int STORESCREEN_ITEMOFFSET_1_X = 422;
-constexpr const int STORESCREEN_ITEMOFFSET_1_Y = 206;
-constexpr const int STORESCREEN_ITEMOFFSET_2_X = 372;
-constexpr const int STORESCREEN_ITEMOFFSET_2_Y = 310;
+constexpr const int STORESCREEN_ITEMOFFSET_1_X = 422 + BOARD_ADDITIONAL_WIDTH;
+constexpr const int STORESCREEN_ITEMOFFSET_1_Y = 206 + BOARD_OFFSET_Y;
+constexpr const int STORESCREEN_ITEMOFFSET_2_X = 372 + BOARD_ADDITIONAL_WIDTH;
+constexpr const int STORESCREEN_ITEMOFFSET_2_Y = 325 + BOARD_OFFSET_Y;
 constexpr const int STORESCREEN_ITEMSIZE = 74;
-constexpr const int STORESCREEN_COINBANK_X = 650;
-constexpr const int STORESCREEN_COINBANK_Y = 559;
-constexpr const int STORESCREEN_PAGESTRING_X = 470;
-constexpr const int STORESCREEN_PAGESTRING_Y = 500;
+constexpr const int STORESCREEN_COINBANK_X = 650 + BOARD_ADDITIONAL_WIDTH * 2;
+constexpr const int STORESCREEN_COINBANK_Y = 559 + BOARD_OFFSET_Y * 2;
+constexpr const int STORESCREEN_PAGESTRING_X = 470 + BOARD_ADDITIONAL_WIDTH;
+constexpr const int STORESCREEN_PAGESTRING_Y = 500 + BOARD_OFFSET_Y * 2;
 
 static StoreItem gStoreItemSpots[NUM_STORE_PAGES][MAX_PAGE_SPOTS] =
 {
@@ -115,7 +115,7 @@ StoreScreen::StoreScreen(LawnApp* theApp) : Dialog(nullptr, nullptr, DIALOG_STOR
 	mBackButton->SetFont(Sexy::FONT_HOUSEOFTERROR20);
 	mBackButton->mColors[ButtonWidget::COLOR_LABEL] = Color(98, 153, 235);
 	mBackButton->mColors[ButtonWidget::COLOR_LABEL_HILITE] = Color(167, 192, 235);
-	mBackButton->Resize(366, 512, aMenuImage->mWidth, aMenuImage->mHeight);
+	mBackButton->Resize(370 + BOARD_OFFSET_X, 572 + BOARD_OFFSET_Y, aMenuImage->mWidth, aMenuImage->mHeight);
 	mBackButton->mTextOffsetX = -7;
 	mBackButton->mTextOffsetY = 1;
 	mBackButton->mTextDownOffsetX = 2;
@@ -130,7 +130,7 @@ StoreScreen::StoreScreen(LawnApp* theApp) : Dialog(nullptr, nullptr, DIALOG_STOR
 	mPrevButton->mDownImage = Sexy::IMAGE_STORE_PREVBUTTONHIGHLIGHT;
 	mPrevButton->mColors[ButtonWidget::COLOR_LABEL] = Color(255, 240, 0);
 	mPrevButton->mColors[ButtonWidget::COLOR_LABEL_HILITE] = Color(200, 200, 255);
-	mPrevButton->Resize(252, 402, aPrevImage->mWidth, aPrevImage->mHeight);
+	mPrevButton->Resize(218 + BOARD_OFFSET_X, 431 + BOARD_OFFSET_Y, aPrevImage->mWidth, aPrevImage->mHeight);
 
 	mNextButton = new NewLawnButton(nullptr, StoreScreen::StoreScreen_Next, this);
 	mNextButton->mDoFinger = true;
@@ -141,7 +141,7 @@ StoreScreen::StoreScreen(LawnApp* theApp) : Dialog(nullptr, nullptr, DIALOG_STOR
 	mNextButton->mDownImage = Sexy::IMAGE_STORE_NEXTBUTTONHIGHLIGHT;
 	mNextButton->mColors[ButtonWidget::COLOR_LABEL] = Color(255, 240, 0);
 	mNextButton->mColors[ButtonWidget::COLOR_LABEL_HILITE] = Color(200, 200, 255);
-	mNextButton->Resize(596, 402, aNextImage->mWidth, aNextImage->mHeight);
+	mNextButton->Resize(618 + BOARD_OFFSET_X, 431 + BOARD_OFFSET_Y, aNextImage->mWidth, aNextImage->mHeight);
 
 	mOverlayWidget = new StoreScreenOverlay(this);
 	mOverlayWidget->Resize(0, 0, BOARD_WIDTH, BOARD_HEIGHT);
@@ -476,27 +476,27 @@ void StoreScreen::Draw(Graphics* g)
 
 	if (!mHatchTimer && mHatchOpen)
 	{
-		g->DrawImage(Sexy::IMAGE_STORE_CAR, mShakeX + 196, mShakeY + 138);
-		g->DrawImage(Sexy::IMAGE_STORE_HATCHBACKOPEN, mShakeX + 299, mShakeY);
+		g->DrawImage(Sexy::IMAGE_STORE_CAR, mShakeX + 166 + BOARD_OFFSET_X, mShakeY + 138 + BOARD_OFFSET_Y);
+		g->DrawImage(Sexy::IMAGE_STORE_HATCHBACKOPEN, mShakeX + 269 + BOARD_OFFSET_X, mShakeY + BOARD_OFFSET_Y);
 		if (mApp->IsNight())
 		{
-			g->DrawImage(Sexy::IMAGE_STORE_CAR_NIGHT, mShakeX + 688, mShakeY + 193);
+			g->DrawImage(Sexy::IMAGE_STORE_CAR_NIGHT, mShakeX + 166 + BOARD_OFFSET_X, mShakeY + 138 + BOARD_OFFSET_Y);
 		}
 	}
 	else
 	{
-		g->DrawImage(Sexy::IMAGE_STORE_CARCLOSED, mShakeX + 196, mShakeY + 138);
+		g->DrawImage(Sexy::IMAGE_STORE_CARCLOSED, mShakeX + 166 + BOARD_OFFSET_X, mShakeY + 138 + BOARD_OFFSET_Y);
 		if (mApp->IsNight())
 		{
-			g->DrawImage(Sexy::IMAGE_STORE_CAR_NIGHT, mShakeX + 688, mShakeY + 193);
-			g->DrawImage(Sexy::IMAGE_STORE_CARCLOSED_NIGHT, mShakeX + 337, mShakeY + 187);
+			g->DrawImage(Sexy::IMAGE_STORE_CAR_NIGHT, mShakeX + 166 + BOARD_OFFSET_X, mShakeY + 138 + BOARD_OFFSET_Y);
+			g->DrawImage(Sexy::IMAGE_STORE_CARCLOSED_NIGHT, mShakeX + 166 + BOARD_OFFSET_X, mShakeY + 138 + BOARD_OFFSET_Y);
 		}
 	}
-	g->DrawImage(Sexy::IMAGE_STORE_SIGN, 285, aStoreSignPosY);
+	g->DrawImage(Sexy::IMAGE_STORE_SIGN, 285 + BOARD_OFFSET_X, aStoreSignPosY);
 
 	Graphics gCrazyDave = Graphics(*g);
-	gCrazyDave.mTransX -= 42.0f;
-	gCrazyDave.mTransY += 68.0f;
+	gCrazyDave.mTransX -= 42.0f + BOARD_ADDITIONAL_WIDTH / 2;
+	gCrazyDave.mTransY += 68.0f - BOARD_OFFSET_Y;
 	mApp->DrawCrazyDave(&gCrazyDave);
 
 	if (!mHatchTimer && mHatchOpen)
@@ -515,7 +515,7 @@ void StoreScreen::Draw(Graphics* g)
 	g->SetColor(Color(180, 255, 90));
 	g->SetFont(Sexy::FONT_CONTINUUMBOLD14);
 	std::string aCoinLabel = mApp->GetMoneyString(mApp->mPlayerInfo->mCoins);
-	g->DrawString(aCoinLabel, STORESCREEN_COINBANK_X + 116 - Sexy::FONT_CONTINUUMBOLD14->StringWidth(aCoinLabel), STORESCREEN_COINBANK_Y + 24);
+	g->DrawString(aCoinLabel, STORESCREEN_COINBANK_X + 113 - Sexy::FONT_CONTINUUMBOLD14->StringWidth(aCoinLabel), STORESCREEN_COINBANK_Y + 24);
 
 	if (!mPrevButton->mDisabled)
 	{
@@ -1124,7 +1124,7 @@ void StoreScreen::AdvanceCrazyDaveDialog()
 		mApp->WriteCurrentUserConfig();
 		mApp->PlaySample(Sexy::SOUND_DIAMOND);
 		Coin* aCoin = mCoins.DataArrayAlloc();
-		aCoin->CoinInitialize(80, 520, COIN_DIAMOND, COIN_MOTION_FROM_PRESENT);
+		aCoin->CoinInitialize(178 + BOARD_ADDITIONAL_WIDTH / 2, 510 - BOARD_OFFSET_Y, COIN_DIAMOND, COIN_MOTION_FROM_PRESENT);
 		aCoin->mVelX = 0;
 		aCoin->mVelY = -5;
 	}

@@ -448,7 +448,7 @@ void GridItem::AddGraveStoneParticles()
 
 void GridItem::OpenPortal()
 {
-	float aXPos = mGridX * 80.0f - 6.0f;
+	float aXPos = mGridX * 80.0f - 6.0f + BOARD_ADDITIONAL_WIDTH;
 	float aYPos = mBoard->GridToPixelY(0, mGridY) - 65.0f;
 	Reanimation* aPortalReanim = mApp->ReanimationTryToGet(mGridItemReanimID);
 	if (aPortalReanim == nullptr)
@@ -519,7 +519,7 @@ void GridItem::UpdatePortal()
 		aPortalReanim->PlayReanim("anim_pulse", ReanimLoopType::REANIM_LOOP, 0, 12.0f);
 
 		ParticleEffect aEffect = ParticleEffect::PARTICLE_PORTAL_CIRCLE;
-		float aXPos = mGridX * 80.0f + 13.0f;
+		float aXPos = mGridX * 80.0f + 13.0f + BOARD_ADDITIONAL_WIDTH;
 		float aYPos = mBoard->GridToPixelY(0, mGridY) - 39.0f;
 		if (mGridItemType == GridItemType::GRIDITEM_PORTAL_SQUARE)
 		{

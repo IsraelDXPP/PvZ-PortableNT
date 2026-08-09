@@ -238,6 +238,7 @@ public:
 	void							FastLoad(GameMode theGameMode);
 	static std::string				GetStageString(int theLevel);
 	void					KillChallengeScreen();
+	void					DoChallengePagesDialog();
 	void							ShowChallengeScreen(ChallengePage thePage);
 	const ChallengeDefinition&			GetCurrentChallengeDef();
 	void							CheckForGameEnd();
@@ -297,6 +298,7 @@ public:
 	void							KillCreditScreen();
 	static std::string				Pluralize(int theCount, const char* theSingular, const char* thePlural);
 	int								GetNumTrophies(ChallengePage thePage);
+	int								GetTotalTrophies(ChallengePage thePage);
 	bool					EarnedGoldTrophy();
 	inline bool						IsRegistered() { return false; }
 	inline bool						IsExpired() { return false; }

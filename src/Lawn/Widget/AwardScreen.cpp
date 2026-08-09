@@ -143,7 +143,7 @@ AwardScreen::AwardScreen(LawnApp* theApp, AwardType theAwardType, bool theShowin
 	mStartButton->SetFont(Sexy::FONT_DWARVENTODCRAFT15);
 	mStartButton->mColors[ButtonWidget::COLOR_LABEL] = Color(213, 159, 43);
 	mStartButton->mColors[ButtonWidget::COLOR_LABEL_HILITE] = Color(213, 159, 43);
-	mStartButton->Resize(324, 500, 156, 42);
+	mStartButton->Resize(324 + BOARD_ADDITIONAL_WIDTH, 500 + BOARD_OFFSET_Y, 156, 42);
 	mStartButton->mTextOffsetY = -1;
 
 	mContinueButton = new GameButton(AwardScreen::AwardScreen_Start);
@@ -155,7 +155,7 @@ AwardScreen::AwardScreen(LawnApp* theApp, AwardType theAwardType, bool theShowin
 	mContinueButton->SetFont(Sexy::FONT_DWARVENTODCRAFT15);
 	mContinueButton->mColors[ButtonWidget::COLOR_LABEL] = Color(213, 159, 43);
 	mContinueButton->mColors[ButtonWidget::COLOR_LABEL_HILITE] = Color(213, 159, 43);
-	mContinueButton->Resize(324, 515, 156, 42);
+	mContinueButton->Resize(324 + BOARD_ADDITIONAL_WIDTH, 515 + BOARD_OFFSET_Y, 156, 42);
 	mContinueButton->mParentWidget = this;
 	mContinueButton->mTextOffsetY = -1;
 	mContinueButton->mBtnNoDraw = true;
@@ -170,7 +170,7 @@ AwardScreen::AwardScreen(LawnApp* theApp, AwardType theAwardType, bool theShowin
 	mMenuButton->mColors[ButtonWidget::COLOR_LABEL] = Color(42, 42, 90);
 	mMenuButton->mColors[ButtonWidget::COLOR_LABEL_HILITE] = Color(42, 42, 90);
 	mMenuButton->mParentWidget = this;
-	mMenuButton->Resize(677, 16, 111, 26);
+	mMenuButton->Resize(677 + BOARD_ADDITIONAL_WIDTH * 2, 16, 111, 26);
 	mMenuButton->mTextOffsetY = 1;
 	if (!mApp->HasFinishedAdventure() && aLevel <= 3)
 	{
@@ -189,7 +189,7 @@ AwardScreen::AwardScreen(LawnApp* theApp, AwardType theAwardType, bool theShowin
 		mStartButton->SetFont(Sexy::FONT_HOUSEOFTERROR20);
 		mStartButton->mColors[ButtonWidget::COLOR_LABEL] = Color(255, 255, 255);
 		mStartButton->mColors[ButtonWidget::COLOR_LABEL_HILITE] = Color(213, 159, 43);
-		mStartButton->Resize(325, 505, 190, 73);
+		mStartButton->Resize(325 + BOARD_ADDITIONAL_WIDTH, 505 + BOARD_OFFSET_Y, 190, 73);
 		mStartButton->mTextOffsetX = 33;
 		mStartButton->mTextOffsetY = -2;
 		mStartButton->mButtonOffsetX = -2;
@@ -271,9 +271,9 @@ bool AwardScreen::IsPaperNote()
 void AwardScreen::DrawBottom(Graphics* g, std::string_view theTitle, std::string_view theAward, std::string_view theMessage)
 {
 	g->DrawImage(Sexy::IMAGE_AWARDSCREEN_BACK, 0, 0);
-	PvzpDrawString(g, theTitle, BOARD_WIDTH / 2, 58, Sexy::FONT_DWARVENTODCRAFT24, Color(213, 159, 43), DS_ALIGN_CENTER);
-	PvzpDrawString(g, theAward, BOARD_WIDTH / 2, 326, Sexy::FONT_DWARVENTODCRAFT18YELLOW, Color::White, DS_ALIGN_CENTER);
-	PvzpDrawStringWrapped(g, theMessage, Rect(285, 360, 230, 90), Sexy::FONT_BRIANNETOD16, Color(40, 50, 90), DS_ALIGN_CENTER_VERTICAL_MIDDLE);
+	PvzpDrawString(g, theTitle, BOARD_WIDTH / 2, 58 + BOARD_OFFSET_Y, Sexy::FONT_DWARVENTODCRAFT24, Color(213, 159, 43), DS_ALIGN_CENTER);
+	PvzpDrawString(g, theAward, BOARD_WIDTH / 2, 326 + BOARD_OFFSET_Y, Sexy::FONT_DWARVENTODCRAFT18YELLOW, Color::White, DS_ALIGN_CENTER);
+	PvzpDrawStringWrapped(g, theMessage, Rect(285 + BOARD_ADDITIONAL_WIDTH, 360 + BOARD_OFFSET_Y, 230, 90), Sexy::FONT_BRIANNETOD16, Color(40, 50, 90), DS_ALIGN_CENTER_VERTICAL_MIDDLE);
 }
 
 void AwardScreen::DrawAwardSeed(Graphics* g)
@@ -287,8 +287,8 @@ void AwardScreen::DrawAwardSeed(Graphics* g)
 		aMessage = Plant::GetToolTip(aSeedType);
 	DrawBottom(g, "[NEW_PLANT]", aAward, aMessage);
 
-	g->SetScale(2, 2, 350, 129);
-	DrawSeedPacket(g, 350, 129, aSeedType, SEED_NONE, 0, 255, true, false);
+	g->SetScale(2, 2, 350 + BOARD_ADDITIONAL_WIDTH, 129 + BOARD_OFFSET_Y);
+	DrawSeedPacket(g, 350 + BOARD_ADDITIONAL_WIDTH, 129 + BOARD_OFFSET_Y, aSeedType, SEED_NONE, 0, 255, true, false);
 	g->SetScale(1, 1, 0, 0);
 }
 
@@ -307,14 +307,14 @@ void AwardScreen::Draw(Graphics* g)
 		g->SetColorizeImages(false);
 		g->SetColor(Color(0, 0, 0, 64));
 		g->FillRect(0, 525, BOARD_WIDTH, BOARD_HEIGHT);
-		g->DrawImage(Sexy::IMAGE_ZOMBIE_NOTE, 75, 60);
-		g->DrawImage(Sexy::IMAGE_CREDITS_ZOMBIENOTE, 149, 103, 475, 325);
+		g->DrawImage(Sexy::IMAGE_ZOMBIE_NOTE, 75 + BOARD_ADDITIONAL_WIDTH, 60 + BOARD_OFFSET_Y);
+		g->DrawImage(Sexy::IMAGE_CREDITS_ZOMBIENOTE, 149 + BOARD_ADDITIONAL_WIDTH, 103 + BOARD_OFFSET_Y, 475, 325);
 	}
 	else if (mAwardType == AWARD_HELP_ZOMBIENOTE)
 	{
-		g->DrawImage(Sexy::IMAGE_BACKGROUND1, -700, -300, 2800, 1200);
-		g->DrawImage(Sexy::IMAGE_ZOMBIE_NOTE, 80, 80);
-		g->DrawImage(Sexy::IMAGE_ZOMBIE_NOTE_HELP, 131, 132);
+		g->DrawImage(Sexy::IMAGE_BACKGROUND1, -700 + BOARD_ADDITIONAL_WIDTH, -300 + BOARD_OFFSET_Y, 2800, 1200);
+		g->DrawImage(Sexy::IMAGE_ZOMBIE_NOTE, 80 + BOARD_ADDITIONAL_WIDTH, 80 + BOARD_OFFSET_Y);
+		g->DrawImage(Sexy::IMAGE_ZOMBIE_NOTE_HELP, 131 + BOARD_ADDITIONAL_WIDTH, 132 + BOARD_OFFSET_Y);
 	}
 	else if (mAwardType != AWARD_ACHIEVEMENTONLY)
 	{
@@ -323,7 +323,7 @@ void AwardScreen::Draw(Graphics* g)
 			if (mApp->EarnedGoldTrophy())
 			{
 				DrawBottom(g, "[BEAT_GAME_MESSAGE1]", "[GOLD_SUNFLOWER_TROPHY]", "[BEAT_GAME_MESSAGE2]");
-				PvzpDrawImageCelCenterScaledF(g, Sexy::IMAGE_SUNFLOWER_TROPHY, 325, 65, 1, 0.6f, 0.6f);
+				PvzpDrawImageCelCenterScaledF(g, Sexy::IMAGE_SUNFLOWER_TROPHY, 325 + BOARD_ADDITIONAL_WIDTH, 65 + BOARD_OFFSET_Y, 1, 0.6f, 0.6f);
 			}
 			else
 			{
@@ -344,73 +344,73 @@ void AwardScreen::Draw(Graphics* g)
 					aMsgChar = mApp->GetNumTrophies(CHALLENGE_PAGE_CHALLENGE) <= 17 ? "[CHALLENGE_UNLOCKED]" : "[GET_MORE_TROPHIES]";
 
 				DrawBottom(g, "[GOT_TROPHY]", "[TROPHY]", aMsgChar);
-				g->DrawImage(Sexy::IMAGE_TROPHY_HI_RES, BOARD_WIDTH / 2 - Sexy::IMAGE_TROPHY_HI_RES->mWidth / 2, 137);
+				g->DrawImage(Sexy::IMAGE_TROPHY_HI_RES, BOARD_WIDTH / 2 - Sexy::IMAGE_TROPHY_HI_RES->mWidth / 2, 137 + BOARD_OFFSET_Y);
 			}
 		}
 		else if (aLevel == 5)
 		{
 			DrawBottom(g, "[GOT_SHOVEL]", "[SHOVEL]", "[SHOVEL_DESCRIPTION]");
-			g->DrawImage(Sexy::IMAGE_SHOVEL_HI_RES, BOARD_WIDTH / 2 - Sexy::IMAGE_SHOVEL_HI_RES->mWidth / 2, 137);
+			g->DrawImage(Sexy::IMAGE_SHOVEL_HI_RES, BOARD_WIDTH / 2 - Sexy::IMAGE_SHOVEL_HI_RES->mWidth / 2, 137 + BOARD_OFFSET_Y);
 		}
 		else if (aLevel == 10)
 		{
 			g->DrawImage(Sexy::IMAGE_BACKGROUND1, -700, -300, 2800, 1200);
 			g->DrawImage(Sexy::IMAGE_ZOMBIE_NOTE, 80, 80);
-			g->DrawImage(Sexy::IMAGE_ZOMBIE_NOTE1, 131, 132);
-			PvzpDrawString(g, "[FOUND_NOTE]", BOARD_WIDTH / 2, 70, Sexy::FONT_DWARVENTODCRAFT24, Color(255, 200, 0, 255), DS_ALIGN_CENTER);
+			g->DrawImage(Sexy::IMAGE_ZOMBIE_NOTE1, 131 + BOARD_ADDITIONAL_WIDTH, 132 + BOARD_OFFSET_Y);
+			PvzpDrawString(g, "[FOUND_NOTE]", BOARD_WIDTH / 2, 70 + BOARD_OFFSET_Y, Sexy::FONT_DWARVENTODCRAFT24, Color(255, 200, 0, 255), DS_ALIGN_CENTER);
 		}
 		else if (aLevel == 15)
 		{
 			DrawBottom(g, "[FOUND_SUBURBAN_ALMANAC]", "[SUBURBAN_ALMANAC]", "[SUBURBAN_ALMANAC_DESCRIPTION]");
-			g->DrawImage(Sexy::IMAGE_ALMANAC, BOARD_WIDTH / 2 - Sexy::IMAGE_ALMANAC->mWidth / 2, 160);
+			g->DrawImage(Sexy::IMAGE_ALMANAC, BOARD_WIDTH / 2 - Sexy::IMAGE_ALMANAC->mWidth / 2, 160 + BOARD_OFFSET_Y);
 		}
 		else if (aLevel == 20)
 		{
-			g->DrawImage(Sexy::IMAGE_BACKGROUND2, -700, -300, 2800, 1200);
-			g->DrawImage(Sexy::IMAGE_ZOMBIE_NOTE, 80, 80);
-			g->DrawImage(Sexy::IMAGE_ZOMBIE_NOTE2, 133, 127);
-			PvzpDrawString(g, "[FOUND_NOTE]", BOARD_WIDTH / 2, 70, Sexy::FONT_DWARVENTODCRAFT24, Color(255, 200, 0, 255), DS_ALIGN_CENTER);
+		g->DrawImage(Sexy::IMAGE_BACKGROUND2, -700 + BOARD_ADDITIONAL_WIDTH, -300 + BOARD_OFFSET_Y, 2800, 1200);
+		g->DrawImage(Sexy::IMAGE_ZOMBIE_NOTE, 80 + BOARD_ADDITIONAL_WIDTH, 80 + BOARD_OFFSET_Y);
+			g->DrawImage(Sexy::IMAGE_ZOMBIE_NOTE2, 133 + BOARD_ADDITIONAL_WIDTH, 127 + BOARD_OFFSET_Y);
+			PvzpDrawString(g, "[FOUND_NOTE]", BOARD_WIDTH / 2, 70 + BOARD_OFFSET_Y, Sexy::FONT_DWARVENTODCRAFT24, Color(255, 200, 0, 255), DS_ALIGN_CENTER);
 		}
 		else if (aLevel == 25)
 		{
 			DrawBottom(g, "[FOUND_KEYS]", "[KEYS]", "[KEYS_DESCRIPTION]");
-			g->DrawImage(Sexy::IMAGE_CARKEYS, BOARD_WIDTH / 2 - Sexy::IMAGE_CARKEYS->mWidth / 2, 160);
+			g->DrawImage(Sexy::IMAGE_CARKEYS, BOARD_WIDTH / 2 - Sexy::IMAGE_CARKEYS->mWidth / 2, 160 + BOARD_OFFSET_Y);
 		}
 		else if (aLevel == 30)
 		{
-			g->DrawImage(Sexy::IMAGE_BACKGROUND1, -700, -300, 2800, 1200);
-			g->DrawImage(Sexy::IMAGE_ZOMBIE_NOTE, 80, 80);
-			g->DrawImage(Sexy::IMAGE_ZOMBIE_NOTE3, 120, 117);
-			PvzpDrawString(g, "[FOUND_NOTE]", BOARD_WIDTH / 2, 70, Sexy::FONT_DWARVENTODCRAFT24, Color(255, 200, 0, 255), DS_ALIGN_CENTER);
+			g->DrawImage(Sexy::IMAGE_BACKGROUND1, -700 + BOARD_ADDITIONAL_WIDTH, -300 + BOARD_OFFSET_Y, 2800, 1200);
+			g->DrawImage(Sexy::IMAGE_ZOMBIE_NOTE, 80 + BOARD_ADDITIONAL_WIDTH, 80 + BOARD_OFFSET_Y);
+			g->DrawImage(Sexy::IMAGE_ZOMBIE_NOTE3, 120 + BOARD_ADDITIONAL_WIDTH, 117 + BOARD_OFFSET_Y);
+			PvzpDrawString(g, "[FOUND_NOTE]", BOARD_WIDTH / 2, 70 + BOARD_OFFSET_Y, Sexy::FONT_DWARVENTODCRAFT24, Color(255, 200, 0, 255), DS_ALIGN_CENTER);
 		}
 		else if (aLevel == 35)
 		{
 			DrawBottom(g, "[FOUND_TACO]", "[TACO]", "[TACO_DESCRIPTION]");
-			g->DrawImage(Sexy::IMAGE_TACO, BOARD_WIDTH / 2 - Sexy::IMAGE_TACO->mWidth / 2, 160);
+			g->DrawImage(Sexy::IMAGE_TACO, BOARD_WIDTH / 2 - Sexy::IMAGE_TACO->mWidth / 2, 160 + BOARD_OFFSET_Y);
 		}
 		else if (aLevel == 40)
 		{
-			g->DrawImage(Sexy::IMAGE_BACKGROUND2, -700, -300, 2800, 1200);
-			g->DrawImage(Sexy::IMAGE_ZOMBIE_NOTE, 80, 80);
-			g->DrawImage(Sexy::IMAGE_ZOMBIE_NOTE4, 102, 117);
-			PvzpDrawString(g, "[FOUND_NOTE]", BOARD_WIDTH / 2, 70, Sexy::FONT_DWARVENTODCRAFT24, Color(255, 200, 0, 255), DS_ALIGN_CENTER);
+		g->DrawImage(Sexy::IMAGE_BACKGROUND2, -700 + BOARD_ADDITIONAL_WIDTH, -300 + BOARD_OFFSET_Y, 2800, 1200);
+		g->DrawImage(Sexy::IMAGE_ZOMBIE_NOTE, 80 + BOARD_ADDITIONAL_WIDTH, 80 + BOARD_OFFSET_Y);
+			g->DrawImage(Sexy::IMAGE_ZOMBIE_NOTE4, 102 + BOARD_ADDITIONAL_WIDTH, 117 + BOARD_OFFSET_Y);
+			PvzpDrawString(g, "[FOUND_NOTE]", BOARD_WIDTH / 2, 70 + BOARD_OFFSET_Y, Sexy::FONT_DWARVENTODCRAFT24, Color(255, 200, 0, 255), DS_ALIGN_CENTER);
 		}
 		else if (aLevel == 45)
 		{
 			DrawBottom(g, "[FOUND_WATERING_CAN]", "[WATERING_CAN]", "[WATERING_CAN_DESCRIPTION]");
-			g->DrawImage(Sexy::IMAGE_WATERINGCAN, BOARD_WIDTH / 2 - Sexy::IMAGE_WATERINGCAN->mWidth / 2, 160);
+			g->DrawImage(Sexy::IMAGE_WATERINGCAN, BOARD_WIDTH / 2 - Sexy::IMAGE_WATERINGCAN->mWidth / 2, 160 + BOARD_OFFSET_Y);
 		}
 		else if (aLevel == 50)
 		{
-			g->DrawImage(Sexy::IMAGE_BACKGROUND1, -700, -300, 2800, 1200);
-			g->DrawImage(Sexy::IMAGE_ZOMBIE_NOTE, 80, 80);
-			g->DrawImage(Sexy::IMAGE_ZOMBIE_FINAL_NOTE, 114, 138);
-			PvzpDrawString(g, "[FOUND_NOTE]", BOARD_WIDTH / 2, 70, Sexy::FONT_DWARVENTODCRAFT24, Color(255, 200, 0, 255), DS_ALIGN_CENTER);
+			g->DrawImage(Sexy::IMAGE_BACKGROUND1, -700 + BOARD_ADDITIONAL_WIDTH, -300 + BOARD_OFFSET_Y, 2800, 1200);
+			g->DrawImage(Sexy::IMAGE_ZOMBIE_NOTE, 80 + BOARD_ADDITIONAL_WIDTH, 80 + BOARD_OFFSET_Y);
+			g->DrawImage(Sexy::IMAGE_ZOMBIE_FINAL_NOTE, 114 + BOARD_ADDITIONAL_WIDTH, 138 + BOARD_OFFSET_Y);
+			PvzpDrawString(g, "[FOUND_NOTE]", BOARD_WIDTH / 2, 70 + BOARD_OFFSET_Y, Sexy::FONT_DWARVENTODCRAFT24, Color(255, 200, 0, 255), DS_ALIGN_CENTER);
 		}
 		else if (aLevel == 1 && mApp->HasFinishedAdventure())
 		{
 			DrawBottom(g, "[WIN_MESSAGE1]", "[SILVER_SUNFLOWER_TROPHY]", "[WIN_MESSAGE2]");
-			PvzpDrawImageCelCenterScaledF(g, Sexy::IMAGE_SUNFLOWER_TROPHY, 325, 65, 0, 0.7f, 0.7f);
+			PvzpDrawImageCelCenterScaledF(g, Sexy::IMAGE_SUNFLOWER_TROPHY, 325 + BOARD_ADDITIONAL_WIDTH, 65 + BOARD_OFFSET_Y, 0, 0.7f, 0.7f);
 		}
 		else
 		{
@@ -610,9 +610,9 @@ void AwardScreen::DrawAchievements(Graphics* g) {
 	g->FillRect(0, 0, mWidth, mHeight);
 	g->SetColorizeImages(false);
 
-	g->DrawImage(IMAGE_CHALLENGE_BACKGROUND, 0, 0);
+	g->DrawImage(IMAGE_CHALLENGE_BACKGROUND, BOARD_ADDITIONAL_WIDTH, BOARD_OFFSET_Y);
 
-	PvzpDrawString(g, mApp->GetString("ACHIEVEMENTS_TITLE", "ACHIEVEMENTS"), BOARD_WIDTH / 2, 58, FONT_HOUSEOFTERROR28, Color(220, 220, 220), DS_ALIGN_CENTER);
+	PvzpDrawString(g, mApp->GetString("ACHIEVEMENTS_TITLE", "ACHIEVEMENTS"), BOARD_WIDTH / 2, 58 + BOARD_OFFSET_Y, FONT_HOUSEOFTERROR28, Color(220, 220, 220), DS_ALIGN_CENTER);
 
 	for (size_t i = 0; i < mAchievementItems.size(); i++) {
 		std::string aAchievementName = std::string(gAchievementList[mAchievementItems[i].mId].name);
@@ -620,12 +620,12 @@ void AwardScreen::DrawAchievements(Graphics* g) {
 		aAchievementName.append(" Earned!");
 
 		Rect aSrcRect = Rect(70 * (mAchievementItems[i].mId % 7), 70 * (mAchievementItems[i].mId / 7), 70, 70);
-		Rect aDestRect = Rect(220, mAchievementItems[i].mY + 10, 70, 70);
-		Rect aTextRect = Rect(300, mAchievementItems[i].mY + 20, 300, 60);
+		Rect aDestRect = Rect(220 + BOARD_ADDITIONAL_WIDTH, mAchievementItems[i].mY + 10, 70, 70);
+		Rect aTextRect = Rect(300 + BOARD_ADDITIONAL_WIDTH, mAchievementItems[i].mY + 20, 300, 60);
 
 		g->DrawImage(IMAGE_ACHEESEMENTS_ICONS, aDestRect, aSrcRect);
 
-		PvzpDrawString(g, aAchievementName, 450, mAchievementItems[i].mY + 25, FONT_DWARVENTODCRAFT15, Color(224, 187, 98), DS_ALIGN_CENTER);
+		PvzpDrawString(g, aAchievementName, 450 + BOARD_ADDITIONAL_WIDTH, mAchievementItems[i].mY + 25, FONT_DWARVENTODCRAFT15, Color(224, 187, 98), DS_ALIGN_CENTER);
 		PvzpDrawStringWrapped(g, aAchievementDesc, aTextRect, FONT_DWARVENTODCRAFT12, Color(255, 255, 255), DS_ALIGN_CENTER_VERTICAL_MIDDLE);
 	}
 }

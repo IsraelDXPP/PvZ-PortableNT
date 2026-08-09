@@ -269,7 +269,7 @@ void Projectile::CheckForCollision()
 		return;
 	}
 
-	if (mPosX > WIDE_BOARD_WIDTH || mPosX + mWidth < 0.0f)
+	if (mPosX > WIDE_BOARD_WIDTH || mPosX + mWidth < 0.0f + BOARD_ADDITIONAL_WIDTH)
 	{
 		Die();
 		return;
@@ -290,13 +290,13 @@ void Projectile::CheckForCollision()
 		return;
 	}
 
-	if (mProjectileType == ProjectileType::PROJECTILE_STAR && (mPosY > 600.0f || mPosY < 40.0f))
+	if (mPosY > 600.0f + BOARD_OFFSET_Y || mPosY < 0.0f + BOARD_OFFSET_Y)
 	{
 		Die();
 		return;
 	}
 
-	if ((mProjectileType == ProjectileType::PROJECTILE_PEA || mProjectileType == ProjectileType::PROJECTILE_STAR) && mShadowY - mPosY > 90.0f)
+	if ((mProjectileType == ProjectileType::PROJECTILE_PEA || mProjectileType == ProjectileType::PROJECTILE_STAR) && mShadowY - mPosY > 90.0f + BOARD_OFFSET_Y)
 	{
 		return;
 	}

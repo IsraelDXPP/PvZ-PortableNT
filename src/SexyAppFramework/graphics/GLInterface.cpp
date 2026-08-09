@@ -1131,15 +1131,15 @@ void GLInterface::UpdateViewport()
 
 	vw = width; vh = height;
 
-	// Letterbox to 4:3
-	if (width * 3 > height * 4)
+	// Letterbox to the game's aspect ratio (1280x720 / 16:9)
+	if (width * mHeight > height * mWidth)
 	{
-		vw = height * 4 / 3;
+		vw = height * mWidth / mHeight;
 		vx = (width - vw) / 2;
 	}
-	else if (width * 3 < height * 4)
+	else if (width * mHeight < height * mWidth)
 	{
-		vh = width * 3 / 4;
+		vh = width * mHeight / mWidth;
 		vy = (height - vh) / 2;
 	}
 

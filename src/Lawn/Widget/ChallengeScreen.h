@@ -24,6 +24,8 @@
 
 #include "../../ConstEnums.h"
 #include "widget/Dialog.h"
+#include "widget/Slider.h"
+#include "widget/SliderListener.h"
 using namespace Sexy;
 
 #define NUM_CHALLENGE_MODES (static_cast<int>(GameMode::NUM_GAME_MODES) - 1)
@@ -31,19 +33,19 @@ using namespace Sexy;
 class LawnApp;
 class ToolTipWidget;
 class NewLawnButton;
-class ChallengeScreen : public Widget, public ButtonListener
+class ChallengeScreen : public Widget, public ButtonListener, public SliderListener
 {
 private:
 	enum
 	{
 		ChallengeScreen_Back = 100,
-		ChallengeScreen_Mode = 200,
-		ChallengeScreen_Page = 300
+		ChallengeScreen_Selector = 101,
+		ChallengeScreen_Mode = 200
 	};
 
 public:
 	NewLawnButton*              mBackButton;
-	ButtonWidget*               mPageButton[MAX_CHALLANGE_PAGES];
+	NewLawnButton*              mChallengesButton;
 	ButtonWidget*               mChallengeButtons[NUM_CHALLENGE_MODES];
 	LawnApp*                    mApp;
 	ToolTipWidget*              mToolTip;
@@ -54,16 +56,21 @@ public:
 	int                         mUnlockChallengeIndex;
 	float                       mLockShakeX;
 	float                       mLockShakeY;
-	bool                        mLimboPageUnlocked;
-	int                         mClickCount;
-	uint                        mLastClickUpdateCnt;
+	float                       mScrollPosition;
+	float                       mScrollAmount;
+	const float                 mBaseScrollSpeed = 1.5f;
+	const float                 mScrollAccel = 0.1f;
+	float                       mMaxScrollPosition;
+	Slider*                     mSlider;
+	int                         mButtonYStartOffset;
+	int                         mButtonYOffset;
 
 public:
 	ChallengeScreen(LawnApp* theApp, ChallengePage thePage);
 	~ChallengeScreen() override;
 	void                        SetUnlockChallengeIndex(ChallengePage thePage, bool theIsIZombie = false);
 	int                         MoreTrophiesNeeded(int theChallengeIndex);
-	bool             ShowPageButtons();
+	bool                        ShowPageButtons();
 	void                        UpdateButtons();
 	int                         AccomplishmentsNeeded(int theChallengeIndex);
 	void                        DrawButton(Graphics* g, int theChallengeIndex);
@@ -77,13 +84,14 @@ public:
 	void                        ButtonMouseLeave(int) override {}
 	void                        ButtonMouseMove(int, int, int) override {}
 	void                        ButtonDepress(int theId) override;
-	void                        KeyDown(KeyCode theKey) override;
 	void                        UpdateToolTip();
-	void                        MouseDown(int x, int y, int theClickCount) override;
-//  virtual void                KeyChar(char theChar);
+	void                        SliderVal(int theId, double theVal);
+	void                        MouseWheel(int theDelta) override;
 
-	bool             IsScaryPotterLevel(GameMode theGameMode);
-	bool             IsIZombieLevel(GameMode theGameMode);
+	bool                        IsScaryPotterLevel(GameMode theGameMode);
+	bool                        IsIZombieLevel(GameMode theGameMode);
+	std::string                 GetPageTitle(ChallengePage thePage);
+	bool                        IsPageUnlocked(ChallengePage thePage);
 };
 
 class ChallengeDefinition
@@ -94,7 +102,8 @@ public:
 	ChallengePage               mPage;
 	int                         mRow;
 	int                         mCol;
-	const char*             mChallengeName;
+	const char*                 mChallengeName;
+	bool                        mHasTrophy;
 };
 extern const ChallengeDefinition gChallengeDefs[NUM_CHALLENGE_MODES];
 

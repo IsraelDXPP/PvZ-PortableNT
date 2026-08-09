@@ -186,6 +186,12 @@ constinit const ReanimationParams gLawnReanimationArray[ReanimationType::NUM_REA
 	{ .mReanimationType = ReanimationType::REANIM_CREDITS_DISCOLIGHTS, .mReanimFileName = "reanim/Credits_DiscoLights.reanim", .mReanimParamFlags = 1 },
 	{ .mReanimationType = ReanimationType::REANIM_FLAG, .mReanimFileName = "reanim/Zombie_FlagPole.reanim", .mReanimParamFlags = 0 },
 	{ .mReanimationType = ReanimationType::REANIM_ZOMBATAR_HEAD, .mReanimFileName = "reanim/zombatar_zombie_head.reanim", .mReanimParamFlags = 0 },
+	{ .mReanimationType = ReanimationType::REANIM_BUSH3, .mReanimFileName = "reanim/bushes3.reanim", .mReanimParamFlags = 0 },
+	{ .mReanimationType = ReanimationType::REANIM_BUSH4, .mReanimFileName = "reanim/bushes4.reanim", .mReanimParamFlags = 0 },
+	{ .mReanimationType = ReanimationType::REANIM_BUSH5, .mReanimFileName = "reanim/bushes5.reanim", .mReanimParamFlags = 0 },
+	{ .mReanimationType = ReanimationType::REANIM_BUSH3_NIGHT, .mReanimFileName = "reanim/Night_bushes3.reanim", .mReanimParamFlags = 0 },
+	{ .mReanimationType = ReanimationType::REANIM_BUSH4_NIGHT, .mReanimFileName = "reanim/Night_bushes4.reanim", .mReanimParamFlags = 0 },
+	{ .mReanimationType = ReanimationType::REANIM_BUSH5_NIGHT, .mReanimFileName = "reanim/Night_bushes5.reanim", .mReanimParamFlags = 0 },
 };
 
 ReanimatorTransform::ReanimatorTransform() :

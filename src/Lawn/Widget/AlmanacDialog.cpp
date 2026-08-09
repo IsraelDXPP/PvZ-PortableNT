@@ -62,7 +62,7 @@ AlmanacDialog::AlmanacDialog(LawnApp* theApp) : LawnDialog(theApp, DIALOG_ALMANA
 	Color aColor = Color(42, 42, 90);
 	mCloseButton->mColors[ButtonWidget::COLOR_LABEL] = aColor;
 	mCloseButton->mColors[ButtonWidget::COLOR_LABEL_HILITE] = aColor;
-	mCloseButton->Resize(676, 567, 89, 26);
+	mCloseButton->Resize(676 + BOARD_ADDITIONAL_WIDTH, 567 + BOARD_OFFSET_Y, 89, 26);
 	mCloseButton->mParentWidget = this;
 	mCloseButton->mTextOffsetX = -8;
 	mCloseButton->mTextOffsetY = 1;
@@ -75,7 +75,7 @@ AlmanacDialog::AlmanacDialog(LawnApp* theApp) : LawnDialog(theApp, DIALOG_ALMANA
 	mIndexButton->SetFont(Sexy::FONT_BRIANNETOD12);
 	mIndexButton->mColors[ButtonWidget::COLOR_LABEL] = aColor;
 	mIndexButton->mColors[ButtonWidget::COLOR_LABEL_HILITE] = aColor;
-	mIndexButton->Resize(32, 567, 164, 26);
+	mIndexButton->Resize(32 + BOARD_ADDITIONAL_WIDTH, 567 + BOARD_OFFSET_Y, 164, 26);
 	mIndexButton->mParentWidget = this;
 	mIndexButton->mTextOffsetX = 8;
 	mIndexButton->mTextOffsetY = 1;
@@ -90,13 +90,13 @@ AlmanacDialog::AlmanacDialog(LawnApp* theApp) : LawnDialog(theApp, DIALOG_ALMANA
 	mPlantButton->SetFont(Sexy::FONT_DWARVENTODCRAFT18YELLOW);
 	mPlantButton->mColors[ButtonWidget::COLOR_LABEL] = Color::White;
 	mPlantButton->mColors[ButtonWidget::COLOR_LABEL_HILITE] = Color::White;
-	mPlantButton->Resize(130, 345, 156, 42);
+	mPlantButton->Resize(130 + BOARD_ADDITIONAL_WIDTH, 345 + BOARD_OFFSET_Y, 156, 42);
 	mPlantButton->mTextOffsetY = -1;
 	mPlantButton->mParentWidget = this;
 
 	mZombieButton = new GameButton(AlmanacDialog::ALMANAC_BUTTON_ZOMBIE);
 	mZombieButton->SetLabel("[VIEW_ZOMBIES]");
-	mZombieButton->Resize(487, 345, 210, 48);
+	mZombieButton->Resize(487 + BOARD_ADDITIONAL_WIDTH, 345 + BOARD_OFFSET_Y, 210, 48);
 	mZombieButton->mDrawStoneButton = true;
 	mZombieButton->mParentWidget = this;
 
@@ -267,7 +267,7 @@ ZombieType AlmanacDialog::GetZombieType(int theIndex)
 void AlmanacDialog::DrawIndex(Graphics* g)
 {
 	g->DrawImage(Sexy::IMAGE_ALMANAC_INDEXBACK, 0, 0);
-	PvzpDrawString(g, "[SUBURBAN_ALMANAC_INDEX]", BOARD_WIDTH / 2, 60, Sexy::FONT_HOUSEOFTERROR28, Color(220, 220, 220), DrawStringJustification::DS_ALIGN_CENTER);
+	PvzpDrawString(g, "[SUBURBAN_ALMANAC_INDEX]", BOARD_WIDTH / 2, 60 + BOARD_OFFSET_Y, Sexy::FONT_HOUSEOFTERROR28, Color(220, 220, 220), DrawStringJustification::DS_ALIGN_CENTER);
 
 	if (mPlant)
 	{
@@ -286,7 +286,7 @@ void AlmanacDialog::DrawIndex(Graphics* g)
 void AlmanacDialog::DrawPlants(Graphics* g)
 {
 	g->DrawImage(Sexy::IMAGE_ALMANAC_PLANTBACK, 0, 0);
-	PvzpDrawString(g, "[SUBURBAN_ALMANAC_PLANTS]", BOARD_WIDTH / 2, 48, Sexy::FONT_HOUSEOFTERROR20, Color(213, 159, 43), DrawStringJustification::DS_ALIGN_CENTER);
+	PvzpDrawString(g, "[SUBURBAN_ALMANAC_PLANTS]", BOARD_WIDTH / 2, 48 + BOARD_OFFSET_Y, Sexy::FONT_HOUSEOFTERROR20, Color(213, 159, 43), DrawStringJustification::DS_ALIGN_CENTER);
 
 	SeedType aSeedMouseOn = SeedHitTest(mApp->mWidgetManager->mLastMouseX, mApp->mWidgetManager->mLastMouseY);
 	for (SeedType aSeedType = SeedType::SEED_PEASHOOTER; aSeedType < NUM_ALMANAC_SEEDS; aSeedType = (SeedType)(aSeedType + 1))
@@ -314,14 +314,16 @@ void AlmanacDialog::DrawPlants(Graphics* g)
 		mSelectedSeed == SeedType::SEED_CATTAIL || mSelectedSeed == SeedType::SEED_SEASHROOM)
 	{
 		bool aNight = mSelectedSeed == SeedType::SEED_SEASHROOM;
-		g->DrawImage(aNight ? Sexy::IMAGE_ALMANAC_GROUNDNIGHTPOOL : Sexy::IMAGE_ALMANAC_GROUNDPOOL, 521, 107);
+		g->DrawImage(aNight ? Sexy::IMAGE_ALMANAC_GROUNDNIGHTPOOL : Sexy::IMAGE_ALMANAC_GROUNDPOOL, 521 + BOARD_ADDITIONAL_WIDTH, 107 + BOARD_OFFSET_Y);
 
 		if (mApp->Is3DAccelerated())
 		{
 			g->SetClipRect(475, 0, 397, 500);
-			g->mTransY -= 145;
+			g->mTransY -= 85;
+			g->mTransX += BOARD_ADDITIONAL_WIDTH;
 			mApp->mPoolEffect->PoolEffectDraw(g, aNight);
-			g->mTransY += 145;
+			g->mTransY += 85;
+			g->mTransX -= BOARD_ADDITIONAL_WIDTH;
 			g->ClearClipRect();
 		}
 	}
@@ -330,7 +332,7 @@ void AlmanacDialog::DrawPlants(Graphics* g)
 		g->DrawImage(
 			Plant::IsNocturnal(mSelectedSeed) || mSelectedSeed == SeedType::SEED_GRAVEBUSTER || mSelectedSeed == SeedType::SEED_PLANTERN ? Sexy::IMAGE_ALMANAC_GROUNDNIGHT :
 			mSelectedSeed == SeedType::SEED_FLOWERPOT ? Sexy::IMAGE_ALMANAC_GROUNDROOF : Sexy::IMAGE_ALMANAC_GROUNDDAY,
-			521, 107
+			521 + BOARD_ADDITIONAL_WIDTH, 107 + BOARD_OFFSET_Y
 		);
 	}
 
@@ -341,17 +343,17 @@ void AlmanacDialog::DrawPlants(Graphics* g)
 		mPlant->Draw(&aPlantGraphics);
 	}
 
-	g->DrawImage(Sexy::IMAGE_ALMANAC_PLANTCARD, 459, 86);
+	g->DrawImage(Sexy::IMAGE_ALMANAC_PLANTCARD, 459 + BOARD_ADDITIONAL_WIDTH, 86 + BOARD_OFFSET_Y);
 	const PlantDefinition& aPlantDef = GetPlantDefinition(mSelectedSeed);
 	std::string aName = Plant::GetNameString(mSelectedSeed, SEED_NONE);
 	std::string aDescriptionName = StrFormat("[%s_DESCRIPTION]", aPlantDef.mPlantName);
-	PvzpDrawString(g, aName, 617, 288, Sexy::FONT_DWARVENTODCRAFT18YELLOW, Color::White, DS_ALIGN_CENTER);
-	PvzpDrawStringWrapped(g, aDescriptionName, Rect(485, 309, 258, 230), Sexy::FONT_BRIANNETOD12, Color(40, 50, 90), DS_ALIGN_LEFT);
+	PvzpDrawString(g, aName, 617 + BOARD_ADDITIONAL_WIDTH, 288 + BOARD_OFFSET_Y, Sexy::FONT_DWARVENTODCRAFT18YELLOW, Color::White, DS_ALIGN_CENTER);
+	PvzpDrawStringWrapped(g, aDescriptionName, Rect(485 + BOARD_ADDITIONAL_WIDTH, 309 + BOARD_OFFSET_Y, 258, 230), Sexy::FONT_BRIANNETOD12, Color(40, 50, 90), DS_ALIGN_LEFT);
 
 	if (mSelectedSeed != SeedType::SEED_IMITATER)
 	{
 		std::string aCostStr = PvzpReplaceString(StrFormat("{KEYWORD}{COST}:{STAT} %d", aPlantDef.mSeedCost), "{COST}", "[COST]");
-		PvzpDrawStringWrapped(g, aCostStr, Rect(485, 520, 134, 50), Sexy::FONT_BRIANNETOD12, Color::White, DS_ALIGN_LEFT);
+		PvzpDrawStringWrapped(g, aCostStr, Rect(485 + BOARD_ADDITIONAL_WIDTH, 520 + BOARD_OFFSET_Y, 134, 50), Sexy::FONT_BRIANNETOD12, Color::White, DS_ALIGN_LEFT);
 
 		std::string aRechargeStr = PvzpReplaceString(
 			"{KEYWORD}{WAIT_TIME}: {STAT}{WAIT_TIME_LENGTH}",
@@ -359,14 +361,14 @@ void AlmanacDialog::DrawPlants(Graphics* g)
 			aPlantDef.mRefreshTime == 750 ? "[WAIT_TIME_SHORT]" : aPlantDef.mRefreshTime == 3000 ? "[WAIT_TIME_LONG]" : "[WAIT_TIME_VERY_LONG]"
 		);
 		aRechargeStr = PvzpReplaceString(aRechargeStr, "{WAIT_TIME}", "[WAIT_TIME]");
-		PvzpDrawStringWrapped(g, aRechargeStr, Rect(600, 520, 139, 50), Sexy::FONT_BRIANNETOD12, Color(40, 50, 90), DS_ALIGN_RIGHT);
+		PvzpDrawStringWrapped(g, aRechargeStr, Rect(600 + BOARD_ADDITIONAL_WIDTH, 520 + BOARD_OFFSET_Y, 139, 50), Sexy::FONT_BRIANNETOD12, Color(40, 50, 90), DS_ALIGN_RIGHT);
 	}
 }
 
 void AlmanacDialog::DrawZombies(Graphics* g)
 {
 	g->DrawImage(Sexy::IMAGE_ALMANAC_ZOMBIEBACK, 0, 0);
-	PvzpDrawString(g, "[SUBURBAN_ALMANAC_ZOMBIES]", BOARD_WIDTH / 2, 54, Sexy::FONT_DWARVENTODCRAFT24, Color(0, 196, 0), DS_ALIGN_CENTER);
+	PvzpDrawString(g, "[SUBURBAN_ALMANAC_ZOMBIES]", BOARD_WIDTH / 2, 54 + BOARD_OFFSET_Y, Sexy::FONT_DWARVENTODCRAFT24, Color(0, 196, 0), DS_ALIGN_CENTER);
 
 	ZombieType aZombieMouseOn = ZombieHitTest(mApp->mWidgetManager->mLastMouseX, mApp->mWidgetManager->mLastMouseY);
 	for (int i = 0; i < NUM_ALMANAC_ZOMBIES; i++)
@@ -444,7 +446,7 @@ void AlmanacDialog::DrawZombies(Graphics* g)
 	}
 
 	g->DrawImage(mZombie->mZombieType == ZombieType::ZOMBIE_ZAMBONI || mZombie->mZombieType == ZombieType::ZOMBIE_BOBSLED ?
-		Sexy::IMAGE_ALMANAC_GROUNDICE : Sexy::IMAGE_ALMANAC_GROUNDDAY, 518, 110);
+		Sexy::IMAGE_ALMANAC_GROUNDICE : Sexy::IMAGE_ALMANAC_GROUNDDAY, 518 + BOARD_ADDITIONAL_WIDTH, 110 + BOARD_OFFSET_Y);
 	if (mZombie && !ZombieHasSilhouette(mZombie->mZombieType))
 	{
 		Graphics aZombieGraphics = Graphics(*g);
@@ -466,11 +468,11 @@ void AlmanacDialog::DrawZombies(Graphics* g)
 			mZombie->DrawShadow(&aZombieGraphics);
 		mZombie->Draw(&aZombieGraphics);
 	}
-	g->DrawImage(Sexy::IMAGE_ALMANAC_ZOMBIECARD, 455, 78);
+	g->DrawImage(Sexy::IMAGE_ALMANAC_ZOMBIECARD, 455 + BOARD_ADDITIONAL_WIDTH, 78 + BOARD_OFFSET_Y);
 
 	const ZombieDefinition& aZombieDef = GetZombieDefinition(mSelectedZombie);
 	std::string aName = ZombieHasSilhouette(mSelectedZombie) ? "???" : StrFormat("[%s]", aZombieDef.mZombieName);
-	PvzpDrawString(g, aName, 613, 362, Sexy::FONT_DWARVENTODCRAFT18GREENINSET, Color(190, 255, 235, 255), DS_ALIGN_CENTER);
+	PvzpDrawString(g, aName, 613 + BOARD_ADDITIONAL_WIDTH, 362 + BOARD_OFFSET_Y, Sexy::FONT_DWARVENTODCRAFT18GREENINSET, Color(190, 255, 235, 255), DS_ALIGN_CENTER);
 
 	std::string aDescription;
 	DrawStringJustification aAlign;
@@ -501,7 +503,7 @@ void AlmanacDialog::DrawZombies(Graphics* g)
 		}
 	}
 	// todo: fix stuff that have another formatter after them, ex: "{KEYWORD}Weakness:{STAT} fume-shroom{METAL} and magnet-shroom{KEYWORD}" (magnet-shroom will show with the {KEYWORD} colors)
-	PvzpDrawStringWrapped(g, aDescription, Rect(484, mSelectedZombie == ZombieType::ZOMBIE_ZAMBONI ? 372 : 377, 258, 170), Sexy::FONT_BRIANNETOD12, Color(40, 50, 90), aAlign);
+	PvzpDrawStringWrapped(g, aDescription, Rect(484 + BOARD_ADDITIONAL_WIDTH, (mSelectedZombie == ZombieType::ZOMBIE_ZAMBONI ? 372 : 377) + BOARD_OFFSET_Y, 258, 170), Sexy::FONT_BRIANNETOD12, Color(40, 50, 90), aAlign);
 }
 
 void AlmanacDialog::Draw(Graphics* g)
@@ -535,8 +537,8 @@ void AlmanacDialog::GetSeedPosition(SeedType theSeedType, int& x, int& y)
 		x = 20, y = 23;
 	else
 	{
-		x = theSeedType % 8 * 52 + 26;
-		y = theSeedType / 8 * 78 + 92;
+		x = theSeedType % 8 * 52 + 26 + BOARD_ADDITIONAL_WIDTH;
+		y = theSeedType / 8 * 78 + 92 + BOARD_OFFSET_Y;
 	}
 }
 
@@ -619,11 +621,11 @@ bool AlmanacDialog::ZombieHasDescription(ZombieType theZombieType)
 void AlmanacDialog::GetZombiePosition(ZombieType theZombieType, int& x, int& y)
 {
 	if (theZombieType == ZombieType::ZOMBIE_BOSS)
-		x = 192, y = 486;
+		x = 192 + BOARD_ADDITIONAL_WIDTH, y = 486 + BOARD_OFFSET_Y;
 	else
 	{
-		x = theZombieType % 5 * 85 + 22;
-		y = theZombieType / 5 * 80 + 86;
+		x = theZombieType % 5 * 85 + 22 + BOARD_ADDITIONAL_WIDTH;
+		y = theZombieType / 5 * 80 + 86 + BOARD_OFFSET_Y;
 	}
 }
 

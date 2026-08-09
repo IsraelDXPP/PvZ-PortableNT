@@ -22,7 +22,9 @@
 #include "LawnApp.h"
 #include "Resources.h"
 #include "PvzpLib/PvzpStringFile.h"
+#include "PvzpLib/PvzpDebug.h"
 #include <cstdlib>
+#include <exception>
 #include <vector>
 using namespace Sexy;
 
@@ -94,10 +96,18 @@ int main(int argc, char** argv)
 
 	PvzpStringListSetColors(gLawnStringFormats, gLawnStringFormatCount);
 	gExtractResourcesByName = Sexy::ExtractResourcesByName;
-	gLawnApp = new LawnApp();
-	gLawnApp->SetArgs(argc, argv);
-	gLawnApp->Init();
-	gLawnApp->Start();
+	try
+	{
+		gLawnApp = new LawnApp();
+		gLawnApp->SetArgs(argc, argv);
+		gLawnApp->Init();
+		gLawnApp->Start();
+	}
+	catch (const std::exception& theException)
+	{
+		PvzpLogLn("Unhandled exception: %s", theException.what());
+		throw;
+	}
 #ifndef __EMSCRIPTEN__
 	gLawnApp->Shutdown();
 	if (gLawnApp)

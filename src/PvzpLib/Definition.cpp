@@ -663,8 +663,9 @@ bool DefinitionIsCompiled(const std::string& theXMLFilePath)
 	std::filesystem::file_time_type aXMLFileTime{};
 	if (!DefinitionGetFileModTime(theXMLFilePath, aXMLFileTime))
 	{
-		PvzpTrace("Can't find source file to compile '%s'", theXMLFilePath.c_str());
-		return false;
+		// No source XML file (e.g. compiled-only reanim assets). Use the compiled
+		// file directly, matching QEWide behavior.
+		return true;
 	}
 
 	return aXMLFileTime <= aCompiledFileTime;

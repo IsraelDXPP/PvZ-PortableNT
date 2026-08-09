@@ -38,7 +38,7 @@
 #include "widget/Dialog.h"
 #include "widget/WidgetManager.h"
 
-Rect aBackButtonRect = { 120, 35, 130, 80 };
+Rect aBackButtonRect = { 120 + BOARD_ADDITIONAL_WIDTH, 55 - BOARD_OFFSET_Y + 30, 130, 80 };
 
 constinit const AchievementItem gAchievementList[MAX_ACHIEVEMENTS] = {
 	{ "Home Lawn Security", "Complete Adventure Mode." },
@@ -65,14 +65,14 @@ constinit const AchievementItem gAchievementList[MAX_ACHIEVEMENTS] = {
 
 AchievementsWidget::AchievementsWidget(LawnApp* theApp) {
 	mApp = theApp;
-	mWidth = 800;
-	mHeight = IMAGE_ACHEESEMENTS_CHINA->mHeight + IMAGE_SELECTORSCREEN_ACHIEVEMENTS_BG->mHeight + 15700;
+	mWidth = BOARD_WIDTH;
+	mHeight = IMAGE_ACHEESEMENTS_HOLE_TILE->mHeight * 70 - 100 + IMAGE_ACHEESEMENTS_CHINA->mHeight;
 	mScrollDirection = -1;
 	mScrollValue = 0;
 	mDefaultScrollValue = 30;
 	mScrollDecay = 1;
 	mDidPressMoreButton = false;
-	mMoreRockRect = Rect(710, 470, IMAGE_ACHEESEMENTS_MORE_ROCK->mWidth - 25, IMAGE_ACHEESEMENTS_MORE_ROCK->mHeight - 50);
+	mMoreRockRect = Rect(710 + BOARD_ADDITIONAL_WIDTH + 90, 470 - BOARD_OFFSET_Y, IMAGE_ACHEESEMENTS_MORE_ROCK->mWidth - 25, IMAGE_ACHEESEMENTS_MORE_ROCK->mHeight - 50);
 }
 
 AchievementsWidget::~AchievementsWidget() {
@@ -93,7 +93,7 @@ void AchievementsWidget::Update() {
 	//if (aNewY >= mApp->mHeight)
 	//	aNewY = mApp->mHeight;
 
-	int aMaxScroll = 2 * mApp->mHeight + 50 - mHeight;
+	int aMaxScroll = mApp->mHeight - mHeight;
 	aNewY = std::max(aNewY, aMaxScroll);
 
 	mY = aNewY;
@@ -106,23 +106,25 @@ void AchievementsWidget::Update() {
 }
 
 void AchievementsWidget::Draw(Graphics* g) {
-	g->DrawImage(IMAGE_SELECTORSCREEN_ACHIEVEMENTS_BG, 0, 0);
+	g->DrawImage(IMAGE_SELECTORSCREEN_ACHIEVEMENTS_BG, 0, -BOARD_OFFSET_Y + 30);
 
-	int aHeight = IMAGE_SELECTORSCREEN_ACHIEVEMENTS_BG->mHeight;
 	for (int i = 1; i <= 70; i++)
-		g->DrawImage(IMAGE_ACHEESEMENTS_HOLE_TILE, 0, aHeight * i);
+	{
+		if (i == 70)
+			g->DrawImage(IMAGE_ACHEESEMENTS_CHINA, 0, IMAGE_ACHEESEMENTS_CHINA->mHeight * i - 40 - BOARD_OFFSET_Y);
+		else
+			g->DrawImage(IMAGE_ACHEESEMENTS_HOLE_TILE, 0, IMAGE_ACHEESEMENTS_HOLE_TILE->mHeight * i - 100);
+	}
 
-	g->DrawImage(IMAGE_ACHEESEMENTS_BOOKWORM, 0, 1125);
-	g->DrawImage(IMAGE_ACHEESEMENTS_BEJEWELED, 0, 2250);
-	g->DrawImage(IMAGE_ACHEESEMENTS_CHUZZLE, 0, 4500);
-	g->DrawImage(IMAGE_ACHEESEMENTS_PEGGLE, 0, 6750);
-	g->DrawImage(IMAGE_ACHEESEMENTS_PIPE, 0, 9000);
-	g->DrawImage(IMAGE_ACHEESEMENTS_ZUMA, 0, 11250);
-
-	g->DrawImage(IMAGE_ACHEESEMENTS_CHINA, 0, mHeight - IMAGE_ACHEESEMENTS_CHINA->mHeight - /*50*/ 650);
+	g->DrawImage(IMAGE_ACHEESEMENTS_BOOKWORM, BOARD_ADDITIONAL_WIDTH, 1125);
+	g->DrawImage(IMAGE_ACHEESEMENTS_BEJEWELED, BOARD_ADDITIONAL_WIDTH, 2250);
+	g->DrawImage(IMAGE_ACHEESEMENTS_CHUZZLE, BOARD_ADDITIONAL_WIDTH, 4500);
+	g->DrawImage(IMAGE_ACHEESEMENTS_PEGGLE, BOARD_ADDITIONAL_WIDTH, 6750);
+	g->DrawImage(IMAGE_ACHEESEMENTS_PIPE, BOARD_ADDITIONAL_WIDTH, 9000);
+	g->DrawImage(IMAGE_ACHEESEMENTS_ZUMA, BOARD_ADDITIONAL_WIDTH, 11250);
 
 	if (aBackButtonRect.Contains(mWidgetManager->mLastMouseX - mX, mWidgetManager->mLastMouseY - mY))
-		g->DrawImage(IMAGE_ACHEESEMENTS_BACK_HIGHLIGHT, 128, 55);
+		g->DrawImage(IMAGE_ACHEESEMENTS_BACK_HIGHLIGHT, 128 + BOARD_ADDITIONAL_WIDTH, 55 - BOARD_OFFSET_Y + 30);
 
 	for (int i = 0; i < MAX_ACHIEVEMENTS; i++) {
 		bool aHasAchievement;
@@ -130,8 +132,8 @@ void AchievementsWidget::Draw(Graphics* g) {
 		else aHasAchievement = false;
 
 		int aCurrAchievementOff = 57 * int(i / 2);
-		int aImageXPos = i % 2 == 0 ? 120 : 410;
-		int aImageYPos = 178 + aCurrAchievementOff;
+		int aImageXPos = (i % 2 == 0 ? 120 : 410) + BOARD_ADDITIONAL_WIDTH;
+		int aImageYPos = 138 + aCurrAchievementOff;
 		int aTextXPos = aImageXPos + 70;
 		int aTextYPos = aImageYPos + 16;
 
@@ -162,14 +164,14 @@ void AchievementsWidget::Draw(Graphics* g) {
 		g->WriteWordWrapped(aPos, aDesc, 12);
 	}
 
-	g->DrawImage(IMAGE_ACHEESEMENTS_MORE_ROCK, 700, 450);
+	g->DrawImage(IMAGE_ACHEESEMENTS_MORE_ROCK, 710 + BOARD_ADDITIONAL_WIDTH + 90, 470 - BOARD_OFFSET_Y);
 
 	bool aIsHighlight = mMoreRockRect.Contains(mWidgetManager->mLastMouseX - mX, mWidgetManager->mLastMouseY - mY);
 	if (mDidPressMoreButton) {
-		g->DrawImage(aIsHighlight ? IMAGE_ACHEESEMENTS_TOP_BUTTON_HIGHLIGHT : IMAGE_ACHEESEMENTS_TOP_BUTTON, 700, 450);
+		g->DrawImage(aIsHighlight ? IMAGE_ACHEESEMENTS_TOP_BUTTON_HIGHLIGHT : IMAGE_ACHEESEMENTS_TOP_BUTTON, 710 + BOARD_ADDITIONAL_WIDTH + 90, 470 - BOARD_OFFSET_Y);
 	}
 	else {
-		g->DrawImage(aIsHighlight ? IMAGE_ACHEESEMENTS_MORE_BUTTON_HIGHLIGHT : IMAGE_ACHEESEMENTS_MORE_BUTTON, 700, 450);
+		g->DrawImage(aIsHighlight ? IMAGE_ACHEESEMENTS_MORE_BUTTON_HIGHLIGHT : IMAGE_ACHEESEMENTS_MORE_BUTTON, 710 + BOARD_ADDITIONAL_WIDTH + 90, 470 - BOARD_OFFSET_Y);
 	}
 }
 

@@ -19,23 +19,33 @@
  * along with PvZ-Portable. If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include "Coin.h"
-#include "Board.h"
-#include "Plant.h"
-#include "Zombie.h"
-#include "Cutscene.h"
-#include "GridItem.h"
-#include "Challenge.h"
-#include "LawnMower.h"
-#include "Bush.h"
-#include "SeedPacket.h"
-#include "../LawnApp.h"
-#include "Projectile.h"
-#include "../Resources.h"
-#include "CursorObject.h"
-#include "ToolTipWidget.h"
-#include "MessageWidget.h"
-#include "../GameConstants.h"
-#include "Widget/GameButton.h"
-#include "misc/Debug.h"
-#include "graphics/Graphics.h"
+#ifndef __BUSH_H__
+#define __BUSH_H__
+
+#include <cstdint>
+
+#include "../ConstEnums.h"
+#include "GameObject.h"
+
+namespace Sexy
+{
+	class Graphics;
+}
+
+class Bush : public GameObject
+{
+public:
+	int32_t                     mPosX;
+	int32_t                     mPosY;
+	int32_t                     mID;
+	int32_t                     mBushIndex;
+	ReanimationID               mReanimID;
+
+public:
+	void                    BushInitialize(int theRow, bool theNight);
+	void                    Update();
+	void                    Draw(Graphics* g);
+	void                    AnimateBush();
+};
+
+#endif

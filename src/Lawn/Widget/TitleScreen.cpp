@@ -84,7 +84,7 @@ TitleScreen::~TitleScreen()
 
 void TitleScreen::DrawToPreload(Graphics* g)
 {
-	g->DrawImageF(IMAGE_PLANTSHADOW, 1000.0f, 0.0f);
+  g->DrawImageF(IMAGE_PLANTSHADOW, 1480.0f, -50.0f);
 }
 
 void TitleScreen::Draw(Graphics* g)
@@ -171,11 +171,11 @@ void TitleScreen::Draw(Graphics* g)
 	int aLogoY;
 	if (mTitleStateCounter > 60)
 	{
-		aLogoY = PvzpAnimateCurve(100, 60, mTitleStateCounter, -150, 10, CURVE_EASE_IN);
+		aLogoY = PvzpAnimateCurve(100, 60, mTitleStateCounter, -150, 10 + BOARD_OFFSET_Y, CURVE_EASE_IN);
 	}
 	else
 	{
-		aLogoY = PvzpAnimateCurve(60, 50, mTitleStateCounter, 10, 15, CURVE_BOUNCE);
+		aLogoY = PvzpAnimateCurve(60, 50, mTitleStateCounter, 10 + BOARD_OFFSET_Y, 15 + BOARD_OFFSET_Y, CURVE_BOUNCE);
 	}
 	g->DrawImage(IMAGE_PVZ_LOGO, mWidth / 2 - IMAGE_PVZ_LOGO->mWidth / 2, aLogoY);
 
@@ -197,7 +197,7 @@ void TitleScreen::Draw(Graphics* g)
 	else
 	{
 		Graphics aClipG(*g);
-		aClipG.ClipRect(240, aGrassY, mCurBarWidth, IMAGE_LOADBAR_GRASS->mHeight);
+		aClipG.ClipRect(240 + BOARD_ADDITIONAL_WIDTH, aGrassY, mCurBarWidth, IMAGE_LOADBAR_GRASS->mHeight);
 		aClipG.DrawImage(IMAGE_LOADBAR_GRASS, aGrassX, aGrassY);
 
 		float aRollLen = mCurBarWidth * 0.94f;
@@ -328,11 +328,11 @@ void TitleScreen::Update()
 	int aButtonY;
 	if (mTitleStateCounter > 10)
 	{
-		aButtonY = PvzpAnimateCurve(60, 10, mTitleStateCounter, 650, 534, PvzpCurves::CURVE_EASE_IN);
+		aButtonY = PvzpAnimateCurve(60, 10, mTitleStateCounter, BOARD_HEIGHT + BOARD_OFFSET_Y, 534 + BOARD_OFFSET_Y, PvzpCurves::CURVE_EASE_IN);
 	}
 	else
 	{
-		aButtonY = PvzpAnimateCurve(10, 0, mTitleStateCounter, 534, 529, PvzpCurves::CURVE_BOUNCE);
+		aButtonY = PvzpAnimateCurve(10, 0, mTitleStateCounter, 534 + BOARD_OFFSET_Y, 529 + BOARD_OFFSET_Y, PvzpCurves::CURVE_BOUNCE);
 	}
 	mStartButton->Resize(mStartButton->mX, aButtonY, mTotalBarWidth, mStartButton->mHeight);
 
@@ -465,9 +465,9 @@ void TitleScreen::Update()
 			{
 				aReanimType = ReanimationType::REANIM_LOADBAR_ZOMBIEHEAD;
 			}
-			float aPosX = aTriggerPoint[i] + 225.0f;
+			float aPosX = aTriggerPoint[i] + 480.0f;
 			float aPosY = 511.0f;
-			Reanimation* aSproutReanim = mApp->AddReanimation(aPosX, aPosY, 0, aReanimType);
+			Reanimation* aSproutReanim = mApp->AddReanimation(aPosX, aPosY + BOARD_OFFSET_Y, 0, aReanimType);
 			aSproutReanim->mAnimRate = 18.0f;
 			aSproutReanim->mLoopType = ReanimLoopType::REANIM_PLAY_ONCE_AND_HOLD;
 
@@ -477,12 +477,12 @@ void TitleScreen::Update()
 			}
 			else if (i == 2)
 			{
-				aSproutReanim->SetPosition(aPosX, aPosY - 5.0f);
+				aSproutReanim->SetPosition(aPosX, aPosY - 5.0f + BOARD_OFFSET_Y);
 				aSproutReanim->OverrideScale(1.1f, 1.3f);
 			}
 			else if (i == 4)
 			{
-				aSproutReanim->SetPosition(aPosX - 20.0f, aPosY);
+				aSproutReanim->SetPosition(aPosX - 20.0f, aPosY + BOARD_OFFSET_Y);
 			}
 
 			if (i == 4)

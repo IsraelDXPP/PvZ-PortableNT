@@ -67,13 +67,14 @@ SeedChooserScreen::SeedChooserScreen()
 	mStartButton->mOverOverlayImage = Sexy::IMAGE_SEEDCHOOSER_BUTTON_GLOW;
 	mStartButton->SetFont(Sexy::FONT_DWARVENTODCRAFT18YELLOW);
 	mStartButton->mColors[GameButton::COLOR_LABEL_HILITE] = Color::White;
-	mStartButton->Resize(154, 545, 156, 42);
+	mStartButton->Resize(154, 545 + SEED_CHOOSER_EXTRA_HEIGHT, 156, 42);
 	mStartButton->mTextOffsetY = -1;
 	EnableStartButton(false);
 
+	int aButtonOffsetX = BOARD_ADDITIONAL_WIDTH * 2;
 	mMenuButton = new GameButton(SeedChooserScreen::SeedChooserScreen_Menu);
 	mMenuButton->SetLabel("[MENU_BUTTON]");
-	mMenuButton->Resize(681, -10, 117, 46);
+	mMenuButton->Resize(681 + aButtonOffsetX, -10, 117, 46);
 	mMenuButton->mDrawStoneButton = true;
 
 	mRandomButton = new GameButton(SeedChooserScreen::SeedChooserScreen_Random);
@@ -84,7 +85,7 @@ SeedChooserScreen::SeedChooserScreen()
 	mRandomButton->SetFont(Sexy::FONT_BRIANNETOD12);
 	mRandomButton->mColors[0] = Color(255, 240, 0);
 	mRandomButton->mColors[1] = Color(200, 200, 255);
-	mRandomButton->Resize(332, 546, 100, 30);
+	mRandomButton->Resize(332, 546 + SEED_CHOOSER_EXTRA_HEIGHT, 100, 30);
 	if (!mApp->mCheatKeys)
 	{
 		mRandomButton->mBtnNoDraw = true;
@@ -105,7 +106,7 @@ SeedChooserScreen::SeedChooserScreen()
 	mViewLawnButton->SetFont(Sexy::FONT_BRIANNETOD12);
 	mViewLawnButton->mColors[0] = aBtnColor;
 	mViewLawnButton->mColors[1] = aBtnColor;
-	mViewLawnButton->Resize(22, 561, aImageWidth, aImageHeight);
+	mViewLawnButton->Resize(22, 561 + SEED_CHOOSER_EXTRA_HEIGHT, aImageWidth, aImageHeight);
 	mViewLawnButton->mParentWidget = this;
 	mViewLawnButton->mTextOffsetY = 1;
 	if (!mBoard->mCutScene->IsSurvivalRepick())
@@ -122,7 +123,7 @@ SeedChooserScreen::SeedChooserScreen()
 	mAlmanacButton->SetFont(Sexy::FONT_BRIANNETOD12);
 	mAlmanacButton->mColors[0] = aBtnColor;
 	mAlmanacButton->mColors[1] = aBtnColor;
-	mAlmanacButton->Resize(560, 572, aImageWidth, aImageHeight);
+	mAlmanacButton->Resize(560 + aButtonOffsetX, 572 + SEED_CHOOSER_EXTRA_HEIGHT, aImageWidth, aImageHeight);
 	mAlmanacButton->mParentWidget = this;
 	mAlmanacButton->mTextOffsetY = 1;
 
@@ -134,7 +135,7 @@ SeedChooserScreen::SeedChooserScreen()
 	mStoreButton->SetFont(Sexy::FONT_BRIANNETOD12);
 	mStoreButton->mColors[0] = aBtnColor;
 	mStoreButton->mColors[1] = aBtnColor;
-	mStoreButton->Resize(680, 572, aImageWidth, aImageHeight);
+	mStoreButton->Resize(680 + aButtonOffsetX, 572 + SEED_CHOOSER_EXTRA_HEIGHT, aImageWidth, aImageHeight);
 	mStoreButton->mParentWidget = this;
 	mStoreButton->mTextOffsetY = 1;
 
@@ -143,7 +144,7 @@ SeedChooserScreen::SeedChooserScreen()
 	mImitaterButton->mOverImage = Sexy::IMAGE_IMITATERSEED;
 	mImitaterButton->mDownImage = Sexy::IMAGE_IMITATERSEED;
 	mImitaterButton->mDisabledImage = Sexy::IMAGE_IMITATERSEEDDISABLED;
-	mImitaterButton->Resize(464, 515, Sexy::IMAGE_IMITATERSEED->mWidth, Sexy::IMAGE_IMITATERSEED->mHeight);
+	mImitaterButton->Resize(464, 515 + SEED_CHOOSER_EXTRA_HEIGHT, Sexy::IMAGE_IMITATERSEED->mWidth, Sexy::IMAGE_IMITATERSEED->mHeight);
 	mImitaterButton->mParentWidget = this;
 
 	if (!mApp->CanShowAlmanac())
@@ -354,7 +355,7 @@ void SeedChooserScreen::Draw(Graphics* g)
 	g->DrawImage(Sexy::IMAGE_SEEDCHOOSER_BACKGROUND, 0, 87);
 	if (mApp->HasSeedType(SEED_IMITATER))
 	{
-		g->DrawImage(Sexy::IMAGE_SEEDCHOOSER_IMITATERADDON, 459, 503);
+		g->DrawImage(Sexy::IMAGE_SEEDCHOOSER_IMITATERADDON, 459, 503 + SEED_CHOOSER_EXTRA_HEIGHT);
 	}
 	// the localization key name is wrong
 	PvzpDrawString(g, "[CHOOSE_YOUR_PLANTS]", 229, 110, Sexy::FONT_DWARVENTODCRAFT18YELLOW, Color::White, DS_ALIGN_CENTER);
@@ -447,22 +448,28 @@ void SeedChooserScreen::UpdateViewLawn()
 	if (mViewLawnTime == 100) mBoard->DisplayAdviceAgain("[CLICK_TO_CONTINUE]", MESSAGE_STYLE_HINT_STAY, ADVICE_CLICK_TO_CONTINUE);
 	else if (mViewLawnTime == 251) mViewLawnTime = 250;
 
-	int aBoardX = BOARD_IMAGE_WIDTH_OFFSET - mApp->mWidth;
-	int aSeedChooserY = SEED_CHOOSER_OFFSET_Y - Sexy::IMAGE_SEEDCHOOSER_BACKGROUND->mHeight;
+	int aSeedChooserY = SEED_CHOOSER_OFFSET_Y - Sexy::IMAGE_SEEDCHOOSER_BACKGROUND->mHeight - 87;
+	int aStreetOffset = BOARD_IMAGE_WIDTH_OFFSET + BOARD_ADDITIONAL_WIDTH - mApp->mWidth;
 	if (mViewLawnTime <= 100)
 	{
-		mBoard->Move(-PvzpAnimateCurve(0, 100, mViewLawnTime, aBoardX, 0, CURVE_EASE_IN_OUT), 0);
+		mBoard->mRoofPoleOffset = PvzpAnimateCurve(0, 100, mViewLawnTime, ROOF_POLE_END, ROOF_POLE_START, CURVE_EASE_IN_OUT);
+		mBoard->mRoofTreeOffset = PvzpAnimateCurve(0, 100, mViewLawnTime, ROOF_TREE_END, ROOF_TREE_START, CURVE_EASE_IN_OUT);
+		mBoard->Move(-PvzpAnimateCurve(0, 100, mViewLawnTime, aStreetOffset, 0, CURVE_EASE_IN_OUT), 0);
 		Move(0, PvzpAnimateCurve(0, 40, mViewLawnTime, aSeedChooserY, SEED_CHOOSER_OFFSET_Y, CURVE_EASE_IN_OUT));
 	}
 	else if (mViewLawnTime <= 250)
 	{
 		mBoard->Move(0, 0);
+		mBoard->mRoofPoleOffset = ROOF_POLE_START;
+		mBoard->mRoofTreeOffset = ROOF_TREE_START;
 		Move(0, SEED_CHOOSER_OFFSET_Y);
 	}
 	else if (mViewLawnTime <= 350)
 	{
 		mBoard->ClearAdvice(ADVICE_CLICK_TO_CONTINUE);
-		mBoard->Move(-PvzpAnimateCurve(250, 350, mViewLawnTime, 0, aBoardX, CURVE_EASE_IN_OUT), 0);
+		mBoard->mRoofPoleOffset = PvzpAnimateCurve(250, 350, mViewLawnTime, ROOF_POLE_START, ROOF_POLE_END, CURVE_EASE_IN_OUT);
+		mBoard->mRoofTreeOffset = PvzpAnimateCurve(250, 350, mViewLawnTime, ROOF_TREE_START, ROOF_TREE_END, CURVE_EASE_IN_OUT);
+		mBoard->Move(-PvzpAnimateCurve(250, 350, mViewLawnTime, 0, aStreetOffset, CURVE_EASE_IN_OUT), 0);
 		Move(0, PvzpAnimateCurve(310, 350, mViewLawnTime, SEED_CHOOSER_OFFSET_Y, aSeedChooserY, CURVE_EASE_IN_OUT));
 	}
 	else

@@ -1063,6 +1063,7 @@ GLInterface::GLInterface(SexyAppBase* theApp)
 	mDisplayWidth  = mWidth;
 	mDisplayHeight = mHeight;
 	mPresentationRect = Rect(0, 0, mWidth, mHeight);
+	mInputSourceRect = Rect(0, 0, mWidth, mHeight);
 	mRefreshRate = 60;
 	mMillisecondsPerFrame = 1000 / mRefreshRate;
 	mScreenImage = nullptr;
@@ -1145,6 +1146,29 @@ void GLInterface::UpdateViewport()
 
 	glViewport(vx, vy, vw, vh);
 	mPresentationRect = Rect(vx, vy, vw, vh);
+
+	// Input coordinates (SDL mouse/touch events) are reported in window units
+	// (logical points on high-DPI iOS), which may differ from the drawable size
+	// in pixels when SDL_WINDOW_ALLOW_HIGHDPI is used. Map the same letterboxed
+	// region in window units so RemapMouse stays correct.
+	int ww = width, wh = height;
+#ifndef __SWITCH__
+	SDL_GetWindowSize((SDL_Window*)mApp->mWindow, &ww, &wh);
+#endif
+
+	int ivx = 0, ivy = 0, ivw = ww, ivh = wh;
+	if (ww * mHeight > wh * mWidth)
+	{
+		ivw = wh * mWidth / mHeight;
+		ivx = (ww - ivw) / 2;
+	}
+	else if (ww * mHeight < wh * mWidth)
+	{
+		ivh = ww * mHeight / mWidth;
+		ivy = (wh - ivh) / 2;
+	}
+
+	mInputSourceRect = Rect(ivx, ivy, ivw, ivh);
 }
 
 int GLInterface::Init(bool IsWindowed)

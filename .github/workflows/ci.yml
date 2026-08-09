@@ -69,6 +69,223 @@ jobs:
         name: pvz-portable-archlinux
         path: dist/
 
+  build-linux-static:
+    name: Build for Linux (x86_64, static)
+    runs-on: ubuntu-latest
+    container: quay.io/pypa/manylinux_2_34_x86_64 # Old glibc baseline with a recent toolchain
+    steps:
+    - uses: actions/checkout@v6
+      with:
+        fetch-depth: 0
+
+    - name: Fix Git Safe Directory
+      run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+
+    - name: Install Dependencies
+      run: |
+        dnf install -y \
+          alsa-lib-devel \
+          libdecor-devel \
+          libXcursor-devel \
+          libXext-devel \
+          libXi-devel \
+          libXrandr-devel \
+          libXScrnSaver-devel \
+          libxkbcommon-devel \
+          mesa-libGL-devel \
+          nasm \
+          ninja-build \
+          pipewire-devel \
+          pkgconf-pkg-config \
+          pulseaudio-libs-devel \
+          wayland-devel \
+          wget \
+          zlib-devel \
+          zlib-static
+
+    - name: Resolve Dep Versions
+      run: |
+        SDL2_TAG=$(git ls-remote --tags https://github.com/libsdl-org/SDL.git 'refs/tags/release-2.*' \
+          | sed 's|.*refs/tags/release-||' | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -1 || true)
+        if [ -z "$SDL2_TAG" ]; then
+          SDL2_TAG="2.32.10" # Fallback to a known stable version if tag retrieval fails
+        fi
+        echo "SDL2_TAG=$SDL2_TAG" >> "$GITHUB_ENV"
+
+        OPENMPT_TAG=$(git ls-remote --tags https://github.com/OpenMPT/openmpt.git 'refs/tags/libopenmpt-*' \
+          | sed 's|.*refs/tags/libopenmpt-||' \
+          | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -1 || true)
+        if [ -z "$OPENMPT_TAG" ]; then
+          OPENMPT_TAG="0.8.4" # Fallback to a known stable version if tag retrieval fails
+        fi
+        echo "OPENMPT_TAG=$OPENMPT_TAG" >> "$GITHUB_ENV"
+
+        MPG123_VERSION=$(wget -qO- https://sourceforge.net/projects/mpg123/best_release.json \
+          | grep -oE 'mpg123-[0-9]+\.[0-9]+\.[0-9]+' | head -1 | sed 's/mpg123-//' || true)
+        if [ -z "$MPG123_VERSION" ]; then
+          MPG123_VERSION="1.33.7" # Fallback to a known stable version if retrieval fails
+        fi
+        echo "MPG123_VERSION=$MPG123_VERSION" >> "$GITHUB_ENV"
+
+        LIBPNG_VERSION=$(git ls-remote --tags https://github.com/pnggroup/libpng.git 'refs/tags/v1.6.*' \
+          | sed 's|.*refs/tags/v||' | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -1 || true)
+        if [ -z "$LIBPNG_VERSION" ]; then
+          LIBPNG_VERSION="1.6.58" # Fallback to a known stable version if tag retrieval fails
+        fi
+        echo "LIBPNG_VERSION=$LIBPNG_VERSION" >> "$GITHUB_ENV"
+
+        JPEG_TURBO_VERSION=$(git ls-remote --tags https://github.com/libjpeg-turbo/libjpeg-turbo.git 'refs/tags/[0-9]*' \
+          | sed 's|.*refs/tags/||' | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -1 || true)
+        if [ -z "$JPEG_TURBO_VERSION" ]; then
+          JPEG_TURBO_VERSION="3.1.3" # Fallback to a known stable version if tag retrieval fails
+        fi
+        echo "JPEG_TURBO_VERSION=$JPEG_TURBO_VERSION" >> "$GITHUB_ENV"
+
+        OGG_VERSION=$(git ls-remote --tags https://github.com/xiph/libogg.git 'refs/tags/v*' \
+          | sed 's|.*refs/tags/v||' | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -1 || true)
+        if [ -z "$OGG_VERSION" ]; then
+          OGG_VERSION="1.3.6" # Fallback to a known stable version if tag retrieval fails
+        fi
+        echo "OGG_VERSION=$OGG_VERSION" >> "$GITHUB_ENV"
+
+        VORBIS_VERSION=$(git ls-remote --tags https://github.com/xiph/vorbis.git 'refs/tags/v*' \
+          | sed 's|.*refs/tags/v||' | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -1 || true)
+        if [ -z "$VORBIS_VERSION" ]; then
+          VORBIS_VERSION="1.3.7" # Fallback to a known stable version if tag retrieval fails
+        fi
+        echo "VORBIS_VERSION=$VORBIS_VERSION" >> "$GITHUB_ENV"
+
+        echo "Using SDL2 $SDL2_TAG, libopenmpt $OPENMPT_TAG, mpg123 $MPG123_VERSION,"
+        echo "libpng $LIBPNG_VERSION, libjpeg-turbo $JPEG_TURBO_VERSION, libogg $OGG_VERSION, libvorbis $VORBIS_VERSION"
+
+    - name: Restore Source-Built Deps Cache
+      id: deps-cache
+      uses: actions/cache/restore@v6
+      with:
+        path: ~/pvz-deps
+        # Bump the -vN suffix when the dep build recipe changes
+        key: linux-static-deps-v2-${{ env.SDL2_TAG }}-${{ env.OPENMPT_TAG }}-${{ env.MPG123_VERSION }}-${{ env.LIBPNG_VERSION }}-${{ env.JPEG_TURBO_VERSION }}-${{ env.OGG_VERSION }}-${{ env.VORBIS_VERSION }}
+
+    - name: Build SDL2 (static)
+      if: steps.deps-cache.outputs.cache-hit != 'true'
+      run: |
+        wget -q "https://github.com/libsdl-org/SDL/releases/download/release-${SDL2_TAG}/SDL2-${SDL2_TAG}.tar.gz"
+        tar xf "SDL2-${SDL2_TAG}.tar.gz"
+        cmake -G Ninja -B build-sdl2 \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DCMAKE_INSTALL_PREFIX="$HOME/pvz-deps" \
+          -DSDL_SHARED=OFF \
+          -DSDL_STATIC=ON \
+          -DSDL_TEST=OFF \
+          -DSDL_KMSDRM=OFF \
+          -DSDL_JACK=OFF \
+          -DSDL_SNDIO=OFF \
+          -DSDL_DBUS=OFF \
+          -DSDL_IBUS=OFF \
+          -DSDL_LIBUDEV=OFF \
+          -DSDL_LIBSAMPLERATE=OFF \
+          "SDL2-${SDL2_TAG}"
+        cmake --build build-sdl2 -j$(nproc)
+        cmake --install build-sdl2
+
+    - name: Build libopenmpt (static)
+      if: steps.deps-cache.outputs.cache-hit != 'true'
+      run: |
+        git clone --depth=1 --branch "libopenmpt-${OPENMPT_TAG}" https://github.com/OpenMPT/openmpt.git libopenmpt-src
+        cd libopenmpt-src
+        make CONFIG=gcc \
+          STATIC_LIB=1 SHARED_LIB=0 \
+          EXAMPLES=0 OPENMPT123=0 TEST=0 \
+          NO_ZLIB=1 NO_MPG123=1 NO_OGG=1 NO_VORBIS=1 NO_VORBISFILE=1 \
+          NO_PORTAUDIO=1 NO_PORTAUDIOCPP=1 NO_PULSEAUDIO=1 \
+          NO_SDL2=1 NO_FLAC=1 NO_SNDFILE=1 \
+          -j$(nproc)
+        make CONFIG=gcc \
+          STATIC_LIB=1 SHARED_LIB=0 \
+          EXAMPLES=0 OPENMPT123=0 TEST=0 \
+          PREFIX="$HOME/pvz-deps" install
+
+    - name: Build mpg123 (static)
+      if: steps.deps-cache.outputs.cache-hit != 'true'
+      run: |
+        wget -qO mpg123.tar.bz2 "https://downloads.sourceforge.net/project/mpg123/mpg123/${MPG123_VERSION}/mpg123-${MPG123_VERSION}.tar.bz2"
+        mkdir -p mpg123-src
+        tar xf mpg123.tar.bz2 -C mpg123-src --strip-components=1
+        cd mpg123-src
+        ./configure --prefix="$HOME/pvz-deps" --enable-static --disable-shared \
+          --disable-components --enable-libmpg123
+        make -j$(nproc)
+        make install
+
+    - name: Build Codec Libraries (static)
+      if: steps.deps-cache.outputs.cache-hit != 'true'
+      run: |
+        git clone --depth=1 --branch "v${LIBPNG_VERSION}" https://github.com/pnggroup/libpng.git libpng-src
+        cmake -G Ninja -B build-libpng libpng-src \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DCMAKE_INSTALL_PREFIX="$HOME/pvz-deps" \
+          -DPNG_SHARED=OFF \
+          -DPNG_STATIC=ON \
+          -DPNG_EXECUTABLES=OFF \
+          -DPNG_TESTS=OFF
+        cmake --build build-libpng -j$(nproc)
+        cmake --install build-libpng
+
+        git clone --depth=1 --branch "${JPEG_TURBO_VERSION}" https://github.com/libjpeg-turbo/libjpeg-turbo.git libjpeg-turbo-src
+        cmake -G Ninja -B build-jpeg libjpeg-turbo-src \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DCMAKE_INSTALL_PREFIX="$HOME/pvz-deps" \
+          -DENABLE_SHARED=OFF \
+          -DENABLE_STATIC=ON \
+          -DWITH_TURBOJPEG=OFF
+        cmake --build build-jpeg -j$(nproc)
+        cmake --install build-jpeg
+
+        wget -qO libogg.tar.gz "https://downloads.xiph.org/releases/ogg/libogg-${OGG_VERSION}.tar.gz"
+        mkdir -p libogg-src
+        tar xf libogg.tar.gz -C libogg-src --strip-components=1
+        cd libogg-src
+        ./configure --prefix="$HOME/pvz-deps" --enable-static --disable-shared
+        make -j$(nproc)
+        make install
+        cd ..
+
+        wget -qO libvorbis.tar.gz "https://downloads.xiph.org/releases/vorbis/libvorbis-${VORBIS_VERSION}.tar.gz"
+        mkdir -p libvorbis-src
+        tar xf libvorbis.tar.gz -C libvorbis-src --strip-components=1
+        cd libvorbis-src
+        PKG_CONFIG_PATH="$HOME/pvz-deps/lib/pkgconfig" \
+          ./configure --prefix="$HOME/pvz-deps" --enable-static --disable-shared
+        make -j$(nproc)
+        make install
+
+    # Skipped on failure, so partial deps never poison the cache.
+    - name: Save Source-Built Deps Cache
+      if: steps.deps-cache.outputs.cache-hit != 'true'
+      uses: actions/cache/save@v6
+      with:
+        path: ~/pvz-deps
+        key: linux-static-deps-v2-${{ env.SDL2_TAG }}-${{ env.OPENMPT_TAG }}-${{ env.MPG123_VERSION }}-${{ env.LIBPNG_VERSION }}-${{ env.JPEG_TURBO_VERSION }}-${{ env.OGG_VERSION }}-${{ env.VORBIS_VERSION }}
+
+    - name: Build PvZ-Portable
+      run: |
+        cmake -G Ninja -B build \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DBUILD_STATIC=ON \
+          -DCMAKE_EXE_LINKER_FLAGS="-static-libgcc -static-libstdc++" \
+          -DCMAKE_PREFIX_PATH="$HOME/pvz-deps"
+        cmake --build build
+
+        mkdir -p dist
+        cp build/pvz-portable dist/
+        strip dist/pvz-portable
+
+    - name: Upload Artifact
+      uses: actions/upload-artifact@v7
+      with:
+        name: pvz-portable-linux-static
+        path: dist/
+
   build-windows-msys2-ucrt64:
     name: Build for Windows (MSYS2 UCRT64)
     runs-on: windows-latest
@@ -130,7 +347,7 @@ jobs:
         echo "VCPKG_TC=msvc-$tc" >> $env:GITHUB_ENV
 
     - name: Restore vcpkg binary cache
-      uses: actions/cache@v4
+      uses: actions/cache@v6
       with:
         path: vcpkg-cache
         # Triplet is in the key so the x86 and x64 jobs don't share caches.
@@ -184,7 +401,7 @@ jobs:
         echo "VCPKG_TC=msvc-$tc" >> $env:GITHUB_ENV
 
     - name: Restore vcpkg binary cache
-      uses: actions/cache@v4
+      uses: actions/cache@v6
       with:
         path: vcpkg-cache
         # Triplet is in the key so the x86 and x64 jobs don't share caches.
@@ -337,7 +554,7 @@ jobs:
     - name: Download SDL2 Source
       run: |
         SDL2_TAG=$(git ls-remote --tags https://github.com/libsdl-org/SDL.git 'refs/tags/release-2.*' \
-          | sed 's|.*refs/tags/release-||' | sort -V | tail -1)
+          | sed 's|.*refs/tags/release-||' | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -1 || true)
         if [ -z "$SDL2_TAG" ]; then
           SDL2_TAG="2.32.10" # Fallback to a known stable version if tag retrieval fails
         fi
@@ -353,7 +570,7 @@ jobs:
         echo "VCPKG_TC=ndk-$NDK_VER" >> "$GITHUB_ENV"
 
     - name: Restore vcpkg binary cache
-      uses: actions/cache@v4
+      uses: actions/cache@v6
       with:
         path: vcpkg-cache
         key: vcpkg-android-${{ env.VCPKG_TC }}-${{ hashFiles('vcpkg.json', 'vcpkg-configuration.json') }}
@@ -483,7 +700,7 @@ jobs:
         echo "VCPKG_TC=clang-${CLANG_VER:-unknown}" >> "$GITHUB_ENV"
 
     - name: Restore vcpkg binary cache
-      uses: actions/cache@v4
+      uses: actions/cache@v6
       with:
         path: vcpkg-cache
         key: vcpkg-ios-${{ env.VCPKG_TC }}-${{ hashFiles('vcpkg.json', 'vcpkg-configuration.json', 'CMake/triplets/arm64-ios.cmake') }}
@@ -697,8 +914,8 @@ jobs:
       run: |
         SYSROOT="$(em-config EMSCRIPTEN_ROOT)/cache/sysroot"
         OPENMPT_TAG=$(git ls-remote --tags https://github.com/OpenMPT/openmpt.git 'refs/tags/libopenmpt-*' \
-          | grep -v '\^{}' | sed 's|.*refs/tags/libopenmpt-||' \
-          | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -1)
+          | sed 's|.*refs/tags/libopenmpt-||' \
+          | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -1 || true)
         if [ -z "$OPENMPT_TAG" ]; then
           OPENMPT_TAG="0.8.4" # Fallback to a known stable version if tag retrieval fails
         fi
@@ -798,7 +1015,7 @@ jobs:
 
   release:
     name: Release
-    needs: ['build-archlinux', 'build-windows-msys2-ucrt64', 'build-windows-msvc-x64', 'build-windows-msvc-x86', 'build-macos', 'build-android', 'build-ios', 'build-ios-ipad-mini-1', 'build-wasm', 'build-nintendo-switch']
+    needs: ['build-archlinux', 'build-linux-static', 'build-windows-msys2-ucrt64', 'build-windows-msvc-x64', 'build-windows-msvc-x86', 'build-macos', 'build-android', 'build-ios', 'build-ios-ipad-mini-1', 'build-wasm', 'build-nintendo-switch']
     if: github.ref_type == 'tag' || github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     permissions:
@@ -816,6 +1033,10 @@ jobs:
         echo "Preparing Arch Linux file..."
         chmod +x artifacts/pvz-portable-archlinux/pvz-portable
         mv artifacts/pvz-portable-archlinux/pvz-portable release_files/pvz-portable-archlinux-x86_64
+
+        echo "Preparing Linux static file..."
+        chmod +x artifacts/pvz-portable-linux-static/pvz-portable
+        mv artifacts/pvz-portable-linux-static/pvz-portable release_files/pvz-portable-linux-static-x86_64
 
         echo "Preparing Windows MSVC x64 file..."
         mv artifacts/pvz-portable-windows-msvc-x64/pvz-portable.exe release_files/pvz-portable-windows-msvc-x64-static.exe

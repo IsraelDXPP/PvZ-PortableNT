@@ -47,7 +47,8 @@ android {
         versionName gitVersionName
 
         ndk {
-            abiFilters 'arm64-v8a'
+            // Override with -PabiFilter=armeabi-v7a for 32-bit builds (see CI).
+            abiFilters project.findProperty('abiFilter') ?: 'arm64-v8a'
         }
 
         if (!prebuilt) {

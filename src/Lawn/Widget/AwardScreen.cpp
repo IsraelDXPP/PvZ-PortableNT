@@ -354,8 +354,8 @@ void AwardScreen::Draw(Graphics* g)
 		}
 		else if (aLevel == 10)
 		{
-			g->DrawImage(Sexy::IMAGE_BACKGROUND1, -700, -300, 2800, 1200);
-			g->DrawImage(Sexy::IMAGE_ZOMBIE_NOTE, 80, 80);
+			g->DrawImage(Sexy::IMAGE_BACKGROUND1, -700 + BOARD_ADDITIONAL_WIDTH, -300 + BOARD_OFFSET_Y, 2800, 1200);
+			g->DrawImage(Sexy::IMAGE_ZOMBIE_NOTE, 80 + BOARD_ADDITIONAL_WIDTH, 80 + BOARD_OFFSET_Y);
 			g->DrawImage(Sexy::IMAGE_ZOMBIE_NOTE1, 131 + BOARD_ADDITIONAL_WIDTH, 132 + BOARD_OFFSET_Y);
 			PvzpDrawString(g, "[FOUND_NOTE]", BOARD_WIDTH / 2, 70 + BOARD_OFFSET_Y, Sexy::FONT_DWARVENTODCRAFT24, Color(255, 200, 0, 255), DS_ALIGN_CENTER);
 		}
@@ -610,9 +610,9 @@ void AwardScreen::DrawAchievements(Graphics* g) {
 	g->FillRect(0, 0, mWidth, mHeight);
 	g->SetColorizeImages(false);
 
-	g->DrawImage(IMAGE_CHALLENGE_BACKGROUND, BOARD_ADDITIONAL_WIDTH, BOARD_OFFSET_Y);
+	g->DrawImage(IMAGE_CHALLENGE_BACKGROUND, 0, 0);
 
-	PvzpDrawString(g, mApp->GetString("ACHIEVEMENTS_TITLE", "ACHIEVEMENTS"), BOARD_WIDTH / 2, 58 + BOARD_OFFSET_Y, FONT_HOUSEOFTERROR28, Color(220, 220, 220), DS_ALIGN_CENTER);
+	PvzpDrawString(g, mApp->GetString("ACHIEVEMENTS_TITLE", "ACHIEVEMENTS"), BOARD_WIDTH / 2, 58, FONT_HOUSEOFTERROR28, Color(220, 220, 220), DS_ALIGN_CENTER);
 
 	for (size_t i = 0; i < mAchievementItems.size(); i++) {
 		std::string aAchievementName = std::string(gAchievementList[mAchievementItems[i].mId].name);

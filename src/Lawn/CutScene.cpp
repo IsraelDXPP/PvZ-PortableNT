@@ -1769,6 +1769,7 @@ void CutScene::ClearUpsellBoard()
 	mBoard->mProjectiles.DataArrayFreeAll();
 	mBoard->mGridItems.DataArrayFreeAll();
 	mBoard->mLawnMowers.DataArrayFreeAll();
+	mBoard->mBushes.DataArrayFreeAll();
 
 	for (PvzpParticleSystem* aParticle : mBoard->mApp->mEffectSystem->mParticleHolder->mParticleSystems)
 	{
@@ -1857,6 +1858,13 @@ void CutScene::LoadIntroBoard()
 	AddUpsellZombie(ZombieType::ZOMBIE_CATAPULT, 730 + BOARD_ADDITIONAL_WIDTH, 5);
 	AddUpsellZombie(ZombieType::ZOMBIE_NORMAL, 590 + BOARD_ADDITIONAL_WIDTH, 5);
 
+	if (mBoard->StageHasBushes())
+	{
+		for (int i = 0; i < MAX_GRID_SIZE_Y; i++)
+			mBoard->mBushList[i] = mBoard->mBushes.DataArrayAlloc();
+		mBoard->AddBushes();
+	}
+
 	mPreUpdatingBoard = true;
 	for (int i = 0; i < 100; i++)
 	{
@@ -1912,6 +1920,13 @@ void CutScene::LoadUpsellBoardPool()
 	AddUpsellZombie(ZombieType::ZOMBIE_PAIL, 730 + BOARD_ADDITIONAL_WIDTH, 5);
 	AddUpsellZombie(ZombieType::ZOMBIE_NORMAL, 590 + BOARD_ADDITIONAL_WIDTH, 5);
 
+	if (mBoard->StageHasBushes())
+	{
+		for (int i = 0; i < MAX_GRID_SIZE_Y; i++)
+			mBoard->mBushList[i] = mBoard->mBushes.DataArrayAlloc();
+		mBoard->AddBushes();
+	}
+
 	mPreUpdatingBoard = true;
 	for (int i = 0; i < 100; i++)
 	{
@@ -1966,6 +1981,13 @@ void CutScene::LoadUpsellBoardFog()
 	AddUpsellZombie(ZombieType::ZOMBIE_NORMAL, 690 + BOARD_ADDITIONAL_WIDTH, 4);
 	AddUpsellZombie(ZombieType::ZOMBIE_PAIL, 590 + BOARD_ADDITIONAL_WIDTH, 5);
 	AddUpsellZombie(ZombieType::ZOMBIE_NORMAL, 740 + BOARD_ADDITIONAL_WIDTH, 5);
+
+	if (mBoard->StageHasBushes())
+	{
+		for (int i = 0; i < MAX_GRID_SIZE_Y; i++)
+			mBoard->mBushList[i] = mBoard->mBushes.DataArrayAlloc();
+		mBoard->AddBushes();
+	}
 
 	mPreUpdatingBoard = true;
 	for (int i = 0; i < 100; i++)
@@ -2074,6 +2096,13 @@ void CutScene::LoadUpsellBoardRoof()
 	AddUpsellZombie(ZombieType::ZOMBIE_CATAPULT, 704 + BOARD_ADDITIONAL_WIDTH, 4);
 	AddUpsellZombie(ZombieType::ZOMBIE_NORMAL, 690 + BOARD_ADDITIONAL_WIDTH, 4);
 	AddUpsellZombie(ZombieType::ZOMBIE_NORMAL, 590 + BOARD_ADDITIONAL_WIDTH, 4);
+
+	if (mBoard->StageHasBushes())
+	{
+		for (int i = 0; i < MAX_GRID_SIZE_Y; i++)
+			mBoard->mBushList[i] = mBoard->mBushes.DataArrayAlloc();
+		mBoard->AddBushes();
+	}
 
 	mPreUpdatingBoard = true;
 	for (int k = 0; k < 100; k++)

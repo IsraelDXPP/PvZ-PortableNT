@@ -433,11 +433,20 @@ function resizeCanvas() {
     var container = document.getElementById('canvas-container');
     var vw = container.clientWidth;
     var vh = container.clientHeight;
-    // Fit 4:3 aspect ratio inside the viewport
+    // Fit the canvas aspect ratio inside the viewport
     var scale = Math.min(vw / canvas.width, vh / canvas.height);
     canvas.style.width  = Math.floor(canvas.width  * scale) + 'px';
     canvas.style.height = Math.floor(canvas.height * scale) + 'px';
 }
+
+// SDL resizes the canvas backing buffer (e.g. 800x600 -> 1280x720) during
+// callMain, after the initial resizeCanvas() already ran. The layout size is
+// pinned by style, so attribute changes never fire a ResizeObserver; watch the
+// width/height attributes instead and re-fit whenever SDL changes them.
+new MutationObserver(function() { resizeCanvas(); }).observe(
+    document.getElementById('canvas'),
+    { attributes: true, attributeFilter: ['width', 'height'] }
+);
 
 window.addEventListener('fullscreenchange', resizeCanvas);
 

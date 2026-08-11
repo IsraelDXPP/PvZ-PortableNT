@@ -997,6 +997,7 @@ jobs:
           -DCMAKE_CXX_FLAGS="-D_LIBCPP_DISABLE_AVAILABILITY" \
           -DCMAKE_C_FLAGS="-D_LIBCPP_DISABLE_AVAILABILITY" \
           -DCMAKE_EXE_LINKER_FLAGS="-F$GITHUB_WORKSPACE/dummy_frameworks -lobjc -Wl,-undefined,dynamic_lookup" \
+          -DLOW_MEMORY=ON \
           -DCMAKE_BUILD_TYPE=Release \
           -DCMAKE_C_COMPILER_LAUNCHER=ccache \
           -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \

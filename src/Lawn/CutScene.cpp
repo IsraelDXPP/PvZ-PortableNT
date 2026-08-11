@@ -1219,22 +1219,22 @@ void CutScene::AnimateBoard()
 			mApp->PlayFoley(FoleyType::FOLEY_DIGGER);
 			if (mBoard->mLevel == 1)
 			{
-				mApp->AddReanimation(BOARD_ADDITIONAL_WIDTH, BOARD_OFFSET_Y, Board::MakeRenderOrder(RenderLayer::RENDER_LAYER_TOP, 0, 0), ReanimationType::REANIM_SODROLL);
-				mApp->AddPvzpParticle(35 + BOARD_ADDITIONAL_WIDTH, 348 + BOARD_OFFSET_Y, Board::MakeRenderOrder(RenderLayer::RENDER_LAYER_TOP, 0, 1), ParticleEffect::PARTICLE_SOD_ROLL);
+				mApp->AddReanimation(BOARD_ADDITIONAL_WIDTH, BOARD_OFFSET_Y, Board::MakeRenderOrder(RenderLayer::RENDER_LAYER_ZOMBIE, 0, 0), ReanimationType::REANIM_SODROLL);
+				mApp->AddPvzpParticle(35 + BOARD_ADDITIONAL_WIDTH, 348 + BOARD_OFFSET_Y, Board::MakeRenderOrder(RenderLayer::RENDER_LAYER_ZOMBIE, 0, 1), ParticleEffect::PARTICLE_SOD_ROLL);
 			}
 			else if (mBoard->mLevel == 2)
 			{
-				mApp->AddReanimation(BOARD_ADDITIONAL_WIDTH, -102 + BOARD_OFFSET_Y, Board::MakeRenderOrder(RenderLayer::RENDER_LAYER_TOP, 0, 0), ReanimationType::REANIM_SODROLL);
-				mApp->AddReanimation(BOARD_ADDITIONAL_WIDTH, 111 + BOARD_OFFSET_Y, Board::MakeRenderOrder(RenderLayer::RENDER_LAYER_TOP, 0, 0), ReanimationType::REANIM_SODROLL);
-				mApp->AddPvzpParticle(35 + BOARD_ADDITIONAL_WIDTH, 246 + BOARD_OFFSET_Y, Board::MakeRenderOrder(RenderLayer::RENDER_LAYER_TOP, 0, 1), ParticleEffect::PARTICLE_SOD_ROLL);
-				mApp->AddPvzpParticle(35 + BOARD_ADDITIONAL_WIDTH, 459 + BOARD_OFFSET_Y, Board::MakeRenderOrder(RenderLayer::RENDER_LAYER_TOP, 0, 1), ParticleEffect::PARTICLE_SOD_ROLL);
+				mApp->AddReanimation(BOARD_ADDITIONAL_WIDTH, -102 + BOARD_OFFSET_Y, Board::MakeRenderOrder(RenderLayer::RENDER_LAYER_ZOMBIE, 0, 0), ReanimationType::REANIM_SODROLL);
+				mApp->AddReanimation(BOARD_ADDITIONAL_WIDTH, 111 + BOARD_OFFSET_Y, Board::MakeRenderOrder(RenderLayer::RENDER_LAYER_ZOMBIE, 0, 0), ReanimationType::REANIM_SODROLL);
+				mApp->AddPvzpParticle(35 + BOARD_ADDITIONAL_WIDTH, 246 + BOARD_OFFSET_Y, Board::MakeRenderOrder(RenderLayer::RENDER_LAYER_ZOMBIE, 0, 1), ParticleEffect::PARTICLE_SOD_ROLL);
+				mApp->AddPvzpParticle(35 + BOARD_ADDITIONAL_WIDTH, 459 + BOARD_OFFSET_Y, Board::MakeRenderOrder(RenderLayer::RENDER_LAYER_ZOMBIE, 0, 1), ParticleEffect::PARTICLE_SOD_ROLL);
 			}
 			else if (mBoard->mLevel == 4)
 			{
-				mApp->AddReanimation(-3 + BOARD_ADDITIONAL_WIDTH, -198 + BOARD_OFFSET_Y, Board::MakeRenderOrder(RenderLayer::RENDER_LAYER_TOP, 0, 0), ReanimationType::REANIM_SODROLL);
-				mApp->AddReanimation(-3 + BOARD_ADDITIONAL_WIDTH, 203 + BOARD_OFFSET_Y, Board::MakeRenderOrder(RenderLayer::RENDER_LAYER_TOP, 0, 0), ReanimationType::REANIM_SODROLL);
-				mApp->AddPvzpParticle(32 + BOARD_ADDITIONAL_WIDTH, 150 + BOARD_OFFSET_Y, Board::MakeRenderOrder(RenderLayer::RENDER_LAYER_TOP, 0, 1), ParticleEffect::PARTICLE_SOD_ROLL);
-				mApp->AddPvzpParticle(32 + BOARD_ADDITIONAL_WIDTH, 511 + BOARD_OFFSET_Y, Board::MakeRenderOrder(RenderLayer::RENDER_LAYER_TOP, 0, 1), ParticleEffect::PARTICLE_SOD_ROLL);
+				mApp->AddReanimation(-3 + BOARD_ADDITIONAL_WIDTH, -198 + BOARD_OFFSET_Y, Board::MakeRenderOrder(RenderLayer::RENDER_LAYER_ZOMBIE, 0, 0), ReanimationType::REANIM_SODROLL);
+				mApp->AddReanimation(-3 + BOARD_ADDITIONAL_WIDTH, 203 + BOARD_OFFSET_Y, Board::MakeRenderOrder(RenderLayer::RENDER_LAYER_ZOMBIE, 0, 0), ReanimationType::REANIM_SODROLL);
+				mApp->AddPvzpParticle(32 + BOARD_ADDITIONAL_WIDTH, 150 + BOARD_OFFSET_Y, Board::MakeRenderOrder(RenderLayer::RENDER_LAYER_ZOMBIE, 0, 1), ParticleEffect::PARTICLE_SOD_ROLL);
+				mApp->AddPvzpParticle(32 + BOARD_ADDITIONAL_WIDTH, 511 + BOARD_OFFSET_Y, Board::MakeRenderOrder(RenderLayer::RENDER_LAYER_ZOMBIE, 0, 1), ParticleEffect::PARTICLE_SOD_ROLL);
 			}
 		}
 

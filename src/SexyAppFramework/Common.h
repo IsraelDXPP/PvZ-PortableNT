@@ -36,12 +36,17 @@
 #if defined(__APPLE__) && defined(__IPHONE_OS_VERSION_MIN_REQUIRED) && __IPHONE_OS_VERSION_MIN_REQUIRED < 130000
 // Legacy iOS (iOS < 13) has an old libc++.dylib in /usr/lib that lacks std::filesystem and std::variant symbols.
 // Use header-only ghc::filesystem to eliminate runtime libc++.dylib dependencies.
+// NOTE: do NOT alias this into namespace std — libc++'s real <filesystem> may already be
+// present in the TU (e.g. via vcpkg/toolchain headers) and the alias would clash with it.
 #	include "ghc/filesystem.hpp"
-namespace std {
+namespace Sexy {
 	namespace filesystem = ::ghc::filesystem;
 }
 #else
 #	include <filesystem>
+namespace Sexy {
+	namespace filesystem = std::filesystem;
+}
 #endif
 #include <string_view>
 #include <type_traits>
@@ -358,19 +363,19 @@ inline bool IsAutoBreakChar(char32_t theChar)
 
 // UTF-8 path conversion helpers for Windows Unicode path support
 #ifdef _WIN32
-inline std::filesystem::path PathFromU8(std::string_view s)
+inline Sexy::filesystem::path PathFromU8(std::string_view s)
 {
-	return std::filesystem::path(std::u8string_view(reinterpret_cast<const char8_t*>(s.data()), s.size()));
+	return Sexy::filesystem::path(std::u8string_view(reinterpret_cast<const char8_t*>(s.data()), s.size()));
 }
 
-inline std::string PathToU8(const std::filesystem::path& p)
+inline std::string PathToU8(const Sexy::filesystem::path& p)
 {
 	auto u8 = p.generic_u8string();
 	return std::string(u8.begin(), u8.end());
 }
 #else
-inline std::filesystem::path PathFromU8(std::string_view s) { return std::filesystem::path(s); }
-inline std::string PathToU8(const std::filesystem::path& p) { return p.string(); }
+inline Sexy::filesystem::path PathFromU8(std::string_view s) { return Sexy::filesystem::path(s); }
+inline std::string PathToU8(const Sexy::filesystem::path& p) { return p.string(); }
 #endif
 
 // Byte swap helpers

@@ -50,7 +50,7 @@ PakInterface::~PakInterface()
 // Normalize path for pak lookup.
 std::string PakInterface::NormalizePakPath(std::string_view theFileName)
 {
-	std::filesystem::path aFilePath = Sexy::PathFromU8(theFileName);
+	Sexy::filesystem::path aFilePath = Sexy::PathFromU8(theFileName);
 
 	// Make rooted paths relative to resource folder.
 	if (Sexy::IsPathRooted(theFileName))
@@ -58,12 +58,12 @@ std::string PakInterface::NormalizePakPath(std::string_view theFileName)
 		const std::string& aResourceFolder = Sexy::GetResourceFolder();
 		if (!aResourceFolder.empty())
 		{
-			std::filesystem::path aResPath = Sexy::PathFromU8(aResourceFolder);
+			Sexy::filesystem::path aResPath = Sexy::PathFromU8(aResourceFolder);
 			auto [aResEnd, aFileIt] = std::mismatch(aResPath.begin(), aResPath.end(),
 												   aFilePath.begin(), aFilePath.end());
 			if (aResEnd == aResPath.end())
 			{
-				std::filesystem::path aRelativePath;
+				Sexy::filesystem::path aRelativePath;
 				for (; aFileIt != aFilePath.end(); ++aFileIt)
 					aRelativePath /= *aFileIt;
 				aFilePath = aRelativePath;

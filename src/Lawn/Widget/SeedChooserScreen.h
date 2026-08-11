@@ -25,6 +25,8 @@
 #include "../../ConstEnums.h"
 #include "../../PvzpLib/PvzpCommon.h"
 #include "widget/Widget.h"
+#include "widget/Slider.h"
+#include "widget/SliderListener.h"
 using namespace Sexy;
 
 class Board;
@@ -56,7 +58,7 @@ public:
 	bool                    mCrazyDavePicked;
 };
 
-class SeedChooserScreen : public Widget
+class SeedChooserScreen : public Widget, public SliderListener
 {
 private:
 	enum
@@ -91,10 +93,22 @@ public:
 	int                     mLastMouseY;
 	SeedChooserState        mChooseState;
 	int                     mViewLawnTime;
+	Slider*                 mSlider;
+	float                   mScrollPosition;
+	float                   mScrollAmount;
+	const float             mBaseScrollSpeed = 1.5f;
+	const float             mScrollAccel = 0.1f;
+	float                   mMaxScrollPosition;
 
 public:
 	SeedChooserScreen();
 	~SeedChooserScreen() override;
+
+	virtual void            AddedToManager(WidgetManager* theManager) override;
+	virtual void            RemovedFromManager(WidgetManager* theManager) override;
+	void                    ResizeSlider();
+	void         SliderVal(int theId, double theVal) override;
+	void                    MouseWheel(int theDelta) override;
 
 	static int   PickFromWeightedArrayUsingSpecialRandSeed(PvzpWeightedArray* theArray, int theCount, MTRand& theLevelRNG);
 	void                    CrazyDavePickSeeds();

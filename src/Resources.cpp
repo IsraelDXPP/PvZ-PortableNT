@@ -46,6 +46,7 @@ bool Sexy::ExtractResourcesByName(ResourceManager* theResourceManager, const cha
 	if (!strcmp(theName, "DelayLoad_MushroomGarden")) return ExtractDelayLoad_MushroomGardenResources(theResourceManager);
 	if (!strcmp(theName, "DelayLoad_Store")) return ExtractDelayLoad_StoreResources(theResourceManager);
 	if (!strcmp(theName, "DelayLoad_Zombatar")) return ExtractDelayLoad_ZombatarResources(theResourceManager);
+	if (!strcmp(theName, "DelayLoad_QuickPlay")) return ExtractDelayLoad_QuickPlayResources(theResourceManager);
 	if (!strcmp(theName, "DelayLoad_ZombieFinalNote")) return ExtractDelayLoad_ZombieFinalNoteResources(theResourceManager);
 	if (!strcmp(theName, "DelayLoad_ZombieNote")) return ExtractDelayLoad_ZombieNoteResources(theResourceManager);
 	if (!strcmp(theName, "DelayLoad_ZombieNote1")) return ExtractDelayLoad_ZombieNote1Resources(theResourceManager);
@@ -1128,6 +1129,25 @@ Image* Sexy::IMAGE_BLANK;
 Image* Sexy::IMAGE_PARTNER_LOGO;
 Image* Sexy::IMAGE_POPCAP_LOGO;
 
+// DelayLoad_QuickPlay Resources
+bool Sexy::ExtractDelayLoad_QuickPlayResources(ResourceManager* theManager)
+{
+	gNeedRecalcVariableToIdMap = true;
+
+	ResourceManager& aMgr = *theManager;
+	try
+	{
+		IMAGE_QUICKPLAY_BUTTON = aMgr.GetImageThrow("IMAGE_QUICKPLAY_BUTTON");
+		IMAGE_QUICKPLAY_BUTTON_HIGHLIGHT = aMgr.GetImageThrow("IMAGE_QUICKPLAY_BUTTON_HIGHLIGHT");
+		IMAGE_QUICKPLAY_WIDGET = aMgr.GetImageThrow("IMAGE_QUICKPLAY_WIDGET");
+	}
+	catch (ResourceManagerException&)
+	{
+		return false;
+	}
+	return true;
+}
+
 bool Sexy::ExtractInitResources(ResourceManager* theManager)
 {
 	gNeedRecalcVariableToIdMap = true;
@@ -1354,6 +1374,9 @@ Image* Sexy::IMAGE_PROJECTILE_STAR;
 Image* Sexy::IMAGE_PUFFSHROOM_PUFF1;
 Image* Sexy::IMAGE_QUICKPLAY_BACK_BUTTON;
 Image* Sexy::IMAGE_QUICKPLAY_BACK_BUTTON_HIGHLIGHT;
+Image* Sexy::IMAGE_QUICKPLAY_BUTTON;
+Image* Sexy::IMAGE_QUICKPLAY_BUTTON_HIGHLIGHT;
+Image* Sexy::IMAGE_QUICKPLAY_WIDGET;
 Image* Sexy::IMAGE_QUICKPLAY_MINIGAMES_BUTTON;
 Image* Sexy::IMAGE_QUICKPLAY_MINIGAMES_BUTTON_HIGHLIGHT;
 Image* Sexy::IMAGE_QUICKPLAY_MINIGAMES_CLOUD;
@@ -2466,6 +2489,9 @@ void* gResources[static_cast<int>(Sexy::ResourceId::RESOURCE_ID_MAX)] =
 	&Sexy::IMAGE_QUICKPLAY_SURVIVAL_CLOUD,
 	&Sexy::IMAGE_QUICKPLAY_BACK_BUTTON,
 	&Sexy::IMAGE_QUICKPLAY_BACK_BUTTON_HIGHLIGHT,
+	&Sexy::IMAGE_QUICKPLAY_BUTTON,
+	&Sexy::IMAGE_QUICKPLAY_BUTTON_HIGHLIGHT,
+	&Sexy::IMAGE_QUICKPLAY_WIDGET,
 	&Sexy::IMAGE_ACHEESEMENTS_MORE_ROCK,
 	&Sexy::IMAGE_ACHEESEMENTS_MORE_BUTTON,
 	&Sexy::IMAGE_ACHEESEMENTS_MORE_BUTTON_HIGHLIGHT,

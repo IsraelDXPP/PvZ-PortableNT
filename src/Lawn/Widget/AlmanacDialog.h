@@ -23,6 +23,8 @@
 #define __ALMANACDIALOG_H__
 
 #include "LawnDialog.h"
+#include "widget/Slider.h"
+#include "widget/SliderListener.h"
 #include "../../GameConstants.h"
 
 #define NUM_ALMANAC_SEEDS 49
@@ -36,13 +38,14 @@ constexpr const int				ALMANAC_INDEXPLANT_POSITION_X	= 167 + BOARD_ADDITIONAL_WI
 constexpr const int				ALMANAC_INDEXPLANT_POSITION_Y	= 255 + BOARD_OFFSET_Y;
 constexpr const float			ALMANAC_INDEXZOMBIE_POSITION_X	= 535.0f + BOARD_ADDITIONAL_WIDTH;
 constexpr const float			ALMANAC_INDEXZOMBIE_POSITION_Y	= 215.0f + BOARD_OFFSET_Y;
+constexpr const int				ALMANAC_DESCRIPTION_MIN_HEIGHT	= 20;
 
 class Plant;
 class Zombie;
 class LawnApp;
 class GameButton;
 class Reanimation;
-class AlmanacDialog : public LawnDialog
+class AlmanacDialog : public LawnDialog, public SliderListener
 {
 private:
 	enum
@@ -66,11 +69,31 @@ public:
 	Plant*						mPlant;
 	Zombie*						mZombie;
 	Zombie*						mZombiePerfTest[400];
+	Slider*						mPlantSlider;
+	Slider*						mZombieSlider;
+	int							mLastMouseX;
+	int							mLastMouseY;
+	float						mScrollPosition;
+	float						mScrollAmount;
+	const float					mBaseScrollSpeed = 1.5f;
+	const float					mScrollAccel = 0.1f;
+	float						mMaxScrollPosition;
+	float						mDescriptionScroll;
+	int							mDescriptionLineSpacing;
+	Rect						mDescriptionRect;
+	Rect						mDescriptionSliderRect;
+	int							mDescriptionMaxScroll;
+	bool						mDescriptionOverfill;
+	bool						mDescriptionSliderDragging;
+	bool						mIsOverDescription;
+	int							mDescriptionYOffset;
+	float						mDescriptionOffsetScroll;
 
 public:
 	AlmanacDialog(LawnApp* theApp);
 	~AlmanacDialog() override;
 
+	void						AddedToManager(WidgetManager* theWidgetManager) override;
 	void						ClearPlantsAndZombies();
 	void						RemovedFromManager(WidgetManager* theWidgetManager) override;
 	void						SetupPlant();
@@ -90,6 +113,9 @@ public:
 	ZombieType					ZombieHitTest(int x, int y);
 	void						MouseUp(int x, int y, int theClickCount) override;
 	void						MouseDown(int x, int y, int theClickCount) override;
+	void						MouseDrag(int x, int y) override;
+	void						MouseWheel(int theDelta) override;
+	void						SliderVal(int theId, double theVal) override;
 	void						KeyDown(KeyCode theKey) override;
 //	virtual void				KeyChar(char theChar);
 

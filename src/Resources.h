@@ -160,6 +160,9 @@ namespace Sexy
 		IMAGE_QUICKPLAY_SURVIVAL_CLOUD_ID,
 		IMAGE_QUICKPLAY_BACK_BUTTON_ID,
 		IMAGE_QUICKPLAY_BACK_BUTTON_HIGHLIGHT_ID,
+		IMAGE_QUICKPLAY_BUTTON_ID,
+		IMAGE_QUICKPLAY_BUTTON_HIGHLIGHT_ID,
+		IMAGE_QUICKPLAY_WIDGET_ID,
 		IMAGE_ACHEESEMENTS_MORE_ROCK_ID,
 		IMAGE_ACHEESEMENTS_MORE_BUTTON_ID,
 		IMAGE_ACHEESEMENTS_MORE_BUTTON_HIGHLIGHT_ID,
@@ -1457,6 +1460,9 @@ namespace Sexy
 	extern Image* IMAGE_PUFFSHROOM_PUFF1;
 	extern Image* IMAGE_QUICKPLAY_BACK_BUTTON;
 	extern Image* IMAGE_QUICKPLAY_BACK_BUTTON_HIGHLIGHT;
+	extern Image* IMAGE_QUICKPLAY_BUTTON;
+	extern Image* IMAGE_QUICKPLAY_BUTTON_HIGHLIGHT;
+	extern Image* IMAGE_QUICKPLAY_WIDGET;
 	extern Image* IMAGE_QUICKPLAY_MINIGAMES_BUTTON;
 	extern Image* IMAGE_QUICKPLAY_MINIGAMES_BUTTON_HIGHLIGHT;
 	extern Image* IMAGE_QUICKPLAY_MINIGAMES_CLOUD;
@@ -1892,6 +1898,7 @@ namespace Sexy
 	bool                ExtractDelayLoad_MushroomGardenResources(ResourceManager* theResourceManager);
 	bool                ExtractDelayLoad_StoreResources(ResourceManager* theResourceManager);
 	bool                ExtractDelayLoad_ZombatarResources(ResourceManager* theResourceManager);
+	bool                ExtractDelayLoad_QuickPlayResources(ResourceManager* theResourceManager);
 	bool                ExtractDelayLoad_ZombieFinalNoteResources(ResourceManager* theResourceManager);
 	bool                ExtractDelayLoad_ZombieNoteResources(ResourceManager* theResourceManager);
 	bool                ExtractDelayLoad_ZombieNote1Resources(ResourceManager* theResourceManager);

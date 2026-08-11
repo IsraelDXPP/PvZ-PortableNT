@@ -120,6 +120,9 @@ public:
 	int								mPlayTimeInactiveSession;
 	BoardResult						mBoardResult;
 	bool							mSawYeti;
+	bool							mPlayingQuickplay;
+	int								mQuickLevel;
+	bool							mCrazySeeds;
 	TypingCheck*					mKonamiCheck;
 	TypingCheck*					mMustacheCheck;
 	TypingCheck*					mMoustacheCheck;
@@ -182,6 +185,7 @@ public:
 	bool							TryLoadGame();
 	void							NewGame();
 	void							PreNewGame(GameMode theGameMode, bool theLookForSavedGame);
+	void							StartQuickPlay();
 	void							ShowGameSelector();
 	void							KillGameSelector();
 	void							ShowAwardScreen(AwardType theAwardType, bool theShowAchievements);
@@ -280,6 +284,8 @@ public:
 	static bool			IsSurvivalNormal(GameMode theGameMode);
 	static bool			IsSurvivalHard(GameMode theGameMode);
 	static bool			IsSurvivalEndless(GameMode theGameMode);
+	bool					IsQuickplayLevel();
+	bool					IsNightQuickplay();
 	bool					HasFinishedAdventure();
 	bool					IsFirstTimeAdventureMode();
 	bool					CanSpawnYetis();

@@ -124,6 +124,9 @@ LawnApp::LawnApp()
 	mTitleScreen = nullptr;
 	mSoundSystem = nullptr;
 	mMusic = nullptr;
+	mPlayingQuickplay = false;
+	mQuickLevel = 1;
+	mCrazySeeds = false;
 	mKonamiCheck = nullptr;
 	mMustacheCheck = nullptr;
 	mMoustacheCheck = nullptr;
@@ -523,10 +526,18 @@ void LawnApp::NewGame()
 	mBoard->mCutScene->StartLevelIntro();
 }
 
+void LawnApp::StartQuickPlay()
+{
+	mPlayingQuickplay = true;
+	mGameMode = GameMode::GAMEMODE_ADVENTURE;
+	NewGame();
+}
+
 void LawnApp::ShowGameSelector()
 {
 	KillBoard();
 	//UpdateRegisterInfo();
+	mPlayingQuickplay = false;
 	if (mGameSelector)
 	{
 		mWidgetManager->RemoveWidget(mGameSelector);
@@ -694,6 +705,7 @@ void LawnApp::DoBackToMain()
 	WriteCurrentUserConfig();
 	KillNewOptionsDialog();
 	KillBoard();
+	mPlayingQuickplay = false;
 	ShowGameSelector();
 }
 
@@ -1476,6 +1488,12 @@ void LawnApp::CheckForGameEnd()
 {
 	if (mBoard == nullptr || !mBoard->mLevelComplete)
 		return;
+
+	if (mPlayingQuickplay)
+	{
+		ShowGameSelector();
+		return;
+	}
 
 	bool aUnlockedNewChallenge = UpdatePlayerProfileForFinishingLevel();
 
@@ -2262,7 +2280,20 @@ bool LawnApp::IsNight()
 	if (IsIceDemo() || mPlayerInfo == nullptr)
 		return false;
 
+	if (mPlayingQuickplay)
+		return IsNightQuickplay();
+
 	return (mPlayerInfo->mLevel >= 11 && mPlayerInfo->mLevel <= 20) || (mPlayerInfo->mLevel >= 31 && mPlayerInfo->mLevel <= 40) || mPlayerInfo->mLevel == 50;
+}
+
+bool LawnApp::IsQuickplayLevel()
+{
+	return mQuickLevel >= 1 && mQuickLevel <= NUM_LEVELS;
+}
+
+bool LawnApp::IsNightQuickplay()
+{
+	return (mQuickLevel >= 11 && mQuickLevel <= 20) || (mQuickLevel >= 31 && mQuickLevel <= 40) || mQuickLevel == 50;
 }
 
 int LawnApp::GetCurrentChallengeIndex()
@@ -2503,6 +2534,8 @@ bool LawnApp::CanShowZenGarden()
 
 bool LawnApp::CanSpawnYetis()
 {
+	if (mPlayingQuickplay)
+		return false;
 	const ZombieDefinition& aZombieDef = GetZombieDefinition(ZombieType::ZOMBIE_YETI);
 	return HasFinishedAdventure() && (mPlayerInfo->mFinishedAdventure >= 2 || mPlayerInfo->mLevel >= aZombieDef.mStartingLevel);
 }

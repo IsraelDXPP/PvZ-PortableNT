@@ -31,6 +31,7 @@
 class LawnApp;
 class ToolTipWidget;
 class ZombatarWidget;
+class QuickPlayWidget;
 namespace Sexy
 {
 	class DialogButton;
@@ -63,7 +64,8 @@ private:
 		GameSelector_ZenGarden,
 		GameSelector_Survival,
 		GameSelector_Zombatar,
-		GameSelector_Achievements
+		GameSelector_Achievements,
+		GameSelector_QuickPlay
 	};
 
 public:
@@ -81,6 +83,7 @@ public:
 	NewLawnButton*              mChangeUserButton;
 	NewLawnButton*              mZombatarButton;             //+0xC0
 	NewLawnButton*              mAchievementsButton;        //+0xC4
+	NewLawnButton*              mQuickPlayButton;
 	Widget*                     mOverlayWidget;
 	bool                        mStartingGame;
 	int                         mStartingGameCounter;
@@ -109,6 +112,7 @@ public:
 	int                         mDestY;                     //+0x164
 	ZombatarWidget*             mZombatarWidget;            //+0x168
 	AchievementsWidget*         mAchievementsWidget;        //+0x16C
+	QuickPlayWidget*            mQuickPlayWidget;
 
 public:
 	GameSelector(LawnApp* theApp);
@@ -140,6 +144,8 @@ public:
 	void             SlideTo(int theX, int theY);
 	void                        ShowZombatarScreen();
 	void                        ShowAchievementsScreen();
+	void                        ShowQuickPlayScreen();
+	void                        BackFromQuickPlay();
 };
 
 class GameSelectorOverlay : public Widget

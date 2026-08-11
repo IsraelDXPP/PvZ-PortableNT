@@ -24,6 +24,7 @@
 #include "GameButton.h"
 #include "StoreScreen.h"
 #include "ZombatarWidget.h"
+#include "QuickPlayWidget.h"
 #include "../ZenGarden.h"
 #include "GameSelector.h"
 #include "../../LawnApp.h"
@@ -63,6 +64,7 @@ GameSelector::GameSelector(LawnApp* theApp)
 {
 	PvzpHesitationTrace("pregameselector");
 	mLoadedResourceNames.push_back("DelayLoad_Zombatar");
+	mLoadedResourceNames.push_back("DelayLoad_QuickPlay");
 	mLoadedResourceNames.push_back("DelayLoad_Almanac");
 
 	for (std::string& resource : mLoadedResourceNames)
@@ -178,6 +180,21 @@ GameSelector::GameSelector(LawnApp* theApp)
 	mAchievementsButton->mClip = false;
 	mAchievementsButton->mBtnNoDraw = mHasTrophy;
 	mAchievementsButton->mMouseVisible = false;
+
+	mQuickPlayButton = MakeNewButton(
+		GameSelector::GameSelector_QuickPlay,
+		this,
+		"",
+		nullptr,
+		Sexy::IMAGE_QUICKPLAY_BUTTON,
+		Sexy::IMAGE_QUICKPLAY_BUTTON_HIGHLIGHT,
+		Sexy::IMAGE_QUICKPLAY_BUTTON_HIGHLIGHT
+	);
+	mQuickPlayButton->Resize(300, mApp->mHeight - Sexy::IMAGE_QUICKPLAY_BUTTON->mHeight - 100, Sexy::IMAGE_QUICKPLAY_BUTTON->mWidth, Sexy::IMAGE_QUICKPLAY_BUTTON->mHeight);
+	mQuickPlayButton->mClip = false;
+	mQuickPlayButton->mMouseVisible = false;
+	mQuickPlayButton->SetDisabled(!mApp->HasFinishedAdventure());
+	mQuickPlayButton->mVisible = mApp->HasFinishedAdventure();
 
 	mZenGardenButton = MakeNewButton(
 		GameSelector::GameSelector_ZenGarden,
@@ -345,13 +362,16 @@ GameSelector::GameSelector(LawnApp* theApp)
 	mDestX = 0;
 	mDestY = 0;
 	mZombatarWidget = new ZombatarWidget(this);
-	mZombatarWidget->Move(BOARD_WIDTH, 0);
+	mZombatarWidget->Move(BOARD_WIDTH + BOARD_ADDITIONAL_WIDTH, 0);
 	mAchievementsWidget = new AchievementsWidget(this->mApp);
 	mAchievementsWidget->Move(0, mApp->mHeight);
+	mQuickPlayWidget = new QuickPlayWidget(this);
+	mQuickPlayWidget->Move(BOARD_WIDTH, 0);
 
 	// Add as children in z-order (bottom to top).
 	AddWidget(mAchievementsButton);
 	AddWidget(mZombatarButton);
+	AddWidget(mQuickPlayButton);
 	AddWidget(mChangeUserButton);
 	AddWidget(mSurvivalButton);
 	AddWidget(mZenGardenButton);
@@ -376,6 +396,8 @@ GameSelector::~GameSelector()
 		delete mZombatarWidget; // top-level widget, not covered by RemoveAllWidgets
 	if (mAchievementsWidget)
 		delete mAchievementsWidget; // top-level widget, not covered by RemoveAllWidgets
+	if (mQuickPlayWidget)
+		delete mQuickPlayWidget; // top-level widget, not covered by RemoveAllWidgets
 
 	delete mToolTip;
 }
@@ -392,6 +414,10 @@ void GameSelector::SyncButtons()
 	mStoreButton->mVisible = aStoreOpen;
 	mZombatarButton->mDisabled = false;
 	mZombatarButton->mVisible = true;
+	mAchievementsButton->mDisabled = false;
+	mAchievementsButton->mVisible = true;
+	mQuickPlayButton->SetDisabled(!mApp->HasFinishedAdventure());
+	mQuickPlayButton->mVisible = mApp->HasFinishedAdventure();
 
 	Reanimation* aSelectorReanim = mApp->ReanimationGet(mSelectorReanimID);
 	if (aAlmanacAvailable)
@@ -755,8 +781,9 @@ void GameSelector::Update()
 		int aNewY = PvzpAnimateCurve(75, 0, mSlideCounter, mStartY, mDestY, PvzpCurves::CURVE_EASE_IN_OUT);
 		Move(aNewX, aNewY);
 
-		mZombatarWidget->Move(aNewX + BOARD_WIDTH, aNewY);
+		mZombatarWidget->Move(aNewX + BOARD_WIDTH + BOARD_ADDITIONAL_WIDTH, aNewY);
 		mAchievementsWidget->mY = aNewY + mApp->mHeight;
+		mQuickPlayWidget->Move(aNewX + BOARD_WIDTH, aNewY);
 
 		mSlideCounter--;
 	}
@@ -830,6 +857,7 @@ void GameSelector::Update()
 			mQuitButton->mBtnNoDraw = false;
 			mZombatarButton->mBtnNoDraw = false;
 			mAchievementsButton->mBtnNoDraw = false;
+			mQuickPlayButton->mBtnNoDraw = false;
 			mAdventureButton->mMouseVisible = true;
 			mMinigameButton->mMouseVisible = true;
 			mPuzzleButton->mMouseVisible = true;
@@ -843,6 +871,7 @@ void GameSelector::Update()
 			mChangeUserButton->mMouseVisible = true;
 			mZombatarButton->mMouseVisible = true;
 			mAchievementsButton->mMouseVisible = true;
+			mQuickPlayButton->mMouseVisible = true;
 
 			if (mApp->mPlayerInfo == nullptr)
 			{
@@ -940,6 +969,7 @@ void GameSelector::Update()
 	TrackButton(mChangeUserButton, "woodsign2", 24.0f + BOARD_ADDITIONAL_WIDTH, 10.0f + BOARD_OFFSET_Y);
 	TrackButton(mZombatarButton, "woodsign3", 0.0f + BOARD_ADDITIONAL_WIDTH, 0.0f + BOARD_OFFSET_Y);
 	TrackButton(mAchievementsButton, "SelectorScreen_BG_Left", 390.f + BOARD_ADDITIONAL_WIDTH, 540.f + BOARD_OFFSET_Y);
+	TrackButton(mQuickPlayButton, "SelectorScreen_BG_Right", 190.0f + BOARD_ADDITIONAL_WIDTH, 310.0f + BOARD_OFFSET_Y);
 	aSelectorReanim->SetImageOverride("woodsign2", (mChangeUserButton->mIsOver || mChangeUserButton->mIsDown) ? Sexy::IMAGE_REANIM_SELECTORSCREEN_WOODSIGN2_PRESS : nullptr);
 	aSelectorReanim->SetImageOverride("woodsign3", (mZombatarButton->mIsOver || mZombatarButton->mIsDown) ? Sexy::IMAGE_REANIM_SELECTORSCREEN_WOODSIGN3_PRESS : nullptr);
 }
@@ -961,6 +991,7 @@ void GameSelector::AddedToManager(WidgetManager* theWidgetManager)
 
 	theWidgetManager->AddWidget(mZombatarWidget);
 	theWidgetManager->AddWidget(mAchievementsWidget);
+	theWidgetManager->AddWidget(mQuickPlayWidget);
 }
 
 void GameSelector::RemovedFromManager(WidgetManager* theWidgetManager)
@@ -969,12 +1000,14 @@ void GameSelector::RemovedFromManager(WidgetManager* theWidgetManager)
 
 	theWidgetManager->RemoveWidget(mZombatarWidget);
 	theWidgetManager->RemoveWidget(mAchievementsWidget);
+	theWidgetManager->RemoveWidget(mQuickPlayWidget);
 }
 
 void GameSelector::OrderInManagerChanged()
 {
 	mWidgetManager->PutInfront(mAchievementsWidget, this);
 	mWidgetManager->BringToFront(mZombatarWidget);
+	mWidgetManager->BringToFront(mQuickPlayWidget);
 }
 
 void GameSelector::KeyDown(KeyCode theKey)
@@ -1170,6 +1203,7 @@ void GameSelector::ClickedAdventure()
 	mZenGardenButton->SetDisabled(true);
 	mZombatarButton->SetDisabled(true);
 	mAchievementsButton->SetDisabled(true);
+	mQuickPlayButton->SetDisabled(true);
 
 	Reanimation* aHandReanim = mApp->AddReanimation(-70.0f + BOARD_ADDITIONAL_WIDTH, 10.0f + BOARD_OFFSET_Y, 0, ReanimationType::REANIM_ZOMBIE_HAND);
 	aHandReanim->mLoopType = ReanimLoopType::REANIM_PLAY_ONCE_AND_HOLD;
@@ -1265,6 +1299,9 @@ void GameSelector::ButtonDepress(int theId)
 		break;
 	case GameSelector::GameSelector_Achievements:
 		ShowAchievementsScreen();
+		break;
+	case GameSelector::GameSelector_QuickPlay:
+		ShowQuickPlayScreen();
 		break;
 	}
 }
@@ -1397,4 +1434,25 @@ void GameSelector::ShowAchievementsScreen()
 {
 	SlideTo(0, -mApp->mHeight);
 	mWidgetManager->SetFocus(mAchievementsWidget);
+}
+
+void GameSelector::ShowQuickPlayScreen()
+{
+	if (!mQuickPlayWidget)
+		return;
+	mApp->mQuickLevel = std::clamp(mApp->mQuickLevel, 1, NUM_LEVELS);
+	SlideTo(-BOARD_WIDTH, 0);
+	mZombatarWidget->mVisible = false;
+	mAchievementsWidget->mVisible = false;
+	mWidgetManager->SetFocus(mQuickPlayWidget);
+	mQuickPlayWidget->Open();
+}
+
+void GameSelector::BackFromQuickPlay()
+{
+	SlideTo(0, 0);
+	mZombatarWidget->mVisible = true;
+	mAchievementsWidget->mVisible = true;
+	if (mWidgetManager)
+		mWidgetManager->SetFocus(this);
 }

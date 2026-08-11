@@ -34,8 +34,20 @@
 #include "../System/ReanimationLawn.h"
 #include "../../PvzpLib/PvzpStringFile.h"
 #include "widget/WidgetManager.h"
+#include "graphics/Font.h"
+#include <algorithm>
+#include <cmath>
 
 bool gZombieDefeated[NUM_ZOMBIE_TYPES] = { false };
+
+const int cSeedPacketRows = 8;
+const int cSeedPacketYOffset = 8;
+const int cSeedPacketYStartOffset = 14;
+const Rect cSeedClipRect = Rect(0, SEED_PACKET_HEIGHT + cSeedPacketYOffset + cSeedPacketYStartOffset + BOARD_OFFSET_Y, BOARD_WIDTH, 460);
+const int cZombieHeight = 80;
+const int cZombieYStartOffset = 6;
+const Rect cZombieClipRect = Rect(0, cZombieHeight + cZombieYStartOffset + BOARD_OFFSET_Y, BOARD_WIDTH, 474);
+const int cZombieRows = 5;
 
 AlmanacDialog::AlmanacDialog(LawnApp* theApp) : LawnDialog(theApp, DIALOG_ALMANAC, true, theApp->GetString("ALMANAC_HEADER", "Almanac"), "", "", BUTTONS_NONE)
 {
@@ -46,6 +58,17 @@ AlmanacDialog::AlmanacDialog(LawnApp* theApp) : LawnDialog(theApp, DIALOG_ALMANA
 	mZombie = nullptr;
 	mPlant = nullptr;
 	mDrawStandardBack = false;
+	mScrollAmount = 0;
+	mScrollPosition = 0;
+	mMaxScrollPosition = 0;
+	mDescriptionScroll = 0;
+	mDescriptionLineSpacing = 0;
+	mDescriptionMaxScroll = 0;
+	mDescriptionOverfill = false;
+	mDescriptionSliderDragging = false;
+	mIsOverDescription = false;
+	mDescriptionYOffset = 0;
+	mDescriptionOffsetScroll = 0;
 	mLoadedResourceNames.push_back("DelayLoad_Almanac");
 	for (size_t i = 0; i < LENGTH(mZombiePerfTest); i++) mZombiePerfTest[i] = nullptr;
 	LawnDialog::Resize(0, 0, BOARD_WIDTH, BOARD_HEIGHT);
@@ -100,6 +123,20 @@ AlmanacDialog::AlmanacDialog(LawnApp* theApp) : LawnDialog(theApp, DIALOG_ALMANA
 	mZombieButton->mDrawStoneButton = true;
 	mZombieButton->mParentWidget = this;
 
+	mPlantSlider = new Slider(IMAGE_OPTIONS_SLIDERSLOT_PLANT, IMAGE_OPTIONS_SLIDERKNOB_PLANT, 0, this);
+	mPlantSlider->SetValue(std::max(0.0f, std::min(mMaxScrollPosition, mScrollPosition)));
+	mPlantSlider->mHorizontal = false;
+	mPlantSlider->Resize(10 + BOARD_ADDITIONAL_WIDTH, cSeedClipRect.mY, 20, cSeedClipRect.mHeight);
+	mPlantSlider->mThumbOffsetX = -5;
+	mPlantSlider->mVisible = false;
+
+	mZombieSlider = new Slider(IMAGE_CHALLENGE_SLIDERSLOT, IMAGE_OPTIONS_SLIDERKNOB2, 0, this);
+	mZombieSlider->SetValue(std::max(0.0f, std::min(mMaxScrollPosition, mScrollPosition)));
+	mZombieSlider->mHorizontal = false;
+	mZombieSlider->Resize(10 + BOARD_ADDITIONAL_WIDTH, cZombieClipRect.mY, 20, cZombieClipRect.mHeight);
+	mZombieSlider->mThumbOffsetX = -1;
+	mZombieSlider->mVisible = false;
+
 	SetPage(ALMANAC_PAGE_INDEX);
 	if (!mApp->mBoard || !mApp->mBoard->mPaused)
 		mApp->mMusic->MakeSureMusicIsPlaying(MUSIC_TUNE_CHOOSE_YOUR_SEEDS);
@@ -111,6 +148,8 @@ AlmanacDialog::~AlmanacDialog()
 	if (mIndexButton)	delete mIndexButton;
 	if (mPlantButton)	delete mPlantButton;
 	if (mZombieButton)	delete mZombieButton;
+	delete mPlantSlider;
+	delete mZombieSlider;
 
 	ClearPlantsAndZombies();
 }
@@ -140,10 +179,19 @@ void AlmanacDialog::ClearPlantsAndZombies()
 	}
 }
 
+void AlmanacDialog::AddedToManager(WidgetManager* theWidgetManager)
+{
+	LawnDialog::AddedToManager(theWidgetManager);
+	AddWidget(mPlantSlider);
+	AddWidget(mZombieSlider);
+}
+
 void AlmanacDialog::RemovedFromManager(WidgetManager* theWidgetManager)
 {
 	LawnDialog::RemovedFromManager(theWidgetManager);
 	ClearPlantsAndZombies();
+	RemoveWidget(mPlantSlider);
+	RemoveWidget(mZombieSlider);
 }
 
 void AlmanacDialog::SetupPlant()
@@ -180,6 +228,8 @@ void AlmanacDialog::SetupZombie()
 void AlmanacDialog::SetPage(AlmanacPage thePage)
 {
 	mOpenPage = thePage;
+	mPlantSlider->SetValue(0.1f);
+	mZombieSlider->SetValue(0.1f);
 	ClearPlantsAndZombies();
 
 	if (mOpenPage == AlmanacPage::ALMANAC_PAGE_INDEX)
@@ -229,6 +279,8 @@ void AlmanacDialog::ShowZombie(ZombieType theZombieType)
 
 void AlmanacDialog::Update()
 {
+	mLastMouseX = mApp->mWidgetManager->mLastMouseX;
+	mLastMouseY = mApp->mWidgetManager->mLastMouseY;
 	mCloseButton->Update();
 	mIndexButton->Update();
 	mPlantButton->Update();
@@ -243,16 +295,45 @@ void AlmanacDialog::Update()
 		}
 	}
 
-	int aMouseX = mApp->mWidgetManager->mLastMouseX;
-	int aMouseY = mApp->mWidgetManager->mLastMouseY;
-	if (SeedHitTest(aMouseX, aMouseY) != SeedType::SEED_NONE || ZombieHitTest(aMouseX, aMouseY) != ZombieType::ZOMBIE_INVALID ||
-		mCloseButton->IsMouseOver() || mIndexButton->IsMouseOver() || mPlantButton->IsMouseOver() || mZombieButton->IsMouseOver())
+	if (mOpenPage == ALMANAC_PAGE_PLANTS)
 	{
-		mApp->SetCursor(CURSOR_HAND);
+		mMaxScrollPosition = std::max(0, (((NUM_SEEDS_IN_CHOOSER - 2) / cSeedPacketRows) * (SEED_PACKET_HEIGHT + cSeedPacketYOffset)) + SEED_PACKET_HEIGHT - cSeedClipRect.mHeight);
+		float aScrollSpeed = mBaseScrollSpeed + std::abs(mScrollAmount) * mScrollAccel;
+		mScrollPosition = std::clamp(mScrollPosition += mScrollAmount * aScrollSpeed, 0.0f, mMaxScrollPosition);
+		mScrollAmount *= (1.0f - mScrollAccel);
+		mPlantSlider->mVisible = mMaxScrollPosition != 0;
+	}
+	else if (mOpenPage == ALMANAC_PAGE_ZOMBIES)
+	{
+		mMaxScrollPosition = std::max(0, (((NUM_ALMANAC_ZOMBIES - 1) / cZombieRows) * cZombieHeight) + cZombieHeight - cZombieYStartOffset - cZombieClipRect.mHeight);
+		float aScrollSpeed = mBaseScrollSpeed + std::abs(mScrollAmount) * mScrollAccel;
+		mScrollPosition = std::clamp(mScrollPosition += mScrollAmount * aScrollSpeed, 0.0f, mMaxScrollPosition);
+		mScrollAmount *= (1.0f - mScrollAccel);
+		mZombieSlider->mVisible = mMaxScrollPosition != 0;
 	}
 	else
 	{
-		mApp->SetCursor(CURSOR_POINTER);
+		mScrollAmount = 0;
+		mScrollPosition = 0;
+		mPlantSlider->mVisible = false;
+		mZombieSlider->mVisible = false;
+	}
+
+	mPlantSlider->SetValue(mMaxScrollPosition > 0.0f ? std::max(0.0f, std::min(mMaxScrollPosition, mScrollPosition)) / mMaxScrollPosition : 0.0f);
+	mZombieSlider->SetValue(mMaxScrollPosition > 0.0f ? std::max(0.0f, std::min(mMaxScrollPosition, mScrollPosition)) / mMaxScrollPosition : 0.0f);
+
+	if (!(mPlantSlider->mIsOver || mPlantSlider->mDragging) && !(mZombieSlider->mIsOver || mZombieSlider->mDragging))
+	{
+		ZombieType aZombieType = ZombieHitTest(mLastMouseX, mLastMouseY);
+		if (SeedHitTest(mLastMouseX, mLastMouseY) != SeedType::SEED_NONE || (aZombieType != ZombieType::ZOMBIE_INVALID && ZombieIsShown(aZombieType)) ||
+			mCloseButton->IsMouseOver() || mIndexButton->IsMouseOver() || mPlantButton->IsMouseOver() || mZombieButton->IsMouseOver())
+		{
+			mApp->SetCursor(CURSOR_HAND);
+		}
+		else
+		{
+			mApp->SetCursor(CURSOR_POINTER);
+		}
 	}
 
 	mApp->mPoolEffect->PoolEffectUpdate();
@@ -288,7 +369,7 @@ void AlmanacDialog::DrawPlants(Graphics* g)
 	g->DrawImage(Sexy::IMAGE_ALMANAC_PLANTBACK, 0, 0);
 	PvzpDrawString(g, "[SUBURBAN_ALMANAC_PLANTS]", BOARD_WIDTH / 2, 48 + BOARD_OFFSET_Y, Sexy::FONT_HOUSEOFTERROR20, Color(213, 159, 43), DrawStringJustification::DS_ALIGN_CENTER);
 
-	SeedType aSeedMouseOn = SeedHitTest(mApp->mWidgetManager->mLastMouseX, mApp->mWidgetManager->mLastMouseY);
+	SeedType aSeedMouseOn = SeedHitTest(mLastMouseX, mLastMouseY);
 	for (SeedType aSeedType = SeedType::SEED_PEASHOOTER; aSeedType < NUM_ALMANAC_SEEDS; aSeedType = (SeedType)(aSeedType + 1))
 	{
 		int aPosX, aPosY;
@@ -297,18 +378,21 @@ void AlmanacDialog::DrawPlants(Graphics* g)
 		{
 			if (aSeedType == SeedType::SEED_IMITATER)
 			{
+				g->ClearClipRect();
 				if (aSeedType == aSeedMouseOn)
 					g->DrawImage(Sexy::IMAGE_ALMANAC_IMITATER, aPosX, aPosY);
 				g->DrawImage(Sexy::IMAGE_ALMANAC_IMITATER, aPosX, aPosY);
 			}
 			else
 			{
+				g->SetClipRect(cSeedClipRect);
 				DrawSeedPacket(g, aPosX, aPosY, aSeedType, SeedType::SEED_NONE, 0, 255, true, false);
 				if (aSeedType == aSeedMouseOn)
 					g->DrawImage(Sexy::IMAGE_SEEDPACKETFLASH, aPosX, aPosY);
 			}
 		}
 	}
+	g->ClearClipRect();
 
 	if (mSelectedSeed == SeedType::SEED_LILYPAD || mSelectedSeed == SeedType::SEED_TANGLEKELP ||
 		mSelectedSeed == SeedType::SEED_CATTAIL || mSelectedSeed == SeedType::SEED_SEASHROOM)
@@ -348,7 +432,48 @@ void AlmanacDialog::DrawPlants(Graphics* g)
 	std::string aName = Plant::GetNameString(mSelectedSeed, SEED_NONE);
 	std::string aDescriptionName = StrFormat("[%s_DESCRIPTION]", aPlantDef.mPlantName);
 	PvzpDrawString(g, aName, 617 + BOARD_ADDITIONAL_WIDTH, 288 + BOARD_OFFSET_Y, Sexy::FONT_DWARVENTODCRAFT18YELLOW, Color::White, DS_ALIGN_CENTER);
-	PvzpDrawStringWrapped(g, aDescriptionName, Rect(485 + BOARD_ADDITIONAL_WIDTH, 309 + BOARD_OFFSET_Y, 258, 230), Sexy::FONT_BRIANNETOD12, Color(40, 50, 90), DS_ALIGN_LEFT);
+	std::string aDescription = PvzpStringTranslate(aDescriptionName);
+	_Font* aDescriptionFont = Sexy::FONT_BRIANNETOD12;
+	Color aDescriptionColor = Color(40, 50, 90);
+	mDescriptionRect = Rect(485 + BOARD_ADDITIONAL_WIDTH, 309 + BOARD_OFFSET_Y, 258, 210);
+	DrawStringJustification aDescriptionJustification = DS_ALIGN_LEFT;
+	int aTextSpacing = PvzpDrawStringWrappedHelper(g, aDescription, mDescriptionRect, aDescriptionFont, aDescriptionColor, aDescriptionJustification, false);
+	int aRectHeight;
+	if (mDescriptionRect.mHeight < aTextSpacing)
+	{
+		mIsOverDescription = mDescriptionRect.Contains(mLastMouseX, mLastMouseY);
+		mDescriptionLineSpacing = aDescriptionFont->GetLineSpacing();
+		int aBarWidth = 8;
+		int aBarX = mDescriptionRect.mX + mDescriptionRect.mWidth - (aBarWidth / 2);
+		mDescriptionRect.mWidth -= aBarWidth;
+		aTextSpacing = PvzpDrawStringWrappedHelper(g, aDescription, mDescriptionRect, aDescriptionFont, aDescriptionColor, aDescriptionJustification, false);
+		g->SetColor(Color(143, 67, 27, 75));
+		g->FillRect(Rect(aBarX, mDescriptionRect.mY, aBarWidth, mDescriptionRect.mHeight));
+		mDescriptionMaxScroll = aTextSpacing - mDescriptionRect.mHeight;
+		g->SetColor(Color(143, 67, 27));
+		int aBarHeight = mDescriptionRect.mHeight - mDescriptionMaxScroll;
+		float aPosY = mDescriptionScroll;
+		mDescriptionOverfill = aBarHeight < ALMANAC_DESCRIPTION_MIN_HEIGHT;
+		if (mDescriptionOverfill)
+		{
+			aBarHeight = ALMANAC_DESCRIPTION_MIN_HEIGHT;
+			aPosY = (mDescriptionScroll / mDescriptionMaxScroll) * (mDescriptionRect.mHeight - aBarHeight);
+		}
+		mDescriptionSliderRect = Rect(aBarX, mDescriptionRect.mY + aPosY, aBarWidth, aBarHeight);
+		g->FillRect(mDescriptionSliderRect);
+		aRectHeight = aTextSpacing;
+	}
+	else
+	{
+		mIsOverDescription = false;
+		mDescriptionLineSpacing = 0;
+		mDescriptionScroll = 0;
+		mDescriptionMaxScroll = 0;
+		aRectHeight = mDescriptionRect.mHeight;
+	}
+	g->SetClipRect(mDescriptionRect);
+	PvzpDrawStringWrapped(g, aDescription, Rect(mDescriptionRect.mX, mDescriptionRect.mY - mDescriptionScroll, mDescriptionRect.mWidth, aRectHeight), aDescriptionFont, aDescriptionColor, aDescriptionJustification);
+	g->ClearClipRect();
 
 	if (mSelectedSeed != SeedType::SEED_IMITATER)
 	{
@@ -370,7 +495,8 @@ void AlmanacDialog::DrawZombies(Graphics* g)
 	g->DrawImage(Sexy::IMAGE_ALMANAC_ZOMBIEBACK, 0, 0);
 	PvzpDrawString(g, "[SUBURBAN_ALMANAC_ZOMBIES]", BOARD_WIDTH / 2, 54 + BOARD_OFFSET_Y, Sexy::FONT_DWARVENTODCRAFT24, Color(0, 196, 0), DS_ALIGN_CENTER);
 
-	ZombieType aZombieMouseOn = ZombieHitTest(mApp->mWidgetManager->mLastMouseX, mApp->mWidgetManager->mLastMouseY);
+	ZombieType aZombieMouseOn = ZombieHitTest(mLastMouseX, mLastMouseY);
+	g->SetClipRect(cZombieClipRect);
 	for (int i = 0; i < NUM_ALMANAC_ZOMBIES; i++)
 	{
 		ZombieType aZombieType = GetZombieType(i);
@@ -444,6 +570,7 @@ void AlmanacDialog::DrawZombies(Graphics* g)
 			}
 		}
 	}
+	g->ClearClipRect();
 
 	g->DrawImage(mZombie->mZombieType == ZombieType::ZOMBIE_ZAMBONI || mZombie->mZombieType == ZombieType::ZOMBIE_BOBSLED ?
 		Sexy::IMAGE_ALMANAC_GROUNDICE : Sexy::IMAGE_ALMANAC_GROUNDDAY, 518 + BOARD_ADDITIONAL_WIDTH, 110 + BOARD_OFFSET_Y);
@@ -474,18 +601,7 @@ void AlmanacDialog::DrawZombies(Graphics* g)
 	std::string aName = ZombieHasSilhouette(mSelectedZombie) ? "???" : StrFormat("[%s]", aZombieDef.mZombieName);
 	PvzpDrawString(g, aName, 613 + BOARD_ADDITIONAL_WIDTH, 362 + BOARD_OFFSET_Y, Sexy::FONT_DWARVENTODCRAFT18GREENINSET, Color(190, 255, 235, 255), DS_ALIGN_CENTER);
 
-	std::string aDescription;
-	DrawStringJustification aAlign;
-	if (ZombieHasDescription(mSelectedZombie))
-	{
-		aDescription = PvzpStringTranslate(StrFormat("[%s_DESCRIPTION]", aZombieDef.mZombieName));
-		aAlign = DS_ALIGN_LEFT;
-	}
-	else
-	{
-		aDescription = "[NOT_ENCOUNTERED_YET]";
-		aAlign = DS_ALIGN_CENTER_VERTICAL_MIDDLE;
-	}
+	_Font* aDescriptionFont = Sexy::FONT_BRIANNETOD12;
 	for (PvzpStringListFormat& aFormat : gLawnStringFormats)
 	{
 		if (TestBit(aFormat.mFormatFlags, PvzpStringFormatFlag::PVZP_FORMAT_HIDE_UNTIL_MAGNETSHROOM))
@@ -503,7 +619,54 @@ void AlmanacDialog::DrawZombies(Graphics* g)
 		}
 	}
 	// todo: fix stuff that have another formatter after them, ex: "{KEYWORD}Weakness:{STAT} fume-shroom{METAL} and magnet-shroom{KEYWORD}" (magnet-shroom will show with the {KEYWORD} colors)
-	PvzpDrawStringWrapped(g, aDescription, Rect(484 + BOARD_ADDITIONAL_WIDTH, (mSelectedZombie == ZombieType::ZOMBIE_ZAMBONI ? 372 : 377) + BOARD_OFFSET_Y, 258, 170), Sexy::FONT_BRIANNETOD12, Color(40, 50, 90), aAlign);
+	Color aDescriptionColor = Color(40, 50, 90);
+	mDescriptionRect = Rect(484 + BOARD_ADDITIONAL_WIDTH, (mSelectedZombie == ZombieType::ZOMBIE_ZAMBONI ? 372 : 377) + BOARD_OFFSET_Y, 258, 170);
+	if (ZombieHasDescription(mSelectedZombie))
+	{
+		DrawStringJustification aDescriptionJustification = DS_ALIGN_LEFT;
+		std::string aDescription = PvzpStringTranslate(StrFormat("[%s_DESCRIPTION]", aZombieDef.mZombieName));
+		int aTextSpacing = PvzpDrawStringWrappedHelper(g, aDescription, mDescriptionRect, aDescriptionFont, aDescriptionColor, aDescriptionJustification, false);
+		int aRectHeight;
+		if (mDescriptionRect.mHeight < aTextSpacing)
+		{
+			mIsOverDescription = mDescriptionRect.Contains(mLastMouseX, mLastMouseY);
+			mDescriptionLineSpacing = aDescriptionFont->GetLineSpacing();
+			int aBarWidth = 8;
+			int aBarX = mDescriptionRect.mX + mDescriptionRect.mWidth - (aBarWidth / 2);
+			mDescriptionRect.mWidth -= aBarWidth;
+			aTextSpacing = PvzpDrawStringWrappedHelper(g, aDescription, mDescriptionRect, aDescriptionFont, aDescriptionColor, aDescriptionJustification, false);
+			g->SetColor(Color(95, 97, 129, 75));
+			g->FillRect(Rect(aBarX, mDescriptionRect.mY, aBarWidth, mDescriptionRect.mHeight));
+			mDescriptionMaxScroll = aTextSpacing - mDescriptionRect.mHeight;
+			g->SetColor(Color(95, 97, 129));
+			int aBarHeight = mDescriptionRect.mHeight - mDescriptionMaxScroll;
+			float aPosY = mDescriptionScroll;
+			mDescriptionOverfill = aBarHeight < ALMANAC_DESCRIPTION_MIN_HEIGHT;
+			if (mDescriptionOverfill)
+			{
+				aBarHeight = ALMANAC_DESCRIPTION_MIN_HEIGHT;
+				aPosY = (mDescriptionScroll / mDescriptionMaxScroll) * (mDescriptionRect.mHeight - aBarHeight);
+			}
+			mDescriptionSliderRect = Rect(aBarX, mDescriptionRect.mY + aPosY, aBarWidth, aBarHeight);
+			g->FillRect(mDescriptionSliderRect);
+			aRectHeight = aTextSpacing;
+		}
+		else
+		{
+			mIsOverDescription = false;
+			mDescriptionLineSpacing = 0;
+			mDescriptionScroll = 0;
+			mDescriptionMaxScroll = 0;
+			aRectHeight = mDescriptionRect.mHeight;
+		}
+		g->SetClipRect(mDescriptionRect);
+		PvzpDrawStringWrapped(g, aDescription, Rect(mDescriptionRect.mX, mDescriptionRect.mY - mDescriptionScroll, mDescriptionRect.mWidth, aRectHeight), aDescriptionFont, aDescriptionColor, aDescriptionJustification);
+		g->ClearClipRect();
+	}
+	else
+	{
+		PvzpDrawStringWrapped(g, "[NOT_ENCOUNTERED_YET]", mDescriptionRect, aDescriptionFont, aDescriptionColor, DS_ALIGN_CENTER_VERTICAL_MIDDLE);
+	}
 }
 
 void AlmanacDialog::Draw(Graphics* g)
@@ -538,7 +701,7 @@ void AlmanacDialog::GetSeedPosition(SeedType theSeedType, int& x, int& y)
 	else
 	{
 		x = theSeedType % 8 * 52 + 26 + BOARD_ADDITIONAL_WIDTH;
-		y = theSeedType / 8 * 78 + 92 + BOARD_OFFSET_Y;
+		y = theSeedType / 8 * 78 + 92 - mScrollPosition + BOARD_OFFSET_Y;
 	}
 }
 
@@ -553,7 +716,7 @@ SeedType AlmanacDialog::SeedHitTest(int x, int y)
 				int aSeedX, aSeedY;
 				GetSeedPosition(aSeedType, aSeedX, aSeedY);
 				Rect aSeedRect = aSeedType == SeedType::SEED_IMITATER ? Rect(aSeedX, aSeedY, 34, 46) : Rect(aSeedX, aSeedY, SEED_PACKET_WIDTH, SEED_PACKET_HEIGHT);
-				if (aSeedRect.Contains(x, y)) return aSeedType;
+				if ((cSeedClipRect.Contains(x, y) || aSeedType == SeedType::SEED_IMITATER) && aSeedRect.Contains(x, y)) return aSeedType;
 			}
 		}
 	}
@@ -625,7 +788,7 @@ void AlmanacDialog::GetZombiePosition(ZombieType theZombieType, int& x, int& y)
 	else
 	{
 		x = theZombieType % 5 * 85 + 22 + BOARD_ADDITIONAL_WIDTH;
-		y = theZombieType / 5 * 80 + 86 + BOARD_OFFSET_Y;
+		y = theZombieType / 5 * 80 + 86 - mScrollPosition + BOARD_OFFSET_Y;
 	}
 }
 
@@ -640,7 +803,7 @@ ZombieType AlmanacDialog::ZombieHitTest(int x, int y)
 			{
 				int aZombieX, aZombieY;
 				GetZombiePosition(aZombieType, aZombieX, aZombieY);
-				if (Rect(aZombieX, aZombieY, 76, 76).Contains(x, y))
+				if (Rect(aZombieX, aZombieY, 76, 76).Contains(x, y) && cZombieClipRect.Contains(x, y))
 					return aZombieType;
 			}
 		}
@@ -651,6 +814,11 @@ ZombieType AlmanacDialog::ZombieHitTest(int x, int y)
 void AlmanacDialog::MouseUp(int x, int y, int theClickCount)
 {
 	(void)x;(void)y;(void)theClickCount;
+	if (mDescriptionSliderDragging)
+	{
+		mDescriptionSliderDragging = false;
+		return;
+	}
 	if (mPlantButton->IsMouseOver())		SetPage(ALMANAC_PAGE_PLANTS);
 	else if (mZombieButton->IsMouseOver())	SetPage(ALMANAC_PAGE_ZOMBIES);
 	else if (mCloseButton->IsMouseOver())	mApp->KillAlmanacDialog();
@@ -660,6 +828,13 @@ void AlmanacDialog::MouseUp(int x, int y, int theClickCount)
 void AlmanacDialog::MouseDown(int x, int y, int theClickCount)
 {
 	(void)theClickCount;
+	if (mDescriptionSliderRect.Contains(x, y))
+	{
+		mDescriptionYOffset = y - (mDescriptionOverfill ? (mDescriptionScroll / mDescriptionMaxScroll) * (mDescriptionRect.mHeight - ALMANAC_DESCRIPTION_MIN_HEIGHT) : 0);
+		mDescriptionOffsetScroll = mDescriptionScroll;
+		mDescriptionSliderDragging = true;
+		return;
+	}
 	if (mPlantButton->IsMouseOver() || mCloseButton->IsMouseOver() || mIndexButton->IsMouseOver())
 		mApp->PlaySample(Sexy::SOUND_TAP);
 	if (mZombieButton->IsMouseOver())
@@ -673,11 +848,51 @@ void AlmanacDialog::MouseDown(int x, int y, int theClickCount)
 		mApp->PlaySample(Sexy::SOUND_TAP);
 	}
 	ZombieType aZombieType = ZombieHitTest(x, y);
-	if (aZombieType != ZombieType::ZOMBIE_INVALID && aZombieType != mSelectedZombie)
+	if (aZombieType != ZombieType::ZOMBIE_INVALID && aZombieType != mSelectedZombie && ZombieIsShown(aZombieType))
 	{
 		mSelectedZombie = aZombieType;
 		SetupZombie();
 		mApp->PlaySample(Sexy::SOUND_TAP);
+	}
+}
+
+void AlmanacDialog::MouseDrag(int x, int y)
+{
+	if (mDescriptionSliderDragging)
+	{
+		if (mDescriptionOverfill)
+		{
+			mDescriptionScroll = ((y - mDescriptionYOffset) / (mDescriptionRect.mHeight - ALMANAC_DESCRIPTION_MIN_HEIGHT)) * mDescriptionMaxScroll;
+		}
+		else
+		{
+			mDescriptionScroll = y - (mDescriptionYOffset - mDescriptionOffsetScroll);
+		}
+		mDescriptionScroll = std::clamp(mDescriptionScroll, 0.0f, (float)mDescriptionMaxScroll);
+	}
+}
+
+void AlmanacDialog::MouseWheel(int theDelta)
+{
+	if (mIsOverDescription && !mDescriptionSliderDragging)
+	{
+		mDescriptionScroll -= mDescriptionLineSpacing * theDelta;
+		mDescriptionScroll = std::clamp(mDescriptionScroll, 0.0f, (float)mDescriptionMaxScroll);
+	}
+	else
+	{
+		mScrollAmount -= mBaseScrollSpeed * theDelta;
+		mScrollAmount -= mScrollAmount * mScrollAccel;
+	}
+}
+
+void AlmanacDialog::SliderVal(int theId, double theVal)
+{
+	switch (theId)
+	{
+	case 0:
+		mScrollPosition = theVal * mMaxScrollPosition;
+		break;
 	}
 }
 

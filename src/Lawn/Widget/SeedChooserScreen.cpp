@@ -41,6 +41,11 @@
 #include "../../PvzpLib/PvzpStringFile.h"
 #include "widget/WidgetManager.h"
 #include <algorithm>
+#include <cmath>
+
+const Rect cSeedClipRect = Rect(0, 123, BOARD_WIDTH, 420 + SEED_CHOOSER_EXTRA_HEIGHT);
+const int cSeedPacketYOffset = 2;
+const int cSeedPacketRows = 8;
 
 SeedChooserScreen::SeedChooserScreen()
 {
@@ -54,6 +59,9 @@ SeedChooserScreen::SeedChooserScreen()
 	mLastMouseY = -1;
 	mChooseState = CHOOSE_NORMAL;
 	mViewLawnTime = 0;
+	mScrollAmount = 0;
+	mScrollPosition = 0;
+	mMaxScrollPosition = 0;
 	mToolTip = new ToolTipWidget();
 	mToolTip->mMaxLinesWidth = mApp->GetInteger("SEED_CHOOSER_SCREEN_TOOL_TIP_MAX_LINE_WIDTH", 0);
 	mToolTipSeed = -1;
@@ -200,9 +208,16 @@ SeedChooserScreen::SeedChooserScreen()
 		aStarFruit.mSeedIndexInBank = 0;
 		mSeedsInBank++;
 	}
-	if (mApp->IsAdventureMode() && !mApp->IsFirstTimeAdventureMode())
+	if ((mApp->mCrazySeeds && mApp->mPlayingQuickplay) || (mApp->IsAdventureMode() && !mApp->IsFirstTimeAdventureMode() && !mApp->mPlayingQuickplay))
 		CrazyDavePickSeeds();
 	UpdateImitaterButton();
+
+	mSlider = new Sexy::Slider(Sexy::IMAGE_OPTIONS_SLIDERSLOT_PLANT, Sexy::IMAGE_OPTIONS_SLIDERKNOB_PLANT, 0, this);
+	mSlider->SetValue(std::max(0.0f, std::min(mMaxScrollPosition, mScrollPosition)));
+	mSlider->mHorizontal = false;
+	mSlider->mThumbOffsetX = -14;
+	mSlider->mNoDraw = true;
+	ResizeSlider();
 }
 
 int SeedChooserScreen::PickFromWeightedArrayUsingSpecialRandSeed(PvzpWeightedArray* theArray, int theCount, MTRand& theLevelRNG)
@@ -291,18 +306,8 @@ void SeedChooserScreen::GetSeedPositionInChooser(int theIndex, int& x, int& y)
 	}
 	else
 	{
-		int aRow = theIndex / 8;
-		int aCol = theIndex % 8;
-
-		x = aCol * 53 + 22;
-		if (Has7Rows())
-		{
-			y = aRow * 70 + 123;
-		}
-		else
-		{
-			y = aRow * 73 + 128;
-		}
+		x = theIndex % cSeedPacketRows * 53 + 22;
+		y = theIndex / cSeedPacketRows * (SEED_PACKET_HEIGHT + cSeedPacketYOffset) + (SEED_PACKET_HEIGHT + 53) - mScrollPosition;
 	}
 }
 
@@ -320,8 +325,21 @@ SeedChooserScreen::~SeedChooserScreen()
 	if (mAlmanacButton) delete mAlmanacButton;
 	if (mImitaterButton) delete mImitaterButton;
 	if (mStoreButton) delete mStoreButton;
+	if (mSlider) delete mSlider;
 	if (mToolTip) delete mToolTip;
 	if (mMenuButton) delete mMenuButton;
+}
+
+void SeedChooserScreen::AddedToManager(WidgetManager* theWidgetManager)
+{
+	Widget::AddedToManager(theWidgetManager);
+	AddWidget(mSlider);
+}
+
+void SeedChooserScreen::RemovedFromManager(WidgetManager* theWidgetManager)
+{
+	Widget::RemovedFromManager(theWidgetManager);
+	RemoveWidget(mSlider);
 }
 
 unsigned int SeedChooserScreen::SeedNotRecommendedToPick(SeedType theSeedType)
@@ -359,10 +377,13 @@ void SeedChooserScreen::Draw(Graphics* g)
 	}
 	// the localization key name is wrong
 	PvzpDrawString(g, "[CHOOSE_YOUR_PLANTS]", 229, 110, Sexy::FONT_DWARVENTODCRAFT18YELLOW, Color::White, DS_ALIGN_CENTER);
+	mSlider->SliderDraw(g);
 
 	int aNumSeeds = Has7Rows() ? 48 : 40;
 	for (SeedType aSeedShadow = SEED_PEASHOOTER; aSeedShadow < aNumSeeds; aSeedShadow = (SeedType)(aSeedShadow + 1))
 	{
+		if (aSeedShadow != SEED_IMITATER)
+			g->SetClipRect(cSeedClipRect);
 		int x, y;
 		GetSeedPositionInChooser(aSeedShadow, x, y);
 		if (aSeedShadow == SEED_IMITATER)
@@ -382,6 +403,7 @@ void SeedChooserScreen::Draw(Graphics* g)
 		{
 			g->DrawImage(Sexy::IMAGE_SEEDPACKETSILHOUETTE, x, y);
 		}
+		g->ClearClipRect();
 	}
 
 	int aNumSeedsInBank = mBoard->mSeedBank->mNumPackets;
@@ -407,15 +429,27 @@ void SeedChooserScreen::Draw(Graphics* g)
 				SeedNotAllowedDuringTrial(aSeedType))
 				aGrayed = true;
 
-			int aPosX = aChosenSeed.mX;
-			int aPosY = aChosenSeed.mY;
-			if (aSeedState == SEED_IN_BANK)
+			int aPosX, aPosY;
+			if (aSeedState == SEED_IN_CHOOSER)
 			{
-				aPosX -= mX;
-				aPosY -= mY;
+				if (aSeedType != SEED_IMITATER)
+					g->SetClipRect(cSeedClipRect);
+				GetSeedPositionInChooser(aSeedType, aPosX, aPosY);
+			}
+			else if (aSeedState == SEED_IN_BANK)
+			{
+				g->ClearClipRect();
+				aPosX = aChosenSeed.mX - mX;
+				aPosY = aChosenSeed.mY - mY;
+			}
+			else
+			{
+				aPosX = aChosenSeed.mX;
+				aPosY = aChosenSeed.mY;
 			}
 			DrawSeedPacket(g, aPosX, aPosY, aChosenSeed.mSeedType, aChosenSeed.mImitaterType, 0, aGrayed ? 115 : 255, true, false);
 		}
+		g->ClearClipRect();
 	}
 
 	mImitaterButton->Draw(g);
@@ -494,7 +528,7 @@ void SeedChooserScreen::LandFlyingSeed(ChosenSeed& theChosenSeed)
 	else if (theChosenSeed.mSeedState == SEED_FLYING_TO_CHOOSER)
 	{
 		theChosenSeed.mX = theChosenSeed.mEndX;
-		theChosenSeed.mY = theChosenSeed.mEndY;
+		theChosenSeed.mY = theChosenSeed.mEndY + (theChosenSeed.mSeedType == SEED_IMITATER ? 0 : mScrollPosition);
 		theChosenSeed.mTimeStartMotion = 0;
 		theChosenSeed.mTimeEndMotion = 0;
 		theChosenSeed.mSeedState = SEED_IN_CHOOSER;
@@ -510,7 +544,7 @@ void SeedChooserScreen::LandFlyingSeed(ChosenSeed& theChosenSeed)
 
 void SeedChooserScreen::UpdateCursor()
 {
-	if (mApp->GetDialogCount() || mBoard->mCutScene->IsInShovelTutorial() || mApp->mGameMode == GAMEMODE_UPSELL) return;
+	if (mApp->GetDialogCount() || mBoard->mCutScene->IsInShovelTutorial() || mApp->mGameMode == GAMEMODE_UPSELL || mSlider->mIsOver || mSlider->mDragging) return;
 	SeedType aMouseSeedType = SeedHitTest(mLastMouseX, mLastMouseY);
 	if (aMouseSeedType != SEED_NONE)
 	{
@@ -530,6 +564,21 @@ void SeedChooserScreen::UpdateCursor()
 void SeedChooserScreen::Update()
 {
 	Widget::Update();
+
+	mMaxScrollPosition = std::max(0, (((NUM_SEEDS_IN_CHOOSER - 2) / cSeedPacketRows) * (SEED_PACKET_HEIGHT + cSeedPacketYOffset)) + SEED_PACKET_HEIGHT - cSeedClipRect.mHeight);
+	mSlider->mVisible = mMaxScrollPosition != 0;
+	if (mSlider->mVisible)
+	{
+		mScrollPosition += mScrollAmount * (mBaseScrollSpeed + std::abs(mScrollAmount) * mScrollAccel);
+		mScrollPosition = std::clamp(mScrollPosition, 0.0f, mMaxScrollPosition);
+		mScrollAmount *= (1.0f - mScrollAccel);
+		mSlider->SetValue(std::max(0.0f, std::min(mMaxScrollPosition, mScrollPosition)) / mMaxScrollPosition);
+	}
+	else
+	{
+		mScrollPosition = 0;
+		mScrollAmount = 0;
+	}
 
 	mLastMouseX = mApp->mWidgetManager->mLastMouseX;
 	mLastMouseY = mApp->mWidgetManager->mLastMouseY;
@@ -567,6 +616,14 @@ void SeedChooserScreen::Update()
 	UpdateViewLawn();
 	UpdateCursor();
 	MarkDirty();
+}
+
+void SeedChooserScreen::MouseWheel(int theDelta)
+{
+	if (mChooseState != CHOOSE_NORMAL) return;
+
+	mScrollAmount -= mBaseScrollSpeed * theDelta;
+	mScrollAmount -= mScrollAmount * mScrollAccel;
 }
 
 bool SeedChooserScreen::DisplayRepickWarningDialog(const char* theMessage)
@@ -788,7 +845,18 @@ SeedType SeedChooserScreen::SeedHitTest(int x, int y)
 		{
 			ChosenSeed& aChosenSeed = mChosenSeeds[aSeedType];
 			if (!mApp->HasSeedType(aSeedType) || aChosenSeed.mSeedState == SEED_PACKET_HIDDEN) continue;
-			if (Rect(aChosenSeed.mX, aChosenSeed.mY, SEED_PACKET_WIDTH, SEED_PACKET_HEIGHT).Contains(x, y)) return aSeedType;
+			if (aChosenSeed.mSeedState == SEED_IN_CHOOSER)
+			{
+				Rect aChosenSeedRect = Rect(aChosenSeed.mX, aChosenSeed.mY + (aChosenSeed.mSeedType != SEED_IMITATER ? -mScrollPosition : 0), SEED_PACKET_WIDTH, SEED_PACKET_HEIGHT);
+				if ((aChosenSeed.mSeedType != SEED_IMITATER ? cSeedClipRect.Contains(x, y) : true) && aChosenSeedRect.Contains(x, y))
+				{
+					return aSeedType;
+				}
+			}
+			else if (aChosenSeed.mSeedState == SEED_IN_BANK)
+			{
+				if (Rect(aChosenSeed.mX, aChosenSeed.mY, SEED_PACKET_WIDTH, SEED_PACKET_HEIGHT).Contains(x, y)) return aSeedType;
+			}
 		}
 	}
 	return SEED_NONE;
@@ -854,7 +922,7 @@ void SeedChooserScreen::ClickedSeedInChooser(ChosenSeed& theChosenSeed)
 	theChosenSeed.mTimeStartMotion = mSeedChooserAge;
 	theChosenSeed.mTimeEndMotion = mSeedChooserAge + 25;
 	theChosenSeed.mStartX = theChosenSeed.mX;
-	theChosenSeed.mStartY = theChosenSeed.mY;
+	theChosenSeed.mStartY = theChosenSeed.mY - (theChosenSeed.mSeedType == SEED_IMITATER ? 0 : mScrollPosition);
 	GetSeedPositionInBank(mSeedsInBank, theChosenSeed.mEndX, theChosenSeed.mEndY);
 	theChosenSeed.mSeedState = SEED_FLYING_TO_BANK;
 	theChosenSeed.mSeedIndexInBank = mSeedsInBank;
@@ -1021,9 +1089,15 @@ void SeedChooserScreen::MouseDown(int x, int y, int theClickCount)
 	{
 		mApp->PlaySample(Sexy::SOUND_GRAVEBUTTON);
 	}
-	else if (mStartButton->IsMouseOver() || mAlmanacButton->IsMouseOver() || mStoreButton->IsMouseOver())
+	else if (mStartButton->IsMouseOver() || mAlmanacButton->IsMouseOver())
 	{
 		mApp->PlaySample(Sexy::SOUND_TAP);
+	}
+	else if (mStoreButton->IsMouseOver())
+	{
+		mApp->PlaySample(Sexy::SOUND_TAP);
+		mScrollAmount = 0;
+		mScrollPosition = 0;
 	}
 	else if (mImitaterButton->IsMouseOver())
 	{
@@ -1159,4 +1233,20 @@ void SeedChooserScreen::UpdateAfterPurchase()
 	}
 	EnableStartButton(mSeedsInBank == mBoard->mSeedBank->mNumPackets);
 	UpdateImitaterButton();
+	ResizeSlider();
+}
+
+void SeedChooserScreen::ResizeSlider()
+{
+	mSlider->Resize(472, 92, 40, Sexy::IMAGE_SEEDCHOOSER_BACKGROUND->mHeight - (mApp->HasSeedType(SEED_IMITATER) ? Sexy::IMAGE_SEEDCHOOSER_IMITATERADDON->mHeight + 4 : 0) - 11);
+}
+
+void SeedChooserScreen::SliderVal(int theId, double theVal)
+{
+	switch (theId)
+	{
+	case 0:
+		mScrollPosition = theVal * mMaxScrollPosition;
+		break;
+	}
 }

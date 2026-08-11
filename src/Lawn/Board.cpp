@@ -370,6 +370,7 @@ void Board::TryToSaveGame()
 bool Board::NeedSaveGame()
 {
 	return
+		!mApp->mPlayingQuickplay &&
 		mApp->mGameMode != GameMode::GAMEMODE_CHALLENGE_ICE &&
 		mApp->mGameMode != GameMode::GAMEMODE_UPSELL &&
 		mApp->mGameMode != GameMode::GAMEMODE_INTRO &&
@@ -1378,7 +1379,7 @@ void Board::InitLevel()
 	{
 		mApp->mMusic->StopAllMusic();
 	}
-	mLevel = mApp->IsAdventureMode() ? mApp->mPlayerInfo->mLevel : 0;
+	mLevel = mApp->IsAdventureMode() ? (mApp->mPlayingQuickplay ? mApp->mQuickLevel : mApp->mPlayerInfo->mLevel) : 0;
 	PickBackground();
 	InitZombieWaves();
 	if (aGameMode == GameMode::GAMEMODE_CHALLENGE_BEGHOULED || aGameMode == GameMode::GAMEMODE_CHALLENGE_BEGHOULED_TWIST ||
@@ -1777,6 +1778,22 @@ void Board::UpdateLevelEndSequence()
 	mBoardFadeOutCounter--;
 	if (mBoardFadeOutCounter == 0)
 	{
+		if (mApp->mPlayingQuickplay && mLevel != FINAL_LEVEL)
+		{
+			LawnDialog* aDialog = (LawnDialog*)mApp->DoDialog(
+				Dialogs::DIALOG_MESSAGE,
+				true,
+				mApp->GetString("[QUICK_PLAY_HEADER]", "Play Next Level?"),
+				mApp->GetString("[QUICK_PLAY]", "Would you like to play the next level?"),
+				"",
+				Dialog::BUTTONS_YES_NO
+			);
+			if (aDialog->WaitForResult(true) == Dialog::ID_YES)
+			{
+				mApp->mQuickLevel++;
+				mApp->StartQuickPlay();
+			}
+		}
 		mLevelComplete = true;
 		return;
 	}
@@ -1797,7 +1814,7 @@ void Board::UpdateLevelEndSequence()
 		}
 	}
 
-	if (CanDropLoot() && !IsSurvivalStageWithRepick())
+	if (CanDropLoot() && !IsSurvivalStageWithRepick() && !mApp->mPlayingQuickplay)
 	{
 		mScoreNextMowerCounter = 40;
 		LawnMower* aLawnMower = GetBottomLawnMower();
@@ -8562,7 +8579,7 @@ void Board::AddSunMoney(int theAmount)
 {
 	mSunMoney += theAmount;
 	mSunMoney = std::min(mSunMoney, 9990);
-	if (mSunMoney >= 8000)
+	if (mSunMoney >= 8000 && !mApp->mPlayingQuickplay)
 		ReportAchievement::GiveAchievement(mApp, SunnyDays, true);
 }
 
@@ -9265,6 +9282,9 @@ void Board::DropLootPiece(int thePosX, int thePosY, int theDropFactor)
 			return;
 		}
 	}
+
+	if (mApp->mPlayingQuickplay)
+		return;
 
 	if (mTotalSpawnedWaves > 70)
 		return;

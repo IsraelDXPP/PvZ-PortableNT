@@ -134,8 +134,9 @@ __attribute__((weak)) float __floatdisf(int64_t a) {
 
 // ObjC stubs — these are needed because SDL2 references UIPointerStyle (iOS 13.4+)
 // which doesn't exist on iOS 9/10. We provide a null class so ObjC messaging nil is safe.
-__attribute__((weak)) void objc_msgSend_stret() {}
-
+// NOTE: do NOT define objc_msgSend_stret here. A weak no-op definition for it swallows
+// every struct-returning message (bounds/frame/size) as a no-op, producing NaN rects
+// and CALayerInvalidGeometry crashes at launch. Let it bind to libobjc's real one.
 __attribute__((weak)) void* OBJC_CLASS_$_UIPointerStyle;
 __attribute__((weak)) void* OBJC_CLASS_$_UIPointerInteraction;
 __attribute__((weak)) void* OBJC_CLASS_$_UIPointerRegion;

@@ -32,6 +32,7 @@
 #include "graphics/Graphics.h"
 #include "graphics/MemoryImage.h"
 #include "SexyAppBase.h"
+#include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <mutex>
@@ -1169,6 +1170,33 @@ void GLInterface::UpdateViewport()
 	}
 
 	mInputSourceRect = Rect(ivx, ivy, ivw, ivh);
+
+#ifdef __IPHONEOS__
+	// TEMP DIAGNOSTIC: dump real window/drawable sizes to Documents for device inspection
+	static int sDiagCount = 0;
+	if (sDiagCount < 10)
+	{
+		Uint32 wf = SDL_GetWindowFlags((SDL_Window*)mApp->mWindow);
+		std::string aPath = Sexy::GetAppDataPath("viewport_diag.txt");
+		FILE* aF = fopen(Sexy::PathFromU8(aPath).string().c_str(), "w");
+		if (aF)
+		{
+			fprintf(aF,
+				"mWidth=%d mHeight=%d\n"
+				"window=%dx%d drawable=%dx%d\n"
+				"isWindowed=%d\n"
+				"winFlags=0x%X (FULLSCREEN_DESKTOP=0x%X)\n"
+				"viewport=%d,%d %dx%d\n",
+				mWidth, mHeight,
+				ww, wh, width, height,
+				mApp->mIsWindowed,
+				wf, (unsigned)SDL_WINDOW_FULLSCREEN_DESKTOP,
+				vx, vy, vw, vh);
+			fclose(aF);
+		}
+		sDiagCount++;
+	}
+#endif
 }
 
 int GLInterface::Init(bool IsWindowed)

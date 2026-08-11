@@ -190,7 +190,7 @@ SexyAppBase::SexyAppBase()
 		const char* aHome = std::getenv("HOME");
 		if (aHome != nullptr && aHome[0] != '\0')
 		{
-			mResourceDir = (std::filesystem::path(aHome) / "Documents").generic_string() + "/";
+			mResourceDir = (Sexy::filesystem::path(aHome) / "Documents").generic_string() + "/";
 		}
 		else
 		{
@@ -619,7 +619,7 @@ static std::vector<std::string> FindDemoFiles(std::string_view theDemoPrefix, bo
 
 	const std::string aFilter = std::string(theDemoPrefix) + '-';
 	std::error_code anError;
-	for (const std::filesystem::directory_entry& anEntry : std::filesystem::directory_iterator(".", anError))
+	for (const Sexy::filesystem::directory_entry& anEntry : Sexy::filesystem::directory_iterator(".", anError))
 	{
 		std::error_code aTypeError;
 		std::string aName = PathToU8(anEntry.path().filename());
@@ -690,7 +690,7 @@ void SexyAppBase::WriteDemoBuffer()
 				for (size_t i = mDemoRecordFileLimit; i < aDemoFiles.size(); ++i)
 				{
 					std::error_code anError;
-					std::filesystem::remove(PathFromU8(aDemoFiles[i]), anError);
+					Sexy::filesystem::remove(PathFromU8(aDemoFiles[i]), anError);
 				}
 			}
 		}
@@ -3075,14 +3075,14 @@ void SexyAppBase::ShowResourceError(bool doExit)
 	const std::string& aError = mResourceManager->GetErrorText();
 #if defined(__IPHONEOS__)
 	// Documents folder is only shown in the Files app / iTunes once it contains a file
-	const std::filesystem::path aResourceDir(GetResourceFolder());
+	const Sexy::filesystem::path aResourceDir(GetResourceFolder());
 	const bool aHasGameResources = !aResourceDir.empty() &&
-		std::filesystem::is_regular_file(aResourceDir / "main.pak") &&
-		std::filesystem::is_directory(aResourceDir / "properties");
+		Sexy::filesystem::is_regular_file(aResourceDir / "main.pak") &&
+		Sexy::filesystem::is_directory(aResourceDir / "properties");
 	if (!aHasGameResources)
 	{
-		const std::filesystem::path aReadmePath = aResourceDir / "README.txt";
-		if (!aResourceDir.empty() && !std::filesystem::exists(aReadmePath))
+		const Sexy::filesystem::path aReadmePath = aResourceDir / "README.txt";
+		if (!aResourceDir.empty() && !Sexy::filesystem::exists(aReadmePath))
 			std::ofstream(aReadmePath, std::ios::out | std::ios::trunc)
 				<< "Place your `main.pak` and `properties/` folder here to play the game.\n";
 	}
@@ -3454,7 +3454,7 @@ void SexyAppBase::Init()
 		const char* aHome = std::getenv("HOME");
 		if (aHome != nullptr && aHome[0] != '\0')
 		{
-			SetAppDataFolder((std::filesystem::path(aHome) / "Documents").generic_string() + "/");
+			SetAppDataFolder((Sexy::filesystem::path(aHome) / "Documents").generic_string() + "/");
 		}
 	}
 #elif defined(__EMSCRIPTEN__)

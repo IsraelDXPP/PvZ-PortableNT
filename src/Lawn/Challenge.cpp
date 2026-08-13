@@ -5201,7 +5201,7 @@ void Challenge::TreeOfWisdomDraw(Graphics* g)
 	aReanimTree->mEnableExtraOverlayDraw = false;
 	aReanimTree->OverrideScale(1.25f, 1.25f);
 	aReanimTree->SetPosition(BOARD_ADDITIONAL_WIDTH / 2, 0);
-	aReanimTree->DrawRenderGroup(g, 0);  // draw the background
+	aReanimTree->DrawRenderGroup(g, 1);  // draw the background
 	for (int i = 0; i < 6; i++)
 	{
 		mApp->ReanimationGet(mReanimClouds[i])->SetPosition(BOARD_ADDITIONAL_WIDTH / 2, 0);
@@ -5288,7 +5288,7 @@ void Challenge::TreeOfWisdomInit()
 	ReanimatorEnsureDefinitionLoaded(REANIM_TREEOFWISDOM, true);
 	Reanimation* aReanimTree = mApp->AddReanimation(0.5f, 0.5f, 0, REANIM_TREEOFWISDOM);
 	aReanimTree->mIsAttachment = true;
-	aReanimTree->AssignRenderGroupToPrefix("bg", 0);
+	aReanimTree->AssignRenderGroupToPrefix("bg", 1);
 	aReanimTree->AssignRenderGroupToPrefix("tree", 2);
 	aReanimTree->AssignRenderGroupToPrefix("grass", 3);
 	aReanimTree->AssignRenderGroupToPrefix("overlay", 4);

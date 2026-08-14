@@ -387,7 +387,7 @@ elseif(PVZ_IS_UWP)
 		${CMAKE_CURRENT_SOURCE_DIR}/uwp/PvzpUwpMetadata.cpp
 		# /std:c++17 must come AFTER cxx_std_20 (MSVC uses the last /std flag;
 		# /ZW is incompatible with /std:c++20).
-		PROPERTIES COMPILE_OPTIONS "/std:c++17" "/ZW"
+		PROPERTIES COMPILE_OPTIONS "/std:c++17;/ZW"
 	)
 
 	# UWP entry point (SDL provides no SDL2main.lib for Windows Store) plus
@@ -398,7 +398,7 @@ elseif(PVZ_IS_UWP)
 	)
 	set_source_files_properties(
 		${CMAKE_CURRENT_SOURCE_DIR}/src/SexyAppFramework/platform/uwp/SDL_winrt_main_NonXAML.cpp
-		PROPERTIES COMPILE_OPTIONS "/std:c++17" "/ZW"
+		PROPERTIES COMPILE_OPTIONS "/std:c++17;/ZW"
 	)
 
 	# Generate the AppX manifest (version is padded to the 4-part form)

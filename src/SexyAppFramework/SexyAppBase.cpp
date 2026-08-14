@@ -278,7 +278,7 @@ SexyAppBase::SexyAppBase()
 	mLastDrawTick = SDL_GetTicks();
 	mNextDrawTick = SDL_GetTicks();
 	mSysCursor = true;
-#if defined(__IPHONEOS__) || (defined(__ANDROID__) && !defined(__TERMUX__)) || defined(__SWITCH__)
+#if defined(__IPHONEOS__) || (defined(__ANDROID__) && !defined(__TERMUX__)) || defined(__SWITCH__) || defined(PVZ_UWP) || defined(__WINRT__)
 	mForceFullscreen = true;
 #else
 	mForceFullscreen = false;
@@ -2404,7 +2404,7 @@ void SexyAppBase::StartCursorThread()
 
 void SexyAppBase::SwitchScreenMode(bool wantWindowed, bool is3d, bool force)
 {
-#if defined(__IPHONEOS__) || (defined(__ANDROID__) && !defined(__TERMUX__)) || defined(__SWITCH__)
+#if defined(__IPHONEOS__) || (defined(__ANDROID__) && !defined(__TERMUX__)) || defined(__SWITCH__) || defined(PVZ_UWP) || defined(__WINRT__)
 	// Mobile/console platforms are always fullscreen; skip mode switching entirely.
 	Set3DAcclerated(is3d);
 	return;

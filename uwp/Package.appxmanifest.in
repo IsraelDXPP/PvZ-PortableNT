@@ -6,7 +6,8 @@
 
   <Identity Name="PvZPortable.Community"
             Publisher="@PVZP_UWP_PUBLISHER@"
-            Version="@PVZP_MANIFEST_VERSION@" />
+            Version="@PVZP_MANIFEST_VERSION@"
+            ProcessorArchitecture="x64" />
 
   <Properties>
     <DisplayName>PvZ Portable</DisplayName>

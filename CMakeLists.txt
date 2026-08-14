@@ -375,12 +375,20 @@ elseif(PVZ_IS_UWP)
 	target_compile_options(pvz-portable PRIVATE /utf-8)
 	set_target_properties(pvz-portable PROPERTIES WIN32_EXECUTABLE TRUE)
 
-	# UWP apps link against the app-container system library only
-	target_link_libraries(pvz-portable PRIVATE WindowsApp.lib)
-
-	# App-container linker mode: selects the UWP CRT init instead of the
-	# desktop one (fixes LNK2038 vccorlib/msvcrt mismatch + LNK2005).
-	target_link_options(pvz-portable PRIVATE /APPCONTAINER)
+	# vccorlib (auto-linked by /ZW) must be scanned BEFORE msvcrt, otherwise
+	# the linker pulls the desktop CRT app init (app_appinit.obj) and the
+	# __crtWinrtInitType symbols collide (LNK2038/LNK2005). Drop both from the
+	# default libs and link them explicitly, vccorlib first.
+	target_link_options(pvz-portable PRIVATE
+		/APPCONTAINER
+		/NODEFAULTLIB:vccorlib
+		/NODEFAULTLIB:msvcrt
+	)
+	target_link_libraries(pvz-portable PRIVATE
+		vccorlib.lib
+		msvcrt.lib
+		WindowsApp.lib
+	)
 
 	# Metadata anchor so the linker emits the app's .winmd (required by
 	# C++/CX-built packages). Compiled with /ZW (Windows Runtime extensions).

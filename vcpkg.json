@@ -1,5 +1,6 @@
 {
   "dependencies": [
+    "angle",
     "libjpeg-turbo",
     "libogg",
     "libopenmpt",

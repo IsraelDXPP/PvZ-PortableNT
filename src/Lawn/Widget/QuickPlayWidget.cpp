@@ -169,6 +169,8 @@ void QuickPlayWidget::Draw(Graphics* g)
 				mDisplayZombie->mPosX = -100 + BOARD_ADDITIONAL_WIDTH;
 				mDisplayZombie->mPosY = -20;
 			}
+			mDisplayZombie->mX = static_cast<int>(mDisplayZombie->mPosX);
+			mDisplayZombie->mY = static_cast<int>(mDisplayZombie->mPosY);
 			if (mDisplayZombie->BeginDraw(&aZombieGraphics))
 			{
 				if (mZombieType != ZombieType::ZOMBIE_BUNGEE && mZombieType != ZombieType::ZOMBIE_BOSS &&

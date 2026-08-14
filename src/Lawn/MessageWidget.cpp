@@ -310,7 +310,7 @@ void MessageWidget::DrawReanimatedText(Graphics* g, _Font* theFont, const Color&
 		aFinalColor.mAlpha = anAlpha;
 
 		aTransform.mTransX += aTextReanim->mOverlayMatrix.m02 + BOARD_ADDITIONAL_WIDTH;
-		aTransform.mTransY += aTextReanim->mOverlayMatrix.m12 + thePosY - BOARD_HEIGHT / 2;
+		aTransform.mTransY = thePosY;
 		if (mReanimType == ReanimationType::REANIM_TEXT_FADE_ON && mDisplayTime - mDuration < mSlideOffTime)
 		{
 			float aStretch = 1.0f - aTextReanim->mAnimTime;

@@ -9337,6 +9337,9 @@ bool Zombie::HasShadow()
 	if (mInPool)
 		return false;
 
+	if (mApp->mGameMode == GameMode::GAMEMODE_CHALLENGE_ZOMBIQUARIUM)
+		return false;
+
 	return mApp->mGameMode != GameMode::GAMEMODE_CHALLENGE_INVISIGHOUL || mFromWave == Zombie::ZOMBIE_WAVE_UI;
 }
 

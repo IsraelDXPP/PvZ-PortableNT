@@ -4807,7 +4807,7 @@ void Board::SpawnZombiesFromPool()
 		aGrid->mWeight = 0;
 
 		ZombieType aZombieType = PickGraveRisingZombieType();
-		Zombie* aZombie = AddZombieInRow(aZombieType, aGrid->mY, mCurrentWave);
+		Zombie* aZombie = AddZombieInRow(aZombieType, aGrid->mY, mCurrentWave, true);
 		if (aZombie == nullptr)
 		{
 			return;

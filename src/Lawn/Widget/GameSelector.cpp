@@ -88,7 +88,6 @@ GameSelector::GameSelector(LawnApp* theApp)
 
 	mAdventureButton->Resize(0, 0, Sexy::IMAGE_REANIM_SELECTORSCREEN_ADVENTURE_BUTTON->mWidth, 125);
 	mAdventureButton->mClip = false;
-	mAdventureButton->mBtnNoDraw = true;
 	mAdventureButton->mMouseVisible = false;
 	mAdventureButton->mPolygonShape[0] = SexyVector2(7.0f, 1.0f);
 	mAdventureButton->mPolygonShape[1] = SexyVector2(328.0f, 30.0f);

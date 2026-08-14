@@ -41,7 +41,7 @@ using namespace Sexy;
 #include <emscripten.h>
 #endif
 
-#ifdef _WIN32
+#if defined(_WIN32) && !defined(__WINRT__) && !defined(PVZ_UWP)
 static std::vector<std::string> gUtf8ArgsStorage;
 static std::vector<char*> gUtf8Argv;
 
@@ -90,7 +90,7 @@ int main(int argc, char** argv)
 	consoleDebugInit(debugDevice_SVC);
 #endif
 
-#ifdef _WIN32
+#if defined(_WIN32) && !defined(__WINRT__) && !defined(PVZ_UWP)
 	BuildUtf8ArgsFromWin32(argc, argv);
 #endif
 

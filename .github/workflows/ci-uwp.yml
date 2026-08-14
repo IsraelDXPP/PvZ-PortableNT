@@ -13,8 +13,6 @@ name: CI - UWP (Xbox One / Windows 10)
 on:
   push:
     branches: [main]
-  pull_request:
-    branches: [main]
   workflow_dispatch:
 
 jobs:
@@ -52,11 +50,20 @@ jobs:
             vcpkg-uwp-x64-
             vcpkg-uwp-
 
+      - name: Restore UWP build dir (incremental compile)
+        uses: actions/cache@v6
+        with:
+          path: build-uwp
+          key: uwp-build-${{ hashFiles('src/**', 'CMakeLists.txt', 'CMake/**', 'uwp/**') }}
+          restore-keys: |
+            uwp-build-
+
       - name: Setup vcpkg (manifest mode, x64-uwp triplet)
         uses: lukka/run-vcpkg@v11
         with:
           vcpkgJsonGlob: vcpkg.json
           runVcpkgInstall: true
+          doNotCache: false
 
       - name: Configure (WindowsStore / UWP toolchain)
         shell: pwsh
@@ -76,13 +83,17 @@ jobs:
           cmake --build build-uwp --config Release
           if ($LASTEXITCODE -ne 0) { throw "cmake build failed" }
 
+      - name: Stage artifacts
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path dist | Out-Null
+          Copy-Item build-uwp/pvz-portable.exe dist/
+          Copy-Item build-uwp/uwp/Package.appxmanifest dist/
+          Copy-Item -Recurse uwp/Assets dist/Assets
+
       - name: Upload UWP build artifacts
         uses: actions/upload-artifact@v7
         with:
           name: pvz-portable-uwp-x64
-          path: |
-            build-uwp/pvz-portable.exe
-            build-uwp/*.dll
-            build-uwp/uwp/Package.appxmanifest
-            uwp/Assets/
+          path: dist/
           if-no-files-found: error

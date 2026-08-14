@@ -264,7 +264,7 @@ else()
 		PNG::PNG
 		JPEG::JPEG
 		ZLIB::ZLIB
-		SDL2::SDL2main
+		$<$<NOT:$<BOOL:${PVZ_IS_UWP}>>:SDL2::SDL2main>
 		${SDL2_LINK_TARGET}
 		Threads::Threads
 	)
@@ -385,6 +385,17 @@ elseif(PVZ_IS_UWP)
 	)
 	set_source_files_properties(
 		${CMAKE_CURRENT_SOURCE_DIR}/uwp/PvzpUwpMetadata.cpp
+		PROPERTIES COMPILE_OPTIONS "/ZW"
+	)
+
+	# UWP entry point (SDL provides no SDL2main.lib for Windows Store) plus
+	# the WinRT cursor resources. Vendored from SDL's src/main/winrt (zlib).
+	target_sources(pvz-portable PRIVATE
+		${CMAKE_CURRENT_SOURCE_DIR}/src/SexyAppFramework/platform/uwp/SDL_winrt_main_NonXAML.cpp
+		${CMAKE_CURRENT_SOURCE_DIR}/src/SexyAppFramework/platform/uwp/SDL2-WinRTResources.rc
+	)
+	set_source_files_properties(
+		${CMAKE_CURRENT_SOURCE_DIR}/src/SexyAppFramework/platform/uwp/SDL_winrt_main_NonXAML.cpp
 		PROPERTIES COMPILE_OPTIONS "/ZW"
 	)
 

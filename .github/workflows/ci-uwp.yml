@@ -108,9 +108,10 @@ jobs:
           Copy-Item build-uwp/uwp/Package.appxmanifest dist/
           Copy-Item -Recurse uwp/Assets dist/Assets
           # Game + ANGLE DLLs from the vcpkg x64-uwp manifest install (SDL2,
-          # jpeg, png, openmpt, libEGL, libGLESv2, ...). UWP apps must ship
-          # every non-system DLL next to the exe.
-          Copy-Item "vcpkg_installed/x64-uwp/bin/*.dll" dist/
+          # jpeg, png, openmpt, libEGL, libGLESv2, ...). The vcpkg toolchain
+          # re-installs the manifest into the CMake build dir during
+          # configure. UWP apps must ship every non-system DLL next to the exe.
+          Copy-Item "build-uwp/vcpkg_installed/x64-uwp/bin/*.dll" dist/
           # UWP CRT runtime DLLs (vcruntime140_app, msvcp140_app, vccorlib140,
           # concrt140_app, ...) from the VC redist onecore app layout.
           $vs = "C:\Program Files\Microsoft Visual Studio\2022\Enterprise"

@@ -3411,6 +3411,12 @@ static inline int64_t DemoWallSeconds(const tm& theTM)
 	return aDays.time_since_epoch().count() * 86400LL + theTM.tm_hour * 3600 + theTM.tm_min * 60 + theTM.tm_sec;
 }
 
+#if defined(PVZ_UWP) || defined(__WINRT__)
+// Implemented in uwp/PvzpUwpMetadata.cpp (C++/CX). Returns the absolute path
+// of this app's LocalState folder, or an empty string on failure.
+std::string PvzpUwpGetLocalStatePath();
+#endif
+
 void SexyAppBase::Init()
 {
 	mPrimaryThreadId = std::this_thread::get_id();
@@ -3423,6 +3429,22 @@ void SexyAppBase::Init()
 	{
 		SetResourceFolder(mResourceDir);
 	}
+
+#if defined(PVZ_UWP) || defined(__WINRT__)
+	// UWP (Xbox): the package is a data-less appx, so the resource folder from
+	// SDL_GetBasePath() (the read-only package dir) holds no game data. Fall
+	// back to the app's LocalState folder, which the user seeds via the device
+	// portal file explorer (LocalAppData\<PackageFamilyName>\LocalState).
+	if (!Sexy::filesystem::is_regular_file(Sexy::GetResourcePath("main.pak")))
+	{
+		const std::string aLocalState = PvzpUwpGetLocalStatePath();
+		if (!aLocalState.empty() &&
+			Sexy::filesystem::is_regular_file(Sexy::filesystem::path(aLocalState) / "main.pak"))
+		{
+			SetResourceFolder(aLocalState + "/");
+		}
+	}
+#endif
 
 	gPakInterface->AddPakFile(GetResourcePath("main.pak"));
 

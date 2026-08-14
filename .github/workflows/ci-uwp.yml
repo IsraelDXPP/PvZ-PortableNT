@@ -1,10 +1,11 @@
 # Experimental UWP (Xbox One / Windows 10) build.
 #
-# STATUS: this target is still being verified — the WinRT toolchain
-# (SDL2 winrt backend + ANGLE) and the vcpkg x64-uwp triplet for all game
-# deps may need fixes. This workflow is intentionally separate from ci.yml
-# so it never blocks the main green build; treat failures here as the
-# toolchain iteration loop until the UWP port builds clean.
+# Builds the game for the Windows Store (x64) target and, on success,
+# packages the staged files into a signed .appx using makeappx + signtool.
+# The appx deliberately excludes the copyrighted game data (main.pak and the
+# properties/ folder); on Xbox the user seeds those into the app's LocalState
+# folder via the device portal file explorer. The signing cert is a persistent
+# self-signed dev cert (base64 pfx in the PVZ_UWP_SIGN_PFX secret).
 #
 # Triggering: run manually (workflow_dispatch) or on any push to main.
 
@@ -135,9 +136,65 @@ jobs:
           Copy-Item $d3d dist/
           Get-ChildItem dist | Sort-Object Name | Select-Object Name, Length
 
+      - name: Build and sign AppX
+        shell: pwsh
+        env:
+          PVZ_UWP_SIGN_PFX: ${{ secrets.PVZ_UWP_SIGN_PFX }}
+          PVZ_UWP_SIGN_PASS: ${{ secrets.PVZ_UWP_SIGN_PASS }}
+        run: |
+          $sdk = "C:\Program Files (x86)\Windows Kits\10\bin"
+          $makeappx = Get-ChildItem $sdk -Recurse -Filter makeappx.exe -ErrorAction SilentlyContinue |
+            Where-Object { $_.FullName -match '\\x64\\' } |
+            Sort-Object FullName -Descending |
+            Select-Object -First 1
+          $signtool = Get-ChildItem $sdk -Recurse -Filter signtool.exe -ErrorAction SilentlyContinue |
+            Where-Object { $_.FullName -match '\\x64\\' } |
+            Sort-Object FullName -Descending |
+            Select-Object -First 1
+          if (-not $makeappx -or -not $signtool) { throw "Windows SDK bin tools not found" }
+
+          # Package layout: the manifest must be named AppxManifest.xml.
+          $appxDir = "appx"
+          New-Item -ItemType Directory -Force -Path $appxDir | Out-Null
+          Copy-Item dist/* $appxDir/ -Recurse
+          Move-Item "$appxDir/Package.appxmanifest" "$appxDir/AppxManifest.xml" -Force
+
+          [xml]$m = Get-Content "$appxDir/AppxManifest.xml"
+          $pkgName = $m.Package.Identity.Name
+          $pkgVer = $m.Package.Identity.Version
+          $appxFile = "$appxDir/${pkgName}_${pkgVer}_x64.appx"
+
+          & $makeappx.FullName pack /d $appxDir /p $appxFile /o
+          if ($LASTEXITCODE -ne 0) { throw "makeappx pack failed" }
+
+          # Sign with the persistent dev certificate. Its subject must match
+          # the manifest <Identity Publisher>. Repo secret holds the base64
+          # pfx; without it a throwaway cert is used (unsigned-provenance build).
+          $pfxPass = $env:PVZ_UWP_SIGN_PASS
+          if (-not $env:PVZ_UWP_SIGN_PFX) {
+            Write-Host "No PVZ_UWP_SIGN_PFX secret: generating a throwaway self-signed cert."
+            $cert = New-SelfSignedCertificate -Type CodeSigningCert -Subject "CN=$pkgName" -CertStoreLocation Cert:\CurrentUser\My
+            $pfxPass = [Guid]::NewGuid().ToString("N")
+            $sec = ConvertTo-SecureString -String $pfxPass -Force -AsPlainText
+            Export-PfxCertificate -Cert $cert -FilePath sign.pfx -Password $sec -Force | Out-Null
+          } else {
+            [IO.File]::WriteAllBytes("sign.pfx", [Convert]::FromBase64String($env:PVZ_UWP_SIGN_PFX))
+          }
+          & $signtool.FullName sign /f sign.pfx /p $pfxPass /fd SHA256 /a $appxFile
+          if ($LASTEXITCODE -ne 0) { throw "signtool sign failed" }
+          Copy-Item uwp/certs/PvZPortableDev.cer $appxDir/
+          Get-ChildItem $appxDir | Sort-Object Name | Select-Object Name, Length
+
       - name: Upload UWP build artifacts
         uses: actions/upload-artifact@v7
         with:
           name: pvz-portable-uwp-x64
           path: dist/
+          if-no-files-found: error
+
+      - name: Upload signed AppX
+        uses: actions/upload-artifact@v7
+        with:
+          name: pvz-portable-uwp-appx
+          path: appx/
           if-no-files-found: error

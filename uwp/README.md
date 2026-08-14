@@ -12,9 +12,11 @@ rendering through **ANGLE** (D3D11), because UWP has no desktop OpenGL.
 > * Win32-specific code isolated: `src/main.cpp` (done)
 > * AppX manifest + assets: `uwp/` (done)
 > * CMake target: `-DCMAKE_SYSTEM_NAME=WindowsStore` / `PVZ_UWP` (done)
-> * **Not yet verified end-to-end:** the WinRT toolchain (SDL2 + ANGLE for `x64-uwp`)
->   and packaging need at least one successful build. The `ci-uwp.yml` workflow is
->   the place to iterate on that.
+> * **Packaging:** `ci-uwp.yml` builds a signed `.appx` (makeappx + signtool)
+>   with the repo's dev certificate (`uwp/certs/PvZPortableDev.cer`). The
+>   package is deliberately **data-less**: the copyrighted game data
+>   (`main.pak` + `properties/`) is seeded into the app's `LocalState` folder
+>   on the console (see step 4), so every CI build is reproducible.
 
 ## Prerequisites
 
@@ -79,7 +81,10 @@ build with `-DPVZ_UWP=ON`.
 
 ## 3. Assemble the package
 
-Build an `AppPackages`-style layout:
+The AppX is **data-less**: it ships the exe, DLLs, manifest and assets, but
+**not** `main.pak` / `properties/` (copyrighted game data, seeded separately on
+the console — see step 4). CI (`ci-uwp.yml`) assembles and signs it, but you can
+do it by hand:
 
 ```powershell
 $pkg = "out\appx"
@@ -93,11 +98,6 @@ Copy-Item build-uwp\Release\pvz-portable.exe $pkg
 Copy-Item $vcpkg\installed\x64-uwp\bin\SDL2.dll $pkg -ErrorAction SilentlyContinue
 Copy-Item libEGL.dll, libGLESv2.dll, d3dcompiler_47.dll $pkg -ErrorAction SilentlyContinue
 
-# Game resources: main.pak and properties/ must be bundled (install dir is read-only)
-New-Item -ItemType Directory -Force $pkg\resources | Out-Null
-Copy-Item main.pak $pkg\resources
-Copy-Item -Recurse properties $pkg\resources
-
 # AppX manifest + assets
 Copy-Item build-uwp\uwp\Package.appxmanifest $pkg\AppxManifest.xml
 Copy-Item -Recurse uwp\Assets $pkg\Assets
@@ -110,30 +110,18 @@ $sdks = "C:\Program Files (x86)\Windows Kits\10\bin"
 $tools = (Get-ChildItem "$sdks\*\x64\makeappx.exe" | Select-Object -Last 1).DirectoryName
 $env:Path += ";$tools"
 
-# Package resources (pri) — needed or registration can fail
-makepri new /pr $pkg /cf "$sdks\...\AppxLayout\mappings\AppxMapping.xml" /of $pkg\resources.pri /mn $pkg\AppxManifest.xml
-
 makeappx pack /d $pkg /p out\PvZPortable.appx
 ```
-
-> A simpler path is to open the project in Visual Studio with the UWP workload
-> and use the built-in **Deploy to Xbox** target — VS handles makepri/makeappx,
-> signing and deployment. The manual route above is for CI/headless builds.
 
 ### Sign (dev mode)
 
 Developer Mode does not trust the public Store signing chain, so sign with a
-certificate whose CN matches the `Publisher` in the manifest:
+certificate whose CN matches the `Publisher` in the manifest. The repo's shared
+dev cert is `uwp/certs/PvZPortableDev.cer` (public part; the private `.pfx` is
+the `PVZ_UWP_SIGN_PFX` GitHub secret, password in `PVZ_UWP_SIGN_PASS`):
 
 ```powershell
-$cert = New-SelfSignedCertificate -Type CodeSigningCert `
-  -Subject "CN=PvZPortable.Community" -CertStoreLocation Cert:\CurrentUser\My `
-  -NotAfter (Get-Date).AddYears(10)
-
-$pwd = ConvertTo-SecureString -String "password" -Force -AsPlainText
-Export-PfxCertificate -Cert $cert -FilePath out\pvzportable.pfx -Password $pwd
-
-signtool sign /fd SHA256 /f out\pvzportable.pfx /p password out\PvZPortable.appx
+signtool sign /fd SHA256 /f pvzportable.pfx /p <password> out\PvZPortable.appx
 ```
 
 > If you change the manifest `Publisher`, regenerate the cert with the same CN.
@@ -143,20 +131,26 @@ signtool sign /fd SHA256 /f out\pvzportable.pfx /p password out\PvZPortable.appx
 Open the Device Portal on your dev machine: `http://<console-ip>:11443` (accept
 the self-signed cert), then:
 
+1. **Trust the dev cert** — upload `uwp/certs/PvZPortableDev.cer` under
+   *Settings* or install it from Dev Home; Developer Mode needs the signing
+   root trusted before it accepts the package.
+2. **Install the appx** — under *My games & apps* > *Add*, choose the signed
+   `.appx` from the CI artifact (`pvz-portable-uwp-appx`).
+3. **Seed the game data** — under *File explorer*, open
+   `LocalAppData\PvZPortable.Community\LocalState` and upload `main.pak` and the
+   `properties/` folder there. (If the folder doesn't exist yet, launch the app
+   once — it creates it — then copy the data and relaunch.)
+
 ```powershell
-# Add your dev cert as a trusted root on the console
-# Device Portal -> Explorer tab or:
+# Install from the command line instead of the web UI:
 curl.exe -k -u DevToolsUser -X POST `
   "https://<console-ip>:11443/api/app/packagemanager/upload" `
   -F "file=@out\PvZPortable.appx"
-
-# Or deploy from Visual Studio: set a signing cert, then Build > Deploy with
-# the "Xbox One (Device Portal)" remote machine selected.
 ```
 
-From VS: **Project > Properties > Debugging**, set *Remote machine* to the
-console IP and *Authentication mode* to *Universal (Unencrypted protocol)*, then
-**Build > Deploy Solution**.
+The game reads its resources from the package dir first, then falls back to the
+app's `LocalState` folder (`uwp/PvzpUwpMetadata.cpp` + `SexyAppBase::Init`), so
+the data-less appx runs once `main.pak`/`properties/` are in `LocalState`.
 
 ## Gamepad controls (virtual mouse)
 
@@ -173,7 +167,8 @@ controller when `PVZ_UWP`/`__WINRT__` is defined:
 | D-pad                | Arrow keys (menu navigation)            |
 
 Saves go to the app's `LocalState` folder (`SDL_GetPrefPath` on WinRT); game
-resources are read from the package install directory.
+resources are read from the package install directory, falling back to
+`LocalState` (see step 4).
 
 ## Troubleshooting
 

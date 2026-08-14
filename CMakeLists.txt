@@ -378,6 +378,10 @@ elseif(PVZ_IS_UWP)
 	# UWP apps link against the app-container system library only
 	target_link_libraries(pvz-portable PRIVATE WindowsApp.lib)
 
+	# App-container linker mode: selects the UWP CRT init instead of the
+	# desktop one (fixes LNK2038 vccorlib/msvcrt mismatch + LNK2005).
+	target_link_options(pvz-portable PRIVATE /APPCONTAINER)
+
 	# Metadata anchor so the linker emits the app's .winmd (required by
 	# C++/CX-built packages). Compiled with /ZW (Windows Runtime extensions).
 	target_sources(pvz-portable PRIVATE
@@ -387,7 +391,7 @@ elseif(PVZ_IS_UWP)
 		${CMAKE_CURRENT_SOURCE_DIR}/uwp/PvzpUwpMetadata.cpp
 		# /std:c++17 must come AFTER cxx_std_20 (MSVC uses the last /std flag;
 		# /ZW is incompatible with /std:c++20).
-		PROPERTIES COMPILE_OPTIONS "/std:c++17;/ZW"
+		PROPERTIES COMPILE_OPTIONS "/std:c++17" "/ZW"
 	)
 
 	# UWP entry point (SDL provides no SDL2main.lib for Windows Store) plus
@@ -398,7 +402,7 @@ elseif(PVZ_IS_UWP)
 	)
 	set_source_files_properties(
 		${CMAKE_CURRENT_SOURCE_DIR}/src/SexyAppFramework/platform/uwp/SDL_winrt_main_NonXAML.cpp
-		PROPERTIES COMPILE_OPTIONS "/std:c++17;/ZW"
+		PROPERTIES COMPILE_OPTIONS "/std:c++17" "/ZW"
 	)
 
 	# Generate the AppX manifest (version is padded to the 4-part form)

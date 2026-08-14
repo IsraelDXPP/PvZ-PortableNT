@@ -252,6 +252,39 @@ cmake -G Ninja -B build -DCMAKE_BUILD_TYPE=Release -DPVZ_DEBUG=ON
 
 If running these commands does not create a successful build please create an issue and detail your problem.
 
+### Building for UWP / Xbox One
+
+A UWP (Universal Windows Platform) target exists for running the game on an **Xbox One** in [Developer Mode](https://docs.microsoft.com/en-us/windows/uwp/xbox-apps/) (retail console + the free "Xbox Developer Mode Activation" app, ~$20), as well as on Windows 10/11 PCs. Rendering is OpenGL ES 2.0 via **ANGLE** (D3D11), input is a virtual cursor driven by the gamepad (no mouse on console).
+
+> **Status:** the platform layer, AppX packaging and CMake target are in place. The dependency/toolchain steps below need a machine with the *Universal Windows Platform development* VS workload (or a CI runner). See [`uwp/README.md`](uwp/README.md) for the full build & deploy guide and current status.
+
+Requirements:
+
+* Visual Studio 2022 with the **Universal Windows Platform development** workload (includes C++ UWP tools and the 10.0 Windows SDK).
+* [vcpkg](https://vcpkg.io/) with the `x64-uwp` triplet, or prebuilt UWP libs for SDL2 (winrt backend), libpng, libjpeg, zlib, libogg, libvorbis, libopenmpt and mpg123.
+* SDL2 built for WinRT with the EGL (ANGLE) OpenGL ES path enabled.
+
+High-level steps:
+
+```powershell
+# 1. Install UWP deps (x64-uwp triplet)
+vcpkg install sdl2 libpng libjpeg-turbo zlib libogg libvorbis libopenmpt mpg123 --triplet x64-uwp
+
+# 2. Configure (WindowsStore drives the UWP toolchain + PVZ_UWP)
+cmake -G "Visual Studio 17 2022" -A x64 `
+  -B build-uwp -DCMAKE_SYSTEM_NAME=WindowsStore -DCMAKE_SYSTEM_VERSION=10.0 `
+  -DCMAKE_TOOLCHAIN_FILE=<vcpkg>/scripts/buildsystems/vcpkg.cmake `
+  -DVCPKG_TARGET_TRIPLET=x64-uwp
+
+# 3. Build
+cmake --build build-uwp --config Release
+
+# 4. Package (makeappx / makepri from the SDK, then sign + deploy to the console)
+#    see uwp/README.md
+```
+
+The generated `Package.appxmanifest` lives in `build-uwp/uwp/`. Deploy to the Xbox with **Device Portal** (`http://<console-ip>:11443`) or Visual Studio's *Deploy to Xbox* target. Game resources (`main.pak`, `properties/`) must be bundled in the package; user data is written to the app's `LocalState` folder.
+
 ## Save data compatibility (user data and mid-level saves)
 
 PvZ-Portable uses two distinct types of save data:

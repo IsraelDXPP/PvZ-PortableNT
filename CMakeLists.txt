@@ -4,6 +4,16 @@ project(pvz-portable LANGUAGES C CXX)
 
 include(CMake/ProjectVersion.cmake)
 
+# Universal Windows Platform (Windows 10 / Xbox One via SDL2's winrt backend).
+# Set PVZ_UWP=ON, or configure with -DCMAKE_SYSTEM_NAME=WindowsStore
+# (vcpkg x64-uwp triplet does this automatically).
+option(PVZ_UWP "Build for the Universal Windows Platform (Xbox One / UWP)" OFF)
+if(PVZ_UWP OR CMAKE_SYSTEM_NAME STREQUAL "WindowsStore")
+	set(PVZ_IS_UWP TRUE)
+else()
+	set(PVZ_IS_UWP FALSE)
+endif()
+
 option(BUILD_STATIC "Statically link dependencies for a standalone exe (Windows MinGW, Linux)" OFF)
 if(BUILD_STATIC)
 	if(WIN32 AND NOT MSVC)
@@ -82,6 +92,16 @@ elseif(EMSCRIPTEN)
 	)
 	list(APPEND PLAT_INCLUDES
 		${CMAKE_CURRENT_SOURCE_DIR}/src/SexyAppFramework/platform/emscripten
+	)
+elseif(PVZ_IS_UWP)
+	# UWP (Xbox One / Windows 10): SDL2 winrt backend, GLES2 via ANGLE.
+	# Input is the shared SDL event loop + virtual gamepad cursor.
+	list(APPEND SOURCES
+		${CMAKE_CURRENT_SOURCE_DIR}/src/SexyAppFramework/platform/uwp/Window.cpp
+		${CMAKE_CURRENT_SOURCE_DIR}/src/SexyAppFramework/platform/default/Input.cpp
+	)
+	list(APPEND PLAT_INCLUDES
+		${CMAKE_CURRENT_SOURCE_DIR}/src/SexyAppFramework/platform/uwp
 	)
 else()
 	if(VCPKG_TOOLCHAIN)
@@ -250,7 +270,7 @@ else()
 	)
 endif()
 
-if (WIN32)
+if (WIN32 AND NOT PVZ_IS_UWP)
 	if(MSVC)
 		target_compile_options(pvz-portable PRIVATE /utf-8)
 	endif()
@@ -343,4 +363,57 @@ elseif (IOS)
 		set_source_files_properties("${CMAKE_CURRENT_SOURCE_DIR}/ios/Assets.xcassets"
 			PROPERTIES MACOSX_PACKAGE_LOCATION Resources)
 	endif()
+elseif(PVZ_IS_UWP)
+	# --- UWP (Xbox One / Windows 10) target setup ---
+	target_compile_definitions(pvz-portable PRIVATE
+		PVZ_UWP
+		WINAPI_FAMILY=WINAPI_FAMILY_APP
+		_WIN32_WINNT=0x0A00
+		UNICODE
+		_UNICODE
+	)
+	target_compile_options(pvz-portable PRIVATE /utf-8)
+	set_target_properties(pvz-portable PROPERTIES WIN32_EXECUTABLE TRUE)
+
+	# UWP apps link against the app-container system library only
+	target_link_libraries(pvz-portable PRIVATE WindowsApp.lib)
+
+	# Metadata anchor so the linker emits the app's .winmd (required by
+	# C++/CX-built packages). Compiled with /ZW (Windows Runtime extensions).
+	target_sources(pvz-portable PRIVATE
+		${CMAKE_CURRENT_SOURCE_DIR}/uwp/PvzpUwpMetadata.cpp
+	)
+	set_source_files_properties(
+		${CMAKE_CURRENT_SOURCE_DIR}/uwp/PvzpUwpMetadata.cpp
+		PROPERTIES COMPILE_OPTIONS "/ZW"
+	)
+
+	# Generate the AppX manifest (version is padded to the 4-part form)
+	if(PVZP_VERSION_PLAIN)
+		string(REPLACE "." ";" _mver_parts "${PVZP_VERSION_PLAIN}")
+		list(LENGTH _mver_parts _mver_len)
+		set(_mver "")
+		foreach(_i RANGE 0 3)
+			if(_i LESS _mver_len)
+				list(GET _mver_parts _i _mcomp)
+			else()
+				set(_mcomp "0")
+			endif()
+			string(APPEND _mver "${_mcomp}")
+			if(_i LESS 3)
+				string(APPEND _mver ".")
+			endif()
+		endforeach()
+		set(PVZP_MANIFEST_VERSION "${_mver}")
+	endif()
+	if(NOT PVZP_MANIFEST_VERSION)
+		set(PVZP_MANIFEST_VERSION "0.1.0.0")
+	endif()
+	if(NOT PVZP_UWP_PUBLISHER)
+		set(PVZP_UWP_PUBLISHER "CN=PvZPortable.Community")
+	endif()
+	set(PVZP_UWP_EXE "pvz-portable.exe")
+
+	configure_file(uwp/Package.appxmanifest.in
+		"${CMAKE_CURRENT_BINARY_DIR}/uwp/Package.appxmanifest" @ONLY)
 endif()

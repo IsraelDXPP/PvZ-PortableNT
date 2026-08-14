@@ -1,0 +1,88 @@
+# Experimental UWP (Xbox One / Windows 10) build.
+#
+# STATUS: this target is still being verified — the WinRT toolchain
+# (SDL2 winrt backend + ANGLE) and the vcpkg x64-uwp triplet for all game
+# deps may need fixes. This workflow is intentionally separate from ci.yml
+# so it never blocks the main green build; treat failures here as the
+# toolchain iteration loop until the UWP port builds clean.
+#
+# Triggering: run manually (workflow_dispatch) or on any push to main.
+
+name: CI - UWP (Xbox One / Windows 10)
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  uwp-x64:
+    name: Build UWP (x64)
+    runs-on: windows-2022
+    env:
+      VCPKG_BINARY_SOURCES: clear;files,${{ github.workspace }}/vcpkg-cache,readwrite
+      VCPKG_DEFAULT_TRIPLET: x64-uwp
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Ensure UWP C++ workload
+        shell: pwsh
+        run: |
+          $vs = "C:\Program Files\Microsoft Visual Studio\2022\Enterprise"
+          $xamlTargets = "$vs\MSBuild\Microsoft\WindowsXaml"
+          if (-not (Test-Path $xamlTargets)) {
+            $installer = "C:\Program Files (x86)\Microsoft Visual Studio\Installer\vs_installer.exe"
+            if (-not (Test-Path $installer)) { throw "vs_installer not found" }
+            & $installer modify --installPath $vs `
+              --add Microsoft.VisualStudio.Workload.Universal `
+              --quiet --norestart
+            if ($LASTEXITCODE -ne 0) { throw "vs_installer modify failed" }
+          } else {
+            Write-Host "UWP workload already present"
+          }
+
+      - name: Restore vcpkg binary cache
+        uses: actions/cache@v6
+        with:
+          path: vcpkg-cache
+          key: vcpkg-uwp-x64-${{ hashFiles('vcpkg.json', 'vcpkg-configuration.json') }}
+          restore-keys: |
+            vcpkg-uwp-x64-
+            vcpkg-uwp-
+
+      - name: Setup vcpkg (manifest mode, x64-uwp triplet)
+        uses: lukka/run-vcpkg@v11
+        with:
+          vcpkgJsonGlob: vcpkg.json
+          runVcpkgInstall: true
+
+      - name: Configure (WindowsStore / UWP toolchain)
+        shell: pwsh
+        run: |
+          cmake -G Ninja -B build-uwp `
+            -DCMAKE_SYSTEM_NAME=WindowsStore `
+            -DCMAKE_SYSTEM_VERSION=10.0 `
+            -DCMAKE_BUILD_TYPE=Release `
+            -DCONSOLE=OFF `
+            -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake" `
+            -DVCPKG_TARGET_TRIPLET=x64-uwp
+          if ($LASTEXITCODE -ne 0) { throw "cmake configure failed" }
+
+      - name: Build
+        shell: pwsh
+        run: |
+          cmake --build build-uwp --config Release
+          if ($LASTEXITCODE -ne 0) { throw "cmake build failed" }
+
+      - name: Upload UWP build artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: pvz-portable-uwp-x64
+          path: |
+            build-uwp/pvz-portable.exe
+            build-uwp/*.dll
+            build-uwp/uwp/Package.appxmanifest
+            uwp/Assets/
+          if-no-files-found: error

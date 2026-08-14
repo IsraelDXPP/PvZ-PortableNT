@@ -25,6 +25,7 @@
 #include <SDL.h>
 
 #include <algorithm>
+#include <cmath>
 
 #include "SexyAppBase.h"
 #include "graphics/GLInterface.h"
@@ -333,7 +334,218 @@ static bool SDLSynthesizeAsciiCharFromKeyDown(const SDL_KeyboardEvent& theEvent,
 void SexyAppBase::InitInput()
 {
 	SDL_Init(SDL_INIT_EVENTS);
+
+#if defined(PVZ_UWP) || defined(__WINRT__)
+	// UWP has no mouse: the gamepad drives a virtual cursor (see UpdateVirtualGamepad)
+	SDL_InitSubSystem(SDL_INIT_GAMECONTROLLER);
+#endif
 }
+
+#if defined(PVZ_UWP) || defined(__WINRT__)
+namespace
+{
+struct VirtualPadState
+{
+	SDL_GameController* mController = nullptr;
+	int mCursorX = 0;
+	int mCursorY = 0;
+	bool mCursorSeeded = false;
+	Uint32 mPrevButtons = 0;
+	float mWheelAccum = 0.0f;
+};
+
+static void PushSyntheticMouseMotion(int theX, int theY)
+{
+	SDL_Event aEvent;
+	SDL_zero(aEvent);
+	aEvent.type = SDL_MOUSEMOTION;
+	aEvent.motion.x = theX;
+	aEvent.motion.y = theY;
+	SDL_PushEvent(&aEvent);
+}
+
+static void PushSyntheticMouseButton(Uint32 theType, int theX, int theY, Uint8 theButton)
+{
+	SDL_Event aEvent;
+	SDL_zero(aEvent);
+	aEvent.type = theType;
+	aEvent.button.x = theX;
+	aEvent.button.y = theY;
+	aEvent.button.button = theButton;
+	aEvent.button.clicks = 1;
+	SDL_PushEvent(&aEvent);
+}
+
+static void PushSyntheticKey(Uint32 theType, SDL_Keycode theSym)
+{
+	SDL_Event aEvent;
+	SDL_zero(aEvent);
+	aEvent.type = theType;
+	aEvent.key.keysym.sym = theSym;
+	aEvent.key.keysym.scancode = SDL_GetScancodeFromKey(theSym);
+	SDL_PushEvent(&aEvent);
+}
+
+static void PushSyntheticWheel(int theY)
+{
+	SDL_Event aEvent;
+	SDL_zero(aEvent);
+	aEvent.type = SDL_MOUSEWHEEL;
+	aEvent.wheel.y = theY;
+	SDL_PushEvent(&aEvent);
+}
+
+static bool UpdateVirtualGamepad(SexyAppBase* theApp)
+{
+	static VirtualPadState aState;
+
+	// Lazily open the first controller (Xbox One pads have built-in SDL mappings)
+	if (aState.mController == nullptr || !SDL_GameControllerGetAttached(aState.mController))
+	{
+		if (aState.mController != nullptr)
+		{
+			SDL_GameControllerClose(aState.mController);
+			aState.mController = nullptr;
+		}
+		if (SDL_NumJoysticks() > 0)
+			aState.mController = SDL_GameControllerOpen(0);
+	}
+	if (aState.mController == nullptr)
+		return false;
+
+	SDL_Window* aWindow = (SDL_Window*)theApp->mWindow;
+	if (aWindow == nullptr)
+		return false;
+
+	int aWinW = 0, aWinH = 0;
+	SDL_GetWindowSize(aWindow, &aWinW, &aWinH);
+	if (aWinW <= 0 || aWinH <= 0)
+		return false;
+
+	bool aPushedAnything = false;
+
+	if (!aState.mCursorSeeded)
+	{
+		aState.mCursorX = aWinW / 2;
+		aState.mCursorY = aWinH / 2;
+		aState.mCursorSeeded = true;
+		PushSyntheticMouseMotion(aState.mCursorX, aState.mCursorY);
+		aPushedAnything = true;
+	}
+
+	// --- Left stick: move the virtual cursor (with a dead zone) ---
+	{
+		static const float kDeadZone = 8000.0f;
+		const Sint16 aStickX = SDL_GameControllerGetAxis(aState.mController, SDL_CONTROLLER_AXIS_LEFTX);
+		const Sint16 aStickY = SDL_GameControllerGetAxis(aState.mController, SDL_CONTROLLER_AXIS_LEFTY);
+		const float aMag = std::sqrt((float)aStickX * aStickX + (float)aStickY * aStickY);
+		if (aMag > kDeadZone)
+		{
+			const float aScale = std::min(1.0f, (aMag - kDeadZone) / (32767.0f - kDeadZone));
+			const float aSpeed = (float)aWinH * 1.2f / 60.0f; // ~1.2 screens/second at 60fps
+			const int aDX = (int)std::lround(aStickX / aMag * aScale * aSpeed);
+			const int aDY = (int)std::lround(aStickY / aMag * aScale * aSpeed);
+			if (aDX != 0 || aDY != 0)
+			{
+				aState.mCursorX = std::max(0, std::min(aWinW - 1, aState.mCursorX + aDX));
+				aState.mCursorY = std::max(0, std::min(aWinH - 1, aState.mCursorY + aDY));
+				PushSyntheticMouseMotion(aState.mCursorX, aState.mCursorY);
+				aPushedAnything = true;
+			}
+		}
+	}
+
+	// --- Face/bumper buttons: mouse clicks (A/X/LB = left, B/Y/RB = right/shovel) ---
+	{
+		struct ButtonMap { SDL_GameControllerButton mButton; Uint8 mSDLMouseButton; Uint32 mBit; };
+		static const ButtonMap aButtonMaps[] =
+		{
+			{ SDL_CONTROLLER_BUTTON_A,             SDL_BUTTON_LEFT,  1u << 0 },
+			{ SDL_CONTROLLER_BUTTON_X,             SDL_BUTTON_LEFT,  1u << 1 },
+			{ SDL_CONTROLLER_BUTTON_B,             SDL_BUTTON_RIGHT, 1u << 2 },
+			{ SDL_CONTROLLER_BUTTON_Y,             SDL_BUTTON_RIGHT, 1u << 3 },
+			{ SDL_CONTROLLER_BUTTON_LEFTSHOULDER,  SDL_BUTTON_LEFT,  1u << 4 },
+			{ SDL_CONTROLLER_BUTTON_RIGHTSHOULDER, SDL_BUTTON_RIGHT, 1u << 5 },
+		};
+		Uint32 aCurButtons = 0;
+		for (const ButtonMap& aMap : aButtonMaps)
+		{
+			if (SDL_GameControllerGetButton(aState.mController, aMap.mButton))
+				aCurButtons |= aMap.mBit;
+		}
+		for (const ButtonMap& aMap : aButtonMaps)
+		{
+			const bool aWasDown = (aState.mPrevButtons & aMap.mBit) != 0;
+			const bool aIsDown = (aCurButtons & aMap.mBit) != 0;
+			if (aIsDown && !aWasDown)
+			{
+				PushSyntheticMouseButton(SDL_MOUSEBUTTONDOWN, aState.mCursorX, aState.mCursorY, aMap.mSDLMouseButton);
+				aPushedAnything = true;
+			}
+			else if (!aIsDown && aWasDown)
+			{
+				PushSyntheticMouseButton(SDL_MOUSEBUTTONUP, aState.mCursorX, aState.mCursorY, aMap.mSDLMouseButton);
+				aPushedAnything = true;
+			}
+		}
+		aState.mPrevButtons = aCurButtons;
+	}
+
+	// --- Triggers: scroll wheel (menu/almanac lists) ---
+	{
+		const Sint16 aLeft = SDL_GameControllerGetAxis(aState.mController, SDL_CONTROLLER_AXIS_TRIGGERLEFT);
+		const Sint16 aRight = SDL_GameControllerGetAxis(aState.mController, SDL_CONTROLLER_AXIS_TRIGGERRIGHT);
+		aState.mWheelAccum += ((float)aLeft - (float)aRight) / 32767.0f;
+		const int aWheel = (int)std::lround(aState.mWheelAccum);
+		if (aWheel != 0)
+		{
+			aState.mWheelAccum -= (float)aWheel;
+			PushSyntheticWheel(aWheel);
+			aPushedAnything = true;
+		}
+	}
+
+	// --- View/Menu: Escape (pause); D-pad: arrow keys ---
+	{
+		struct KeyMap { SDL_GameControllerButton mButton; SDL_Keycode mKey; Uint32 mBit; };
+		static const KeyMap aKeyMaps[] =
+		{
+			{ SDL_CONTROLLER_BUTTON_BACK,  SDLK_ESCAPE, 1u << 0 },
+			{ SDL_CONTROLLER_BUTTON_START, SDLK_ESCAPE, 1u << 1 },
+			{ SDL_CONTROLLER_BUTTON_DPAD_UP,    SDLK_UP,    1u << 2 },
+			{ SDL_CONTROLLER_BUTTON_DPAD_DOWN,  SDLK_DOWN,  1u << 3 },
+			{ SDL_CONTROLLER_BUTTON_DPAD_LEFT,  SDLK_LEFT,  1u << 4 },
+			{ SDL_CONTROLLER_BUTTON_DPAD_RIGHT, SDLK_RIGHT, 1u << 5 },
+		};
+		static Uint32 sPrevKeys = 0;
+		Uint32 aCurKeys = 0;
+		for (const KeyMap& aMap : aKeyMaps)
+		{
+			if (SDL_GameControllerGetButton(aState.mController, aMap.mButton))
+				aCurKeys |= aMap.mBit;
+		}
+		for (const KeyMap& aMap : aKeyMaps)
+		{
+			const bool aWasDown = (sPrevKeys & aMap.mBit) != 0;
+			const bool aIsDown = (aCurKeys & aMap.mBit) != 0;
+			if (aIsDown && !aWasDown)
+			{
+				PushSyntheticKey(SDL_KEYDOWN, aMap.mKey);
+				aPushedAnything = true;
+			}
+			else if (!aIsDown && aWasDown)
+			{
+				PushSyntheticKey(SDL_KEYUP, aMap.mKey);
+				aPushedAnything = true;
+			}
+		}
+		sPrevKeys = aCurKeys;
+	}
+
+	return aPushedAnything;
+}
+} // namespace
+#endif
 
 static void RecordDemoMousePosition(SexyAppBase* theApp, int theX, int theY)
 {
@@ -573,6 +785,14 @@ bool SexyAppBase::ProcessDeferredMessages(bool singleMessage)
 		while (WasmPopSoftKeyboardKey() != 0) {} // discard queued soft-keyboard input during playback
 		while (WasmPopSoftKeyboardChar() != 0) {}
 	}
+#endif
+
+#if defined(PVZ_UWP) || defined(__WINRT__)
+	// UWP has no mouse: synthesize input events from the gamepad.
+	// Pushed events make SDL_PollEvent succeed below; UpdateAppStep keeps
+	// draining messages until the queue empties.
+	if (!mPlayingDemoBuffer)
+		UpdateVirtualGamepad(this);
 #endif
 
 	SDL_Event event;

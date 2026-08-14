@@ -25,6 +25,19 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
+      - name: Set up MSVC UWP environment
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+          uwp: true
+
+      - name: Get toolchain ID for cache key
+        shell: pwsh
+        run: |
+          $tc = $env:VCToolsVersion
+          if (-not $tc) { $tc = "unknown" }
+          echo "VCPKG_TC=msvc-uwp-$tc" >> $env:GITHUB_ENV
+
       - name: Ensure UWP C++ workload
         shell: pwsh
         run: |
@@ -41,14 +54,18 @@ jobs:
             Write-Host "UWP workload already present"
           }
 
+      - name: Install Ninja
+        run: choco install ninja -y
+
       - name: Restore vcpkg binary cache
         uses: actions/cache@v6
         with:
           path: vcpkg-cache
-          key: vcpkg-uwp-x64-${{ hashFiles('vcpkg.json', 'vcpkg-configuration.json') }}
+          # Toolset in the key: vcpkg's ABI hash changes when MSVC updates.
+          key: vcpkg-uwp-x64-${{ env.VCPKG_TC }}-${{ hashFiles('vcpkg.json', 'vcpkg-configuration.json') }}
           restore-keys: |
+            vcpkg-uwp-x64-${{ env.VCPKG_TC }}-
             vcpkg-uwp-x64-
-            vcpkg-uwp-
 
       - name: Restore UWP build dir (incremental compile)
         uses: actions/cache@v6

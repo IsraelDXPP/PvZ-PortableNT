@@ -164,7 +164,10 @@ jobs:
           $pkgVer = $m.Package.Identity.Version
           $appxFile = "$appxDir/${pkgName}_${pkgVer}_x64.appx"
 
-          & $makeappx.FullName pack /d $appxDir /p $appxFile /o /arch x64
+          # Architecture comes from the manifest's <Identity ProcessorArchitecture>
+          # (declared as x64 in Package.appxmanifest.in); makeappx reads it from
+          # AppxManifest.xml. Do not pass /arch here - makeappx has no such option.
+          & $makeappx.FullName pack /d $appxDir /p $appxFile /o
           if ($LASTEXITCODE -ne 0) { throw "makeappx pack failed" }
 
           # Sign with the persistent dev certificate. Its subject must match

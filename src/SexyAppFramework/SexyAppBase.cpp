@@ -80,6 +80,51 @@
 
 using namespace Sexy;
 
+#if defined(PVZ_UWP) || defined(__WINRT__)
+namespace
+{
+// UWP/Xbox has no OS mouse cursor (mouse mode only applies to HTML/XAML apps),
+// so the gamepad-driven virtual cursor is drawn manually on top of each frame.
+void DrawVirtualCursor(Graphics* theGraphics, int x, int y)
+{
+	constexpr int kNumVerts = 7;
+	static const Point aArrow[kNumVerts] =
+	{
+		{ 0, 0 }, { 0, 44 }, { 10, 34 }, { 16, 50 }, { 24, 50 }, { 18, 34 }, { 46, 34 },
+	};
+
+	double aCentroidX = 0, aCentroidY = 0;
+	for (int i = 0; i < kNumVerts; i++)
+	{
+		aCentroidX += aArrow[i].mX;
+		aCentroidY += aArrow[i].mY;
+	}
+	aCentroidX /= kNumVerts;
+	aCentroidY /= kNumVerts;
+
+	Point aBlack[kNumVerts];
+	for (int i = 0; i < kNumVerts; i++)
+	{
+		aBlack[i].mX = x + aArrow[i].mX;
+		aBlack[i].mY = y + aArrow[i].mY;
+	}
+
+	theGraphics->SetColor(Color(0, 0, 0));
+	theGraphics->PolyFill(aBlack, kNumVerts);
+
+	Point aWhite[kNumVerts];
+	for (int i = 0; i < kNumVerts; i++)
+	{
+		aWhite[i].mX = static_cast<int>(aCentroidX + (aArrow[i].mX - aCentroidX) * 0.85) + x;
+		aWhite[i].mY = static_cast<int>(aCentroidY + (aArrow[i].mY - aCentroidY) * 0.85) + y;
+	}
+
+	theGraphics->SetColor(Color(255, 255, 255));
+	theGraphics->PolyFill(aWhite, kNumVerts);
+}
+} // namespace
+#endif
+
 constexpr int DEMO_FILE_ID = 0x42BEEF78;
 constexpr int DEMO_VERSION = 6; // v6: text input is recorded as UTF-8 (DEMO_KEY_TEXT)
 
@@ -1860,6 +1905,15 @@ bool SexyAppBase::DrawDirtyStuff()
 			if (mPlayingDemoBuffer)
 				g.DrawImage(gDemoTimeLeftImage,mWidth-gDemoTimeLeftImage->GetWidth()-10,mHeight-gFPSImage->GetHeight()-gDemoTimeLeftImage->GetHeight()-15);
 		}
+
+#if defined(PVZ_UWP) || defined(__WINRT__)
+		// Draw the gamepad-driven virtual cursor on top of the frame.
+		if (mWidgetManager->mMouseIn)
+		{
+			Graphics g(mGLInterface->GetScreenImage());
+			DrawVirtualCursor(&g, mWidgetManager->mLastMouseX, mWidgetManager->mLastMouseY);
+		}
+#endif
 
 		uint32_t aPreScreenBltTime = SDL_GetTicks();
 		mLastDrawTick = aPreScreenBltTime;

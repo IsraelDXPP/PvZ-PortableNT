@@ -397,6 +397,13 @@ static void PushSyntheticWheel(int theY)
 
 static bool UpdateVirtualGamepad(SexyAppBase* theApp)
 {
+	// Don't synthesize while previously-pushed events are still queued:
+	// ProcessDeferredMessages re-invokes us for every pending event, so
+	// pushing here again would keep the queue non-empty forever and the
+	// game would never leave the MESSAGES state (frozen input).
+	if (SDL_HasEvents(SDL_FIRSTEVENT, SDL_LASTEVENT))
+		return false;
+
 	static VirtualPadState aState;
 
 	// Lazily open the first controller (Xbox One pads have built-in SDL mappings)

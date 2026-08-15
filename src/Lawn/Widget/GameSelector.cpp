@@ -361,7 +361,7 @@ GameSelector::GameSelector(LawnApp* theApp)
 	mDestX = 0;
 	mDestY = 0;
 	mZombatarWidget = new ZombatarWidget(this);
-	mZombatarWidget->Move(BOARD_WIDTH + BOARD_ADDITIONAL_WIDTH, 0);
+	mZombatarWidget->Move(BOARD_WIDTH, 0);
 	mAchievementsWidget = new AchievementsWidget(this->mApp);
 	mAchievementsWidget->Move(0, mApp->mHeight);
 	mQuickPlayWidget = new QuickPlayWidget(this);
@@ -780,7 +780,7 @@ void GameSelector::Update()
 		int aNewY = PvzpAnimateCurve(75, 0, mSlideCounter, mStartY, mDestY, PvzpCurves::CURVE_EASE_IN_OUT);
 		Move(aNewX, aNewY);
 
-		mZombatarWidget->Move(aNewX + BOARD_WIDTH + BOARD_ADDITIONAL_WIDTH, aNewY);
+		mZombatarWidget->Move(aNewX + BOARD_WIDTH, aNewY);
 		mAchievementsWidget->mY = aNewY + mApp->mHeight;
 		mQuickPlayWidget->Move(aNewX + BOARD_WIDTH, aNewY);
 

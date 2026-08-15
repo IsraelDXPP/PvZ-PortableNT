@@ -335,22 +335,27 @@ void SexyAppBase::InitInput()
 {
 	SDL_Init(SDL_INIT_EVENTS);
 
-#if defined(PVZ_UWP) || defined(__WINRT__)
-	// UWP has no mouse: the gamepad drives a virtual cursor (see UpdateVirtualGamepad)
+	// Enable SDL's cross-platform controller layer everywhere the default SDL
+	// input backend is used.  Keyboard, mouse, and touch events continue to be
+	// processed normally; gamepads only add synthetic mouse/key events below.
 	SDL_InitSubSystem(SDL_INIT_GAMECONTROLLER);
-#endif
+	SDL_InitSubSystem(SDL_INIT_JOYSTICK);
+	SDL_GameControllerEventState(SDL_ENABLE);
+	SDL_JoystickEventState(SDL_ENABLE);
 }
 
-#if defined(PVZ_UWP) || defined(__WINRT__)
 namespace
 {
 struct VirtualPadState
 {
 	SDL_GameController* mController = nullptr;
+	SDL_Joystick* mJoystick = nullptr;
+	SDL_JoystickID mInstanceId = -1;
 	int mCursorX = 0;
 	int mCursorY = 0;
 	bool mCursorSeeded = false;
 	Uint32 mPrevButtons = 0;
+	Uint32 mPrevKeys = 0;
 	float mWheelAccum = 0.0f;
 };
 
@@ -395,6 +400,112 @@ static void PushSyntheticWheel(int theY)
 	SDL_PushEvent(&aEvent);
 }
 
+static VirtualPadState& GetVirtualPadState()
+{
+	static VirtualPadState aState;
+	return aState;
+}
+
+static void CloseVirtualPad(VirtualPadState& theState)
+{
+	if (theState.mController != nullptr)
+	{
+		SDL_GameControllerClose(theState.mController);
+		theState.mController = nullptr;
+	}
+	else if (theState.mJoystick != nullptr)
+	{
+		SDL_JoystickClose(theState.mJoystick);
+	}
+
+	theState.mJoystick = nullptr;
+	theState.mInstanceId = -1;
+	theState.mPrevButtons = 0;
+	theState.mPrevKeys = 0;
+	theState.mWheelAccum = 0.0f;
+}
+
+static bool OpenVirtualPad(VirtualPadState& theState)
+{
+	if (theState.mController != nullptr && SDL_GameControllerGetAttached(theState.mController))
+		return true;
+	if (theState.mJoystick != nullptr && SDL_JoystickGetAttached(theState.mJoystick))
+		return true;
+
+	CloseVirtualPad(theState);
+
+	// Prefer SDL_GameController so Xbox, PlayStation, Switch Pro/Joy-Con pairs,
+	// and common adapters use the official gamecontrollerdb layout.  Devices
+	// without a mapping fall back to raw SDL_Joystick with a conservative layout.
+	const int aNumJoysticks = SDL_NumJoysticks();
+	for (int i = 0; i < aNumJoysticks; ++i)
+	{
+		if (!SDL_IsGameController(i))
+			continue;
+
+		theState.mController = SDL_GameControllerOpen(i);
+		if (theState.mController != nullptr)
+		{
+			theState.mJoystick = SDL_GameControllerGetJoystick(theState.mController);
+			theState.mInstanceId = SDL_JoystickInstanceID(theState.mJoystick);
+			return true;
+		}
+	}
+
+	for (int i = 0; i < aNumJoysticks; ++i)
+	{
+		if (SDL_IsGameController(i))
+			continue;
+
+		theState.mJoystick = SDL_JoystickOpen(i);
+		if (theState.mJoystick != nullptr)
+		{
+			theState.mInstanceId = SDL_JoystickInstanceID(theState.mJoystick);
+			return true;
+		}
+	}
+
+	return false;
+}
+
+static Sint16 GetVirtualPadAxis(const VirtualPadState& theState, SDL_GameControllerAxis theControllerAxis, int theJoystickAxis)
+{
+	if (theState.mController != nullptr)
+		return SDL_GameControllerGetAxis(theState.mController, theControllerAxis);
+	if (theState.mJoystick != nullptr && theJoystickAxis < SDL_JoystickNumAxes(theState.mJoystick))
+		return SDL_JoystickGetAxis(theState.mJoystick, theJoystickAxis);
+	return 0;
+}
+
+
+static Sint16 GetVirtualPadTrigger(const VirtualPadState& theState, SDL_GameControllerAxis theControllerAxis, int theJoystickAxis)
+{
+	if (theState.mController != nullptr)
+		return SDL_GameControllerGetAxis(theState.mController, theControllerAxis);
+
+	// Raw joystick trigger axes vary: many report -32768 at rest, while others
+	// report 0.  Treat only a clearly positive value as pressed to avoid idle
+	// wheel scrolling on unmapped devices.
+	const Sint16 aValue = GetVirtualPadAxis(theState, theControllerAxis, theJoystickAxis);
+	return (aValue > 8000) ? aValue : 0;
+}
+
+static bool GetVirtualPadButton(const VirtualPadState& theState, SDL_GameControllerButton theControllerButton, int theJoystickButton)
+{
+	if (theState.mController != nullptr)
+		return SDL_GameControllerGetButton(theState.mController, theControllerButton) != 0;
+	if (theState.mJoystick != nullptr && theJoystickButton < SDL_JoystickNumButtons(theState.mJoystick))
+		return SDL_JoystickGetButton(theState.mJoystick, theJoystickButton) != 0;
+	return false;
+}
+
+static int GetVirtualPadHat(const VirtualPadState& theState)
+{
+	if (theState.mJoystick != nullptr && SDL_JoystickNumHats(theState.mJoystick) > 0)
+		return SDL_JoystickGetHat(theState.mJoystick, 0);
+	return SDL_HAT_CENTERED;
+}
+
 static bool UpdateVirtualGamepad(SexyAppBase* theApp)
 {
 	// Don't synthesize while previously-pushed events are still queued:
@@ -404,20 +515,8 @@ static bool UpdateVirtualGamepad(SexyAppBase* theApp)
 	if (SDL_HasEvents(SDL_FIRSTEVENT, SDL_LASTEVENT))
 		return false;
 
-	static VirtualPadState aState;
-
-	// Lazily open the first controller (Xbox One pads have built-in SDL mappings)
-	if (aState.mController == nullptr || !SDL_GameControllerGetAttached(aState.mController))
-	{
-		if (aState.mController != nullptr)
-		{
-			SDL_GameControllerClose(aState.mController);
-			aState.mController = nullptr;
-		}
-		if (SDL_NumJoysticks() > 0)
-			aState.mController = SDL_GameControllerOpen(0);
-	}
-	if (aState.mController == nullptr)
+	VirtualPadState& aState = GetVirtualPadState();
+	if (!OpenVirtualPad(aState))
 		return false;
 
 	SDL_Window* aWindow = (SDL_Window*)theApp->mWindow;
@@ -443,8 +542,13 @@ static bool UpdateVirtualGamepad(SexyAppBase* theApp)
 	// --- Left stick: move the virtual cursor (with a dead zone) ---
 	{
 		static const float kDeadZone = 8000.0f;
-		const Sint16 aStickX = SDL_GameControllerGetAxis(aState.mController, SDL_CONTROLLER_AXIS_LEFTX);
-		const Sint16 aStickY = SDL_GameControllerGetAxis(aState.mController, SDL_CONTROLLER_AXIS_LEFTY);
+		Sint16 aStickX = GetVirtualPadAxis(aState, SDL_CONTROLLER_AXIS_LEFTX, 0);
+		Sint16 aStickY = GetVirtualPadAxis(aState, SDL_CONTROLLER_AXIS_LEFTY, 1);
+		const int aHat = GetVirtualPadHat(aState);
+		if (aStickX == 0 && ((aHat & SDL_HAT_LEFT) || (aHat & SDL_HAT_RIGHT)))
+			aStickX = (aHat & SDL_HAT_LEFT) ? -32767 : 32767;
+		if (aStickY == 0 && ((aHat & SDL_HAT_UP) || (aHat & SDL_HAT_DOWN)))
+			aStickY = (aHat & SDL_HAT_UP) ? -32767 : 32767;
 		const float aMag = std::sqrt((float)aStickX * aStickX + (float)aStickY * aStickY);
 		if (aMag > kDeadZone)
 		{
@@ -464,20 +568,20 @@ static bool UpdateVirtualGamepad(SexyAppBase* theApp)
 
 	// --- Face/bumper buttons: mouse clicks (A/X/LB = left, B/Y/RB = right/shovel) ---
 	{
-		struct ButtonMap { SDL_GameControllerButton mButton; Uint8 mSDLMouseButton; Uint32 mBit; };
+		struct ButtonMap { SDL_GameControllerButton mButton; int mJoystickButton; Uint8 mSDLMouseButton; Uint32 mBit; };
 		static const ButtonMap aButtonMaps[] =
 		{
-			{ SDL_CONTROLLER_BUTTON_A,             SDL_BUTTON_LEFT,  1u << 0 },
-			{ SDL_CONTROLLER_BUTTON_X,             SDL_BUTTON_LEFT,  1u << 1 },
-			{ SDL_CONTROLLER_BUTTON_B,             SDL_BUTTON_RIGHT, 1u << 2 },
-			{ SDL_CONTROLLER_BUTTON_Y,             SDL_BUTTON_RIGHT, 1u << 3 },
-			{ SDL_CONTROLLER_BUTTON_LEFTSHOULDER,  SDL_BUTTON_LEFT,  1u << 4 },
-			{ SDL_CONTROLLER_BUTTON_RIGHTSHOULDER, SDL_BUTTON_RIGHT, 1u << 5 },
+			{ SDL_CONTROLLER_BUTTON_A,             0, SDL_BUTTON_LEFT,  1u << 0 },
+			{ SDL_CONTROLLER_BUTTON_X,             2, SDL_BUTTON_LEFT,  1u << 1 },
+			{ SDL_CONTROLLER_BUTTON_B,             1, SDL_BUTTON_RIGHT, 1u << 2 },
+			{ SDL_CONTROLLER_BUTTON_Y,             3, SDL_BUTTON_RIGHT, 1u << 3 },
+			{ SDL_CONTROLLER_BUTTON_LEFTSHOULDER,  4, SDL_BUTTON_LEFT,  1u << 4 },
+			{ SDL_CONTROLLER_BUTTON_RIGHTSHOULDER, 5, SDL_BUTTON_RIGHT, 1u << 5 },
 		};
 		Uint32 aCurButtons = 0;
 		for (const ButtonMap& aMap : aButtonMaps)
 		{
-			if (SDL_GameControllerGetButton(aState.mController, aMap.mButton))
+			if (GetVirtualPadButton(aState, aMap.mButton, aMap.mJoystickButton))
 				aCurButtons |= aMap.mBit;
 		}
 		for (const ButtonMap& aMap : aButtonMaps)
@@ -500,8 +604,8 @@ static bool UpdateVirtualGamepad(SexyAppBase* theApp)
 
 	// --- Triggers: scroll wheel (menu/almanac lists) ---
 	{
-		const Sint16 aLeft = SDL_GameControllerGetAxis(aState.mController, SDL_CONTROLLER_AXIS_TRIGGERLEFT);
-		const Sint16 aRight = SDL_GameControllerGetAxis(aState.mController, SDL_CONTROLLER_AXIS_TRIGGERRIGHT);
+		const Sint16 aLeft = GetVirtualPadTrigger(aState, SDL_CONTROLLER_AXIS_TRIGGERLEFT, 2);
+		const Sint16 aRight = GetVirtualPadTrigger(aState, SDL_CONTROLLER_AXIS_TRIGGERRIGHT, 5);
 		aState.mWheelAccum += ((float)aLeft - (float)aRight) / 32767.0f;
 		const int aWheel = (int)std::lround(aState.mWheelAccum);
 		if (aWheel != 0)
@@ -514,26 +618,35 @@ static bool UpdateVirtualGamepad(SexyAppBase* theApp)
 
 	// --- View/Menu: Escape (pause); D-pad: arrow keys ---
 	{
-		struct KeyMap { SDL_GameControllerButton mButton; SDL_Keycode mKey; Uint32 mBit; };
+		struct KeyMap { SDL_GameControllerButton mButton; int mJoystickButton; SDL_Keycode mKey; Uint32 mBit; };
 		static const KeyMap aKeyMaps[] =
 		{
-			{ SDL_CONTROLLER_BUTTON_BACK,  SDLK_ESCAPE, 1u << 0 },
-			{ SDL_CONTROLLER_BUTTON_START, SDLK_ESCAPE, 1u << 1 },
-			{ SDL_CONTROLLER_BUTTON_DPAD_UP,    SDLK_UP,    1u << 2 },
-			{ SDL_CONTROLLER_BUTTON_DPAD_DOWN,  SDLK_DOWN,  1u << 3 },
-			{ SDL_CONTROLLER_BUTTON_DPAD_LEFT,  SDLK_LEFT,  1u << 4 },
-			{ SDL_CONTROLLER_BUTTON_DPAD_RIGHT, SDLK_RIGHT, 1u << 5 },
+			{ SDL_CONTROLLER_BUTTON_BACK,       6, SDLK_ESCAPE, 1u << 0 },
+			{ SDL_CONTROLLER_BUTTON_START,      7, SDLK_ESCAPE, 1u << 1 },
+			{ SDL_CONTROLLER_BUTTON_DPAD_UP,   -1, SDLK_UP,     1u << 2 },
+			{ SDL_CONTROLLER_BUTTON_DPAD_DOWN, -1, SDLK_DOWN,   1u << 3 },
+			{ SDL_CONTROLLER_BUTTON_DPAD_LEFT, -1, SDLK_LEFT,   1u << 4 },
+			{ SDL_CONTROLLER_BUTTON_DPAD_RIGHT,-1, SDLK_RIGHT,  1u << 5 },
 		};
-		static Uint32 sPrevKeys = 0;
+
 		Uint32 aCurKeys = 0;
 		for (const KeyMap& aMap : aKeyMaps)
 		{
-			if (SDL_GameControllerGetButton(aState.mController, aMap.mButton))
+			bool aPressed = GetVirtualPadButton(aState, aMap.mButton, aMap.mJoystickButton);
+			if (aState.mController == nullptr && aMap.mJoystickButton < 0)
+			{
+				const int aHat = GetVirtualPadHat(aState);
+				if (aMap.mKey == SDLK_UP) aPressed = (aHat & SDL_HAT_UP) != 0;
+				else if (aMap.mKey == SDLK_DOWN) aPressed = (aHat & SDL_HAT_DOWN) != 0;
+				else if (aMap.mKey == SDLK_LEFT) aPressed = (aHat & SDL_HAT_LEFT) != 0;
+				else if (aMap.mKey == SDLK_RIGHT) aPressed = (aHat & SDL_HAT_RIGHT) != 0;
+			}
+			if (aPressed)
 				aCurKeys |= aMap.mBit;
 		}
 		for (const KeyMap& aMap : aKeyMaps)
 		{
-			const bool aWasDown = (sPrevKeys & aMap.mBit) != 0;
+			const bool aWasDown = (aState.mPrevKeys & aMap.mBit) != 0;
 			const bool aIsDown = (aCurKeys & aMap.mBit) != 0;
 			if (aIsDown && !aWasDown)
 			{
@@ -546,13 +659,12 @@ static bool UpdateVirtualGamepad(SexyAppBase* theApp)
 				aPushedAnything = true;
 			}
 		}
-		sPrevKeys = aCurKeys;
+		aState.mPrevKeys = aCurKeys;
 	}
 
 	return aPushedAnything;
 }
 } // namespace
-#endif
 
 static void RecordDemoMousePosition(SexyAppBase* theApp, int theX, int theY)
 {
@@ -794,13 +906,12 @@ bool SexyAppBase::ProcessDeferredMessages(bool singleMessage)
 	}
 #endif
 
-#if defined(PVZ_UWP) || defined(__WINRT__)
-	// UWP has no mouse: synthesize input events from the gamepad.
+	// Synthesize virtual mouse/key input from the first usable controller.
 	// Pushed events make SDL_PollEvent succeed below; UpdateAppStep keeps
-	// draining messages until the queue empties.
+	// draining messages until the queue empties.  We skip this during demo
+	// playback because playback owns the widget input stream.
 	if (!mPlayingDemoBuffer)
 		UpdateVirtualGamepad(this);
-#endif
 
 	SDL_Event event;
 	if (SDL_PollEvent(&event))
@@ -834,6 +945,24 @@ bool SexyAppBase::ProcessDeferredMessages(bool singleMessage)
 
 		switch(event.type)
 		{
+			case SDL_CONTROLLERDEVICEADDED:
+			case SDL_JOYDEVICEADDED:
+				// Hot-plug is resolved lazily by UpdateVirtualGamepad; keep the
+				// current pad until it disconnects so accidental second-player input
+				// does not steal control.
+				break;
+
+			case SDL_CONTROLLERDEVICEREMOVED:
+			case SDL_JOYDEVICEREMOVED:
+			{
+				VirtualPadState& aState = GetVirtualPadState();
+				const SDL_JoystickID aRemovedId =
+					(event.type == SDL_CONTROLLERDEVICEREMOVED) ? event.cdevice.which : event.jdevice.which;
+				if (aState.mInstanceId == aRemovedId)
+					CloseVirtualPad(aState);
+				break;
+			}
+
 			case SDL_QUIT:
 				CloseRequestAsync();
 				break;

@@ -24,6 +24,8 @@
 
 #include <SDL.h>
 
+#include <fstream>
+
 #include "SexyAppBase.h"
 #include "graphics/GLInterface.h"
 #include "graphics/GLImage.h"
@@ -31,6 +33,27 @@
 #include "widget/WidgetManager.h"
 
 using namespace Sexy;
+
+// Implemented in uwp/PvzpUwpMetadata.cpp (C++/CX). Returns the absolute path
+// of this app's LocalState folder, or an empty string on failure.
+std::string PvzpUwpGetLocalStatePath();
+
+namespace
+{
+void UwpDebugLog(const char* theMessage)
+{
+	std::string aPath = PvzpUwpGetLocalStatePath();
+	if (aPath.empty())
+		return;
+	std::ofstream aFile(aPath + "/uwp_debug.log", std::ios::app);
+	if (aFile)
+	{
+		aFile << theMessage << "\n";
+		if (const char* anError = SDL_GetError(); anError && *anError)
+			aFile << "  SDL_GetError: " << anError << "\n";
+	}
+}
+} // namespace
 
 // UWP (Xbox One / PC) has no desktop OpenGL: rendering is OpenGL ES 2.0
 // through SDL2's winrt video driver, which provides EGL via ANGLE (D3D11).
@@ -47,7 +70,9 @@ void SexyAppBase::MakeWindow()
 	{
 		SDL_SetHint(SDL_HINT_ORIENTATIONS, "LandscapeLeft LandscapeRight");
 
-		SDL_Init(SDL_INIT_VIDEO);
+		UwpDebugLog("MakeWindow: SDL_Init(VIDEO) before");
+		if (SDL_Init(SDL_INIT_VIDEO) < 0)
+			UwpDebugLog("MakeWindow: SDL_Init(VIDEO) FAILED");
 
 		Uint32 winFlags = SDL_WINDOW_OPENGL | SDL_WINDOW_FULLSCREEN;
 
@@ -62,7 +87,17 @@ void SexyAppBase::MakeWindow()
 			mWidth, mHeight, winFlags);
 
 		if (mWindow)
+			UwpDebugLog("MakeWindow: SDL_CreateWindow OK");
+		else
+			UwpDebugLog("MakeWindow: SDL_CreateWindow NULL");
+
+		if (mWindow)
+		{
+			UwpDebugLog("MakeWindow: SDL_GL_CreateContext before");
 			mContext = (void*)SDL_GL_CreateContext((SDL_Window*)mWindow);
+			if (mContext)
+				UwpDebugLog("MakeWindow: SDL_GL_CreateContext OK (first try)");
+		}
 
 		// EGL surfaces may be transiently unavailable on WinRT while the
 		// swap chain settles (app launch, display handoff, etc.)
@@ -71,14 +106,18 @@ void SexyAppBase::MakeWindow()
 			SDL_Delay(100);
 			SDL_PumpEvents();
 			mContext = (void*)SDL_GL_CreateContext((SDL_Window*)mWindow);
+			if (mContext)
+				UwpDebugLog("MakeWindow: SDL_GL_CreateContext OK (retry)");
 		}
 		if (!mContext)
 		{
+			UwpDebugLog("MakeWindow: SDL_GL_CreateContext FAILED after retries");
 			if (mWindow) { SDL_DestroyWindow((SDL_Window*)mWindow); mWindow = nullptr; }
 			Sexy::LogError("Failed to create OpenGL ES context (ANGLE).");
 			return;
 		}
 
+		UwpDebugLog("MakeWindow: context created, SetSwapInterval");
 		SDL_GL_SetSwapInterval(1);
 	}
 
@@ -87,11 +126,14 @@ void SexyAppBase::MakeWindow()
 		mGLInterface = new GLInterface(this);
 		if (!InitGLInterface())
 		{
+			UwpDebugLog("MakeWindow: InitGLInterface FAILED");
 			delete mGLInterface;
 			mGLInterface = nullptr;
 			return;
 		}
 	}
+
+	UwpDebugLog("MakeWindow: complete");
 
 	bool isActive = mActive;
 	mActive = mMinimized ? false : true;

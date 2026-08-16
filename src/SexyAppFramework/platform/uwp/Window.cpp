@@ -24,7 +24,12 @@
 
 #include <SDL.h>
 
+#include <atomic>
+#include <chrono>
 #include <fstream>
+#include <functional>
+#include <string>
+#include <thread>
 
 #include "SexyAppBase.h"
 #include "graphics/GLInterface.h"
@@ -38,9 +43,14 @@ using namespace Sexy;
 // of this app's LocalState folder, or an empty string on failure.
 std::string PvzpUwpGetLocalStatePath();
 
+// Implemented in uwp/PvzpUwpMetadata.cpp (C++/CX). Runs a callable, catching
+// C++/CX Platform::Exception. Returns 0 on success, -1 on failure (outError
+// filled with a diagnostic).
+int PvzpUwpRunCxGuarded(const std::function<void()>& theCallable, std::string& outError);
+
 namespace
 {
-void UwpDebugLog(const char* theMessage)
+void UwpDebugLog(const std::string& theMessage)
 {
 	std::string aPath = PvzpUwpGetLocalStatePath();
 	if (aPath.empty())
@@ -51,6 +61,25 @@ void UwpDebugLog(const char* theMessage)
 		aFile << theMessage << "\n";
 		if (const char* anError = SDL_GetError(); anError && *anError)
 			aFile << "  SDL_GetError: " << anError << "\n";
+	}
+}
+
+// Heartbeat thread: writes a timestamp every 200 ms so we can tell whether the
+// process hangs inside a call or is killed outright, and how long it lives.
+void RunUwpWatchdog(const std::atomic<bool>& aRunning)
+{
+	std::string aPath = PvzpUwpGetLocalStatePath();
+	if (aPath.empty())
+		return;
+	const auto aT0 = std::chrono::steady_clock::now();
+	while (aRunning.load())
+	{
+		std::this_thread::sleep_for(std::chrono::milliseconds(200));
+		const auto aMs = std::chrono::duration_cast<std::chrono::milliseconds>(
+			std::chrono::steady_clock::now() - aT0).count();
+		std::ofstream aFile(aPath + "/uwp_debug.log", std::ios::app);
+		if (aFile)
+			aFile << "watchdog t=" << aMs << "ms\n";
 	}
 }
 } // namespace
@@ -70,9 +99,16 @@ void SexyAppBase::MakeWindow()
 	{
 		SDL_SetHint(SDL_HINT_ORIENTATIONS, "LandscapeLeft LandscapeRight");
 
+		std::atomic<bool> aWatchdogRunning{ true };
+		std::thread aWatchdog(RunUwpWatchdog, std::ref(aWatchdogRunning));
+
+		std::string aErr;
+		int aSdlInit = -1;
 		UwpDebugLog("MakeWindow: SDL_Init(VIDEO) before");
-		if (SDL_Init(SDL_INIT_VIDEO) < 0)
-			UwpDebugLog("MakeWindow: SDL_Init(VIDEO) FAILED");
+		if (PvzpUwpRunCxGuarded([&]() { aSdlInit = SDL_Init(SDL_INIT_VIDEO); }, aErr) != 0)
+			UwpDebugLog("MakeWindow: SDL_Init threw: " + aErr);
+		else
+			UwpDebugLog(aSdlInit < 0 ? "MakeWindow: SDL_Init returned <0" : "MakeWindow: SDL_Init returned 0");
 
 		Uint32 winFlags = SDL_WINDOW_OPENGL | SDL_WINDOW_FULLSCREEN;
 
@@ -81,23 +117,27 @@ void SexyAppBase::MakeWindow()
 		SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
 		SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
 
-		mWindow = (void*)SDL_CreateWindow(
-			mTitle.c_str(),
-			SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
-			mWidth, mHeight, winFlags);
-
-		if (mWindow)
+		if (PvzpUwpRunCxGuarded([&]() {
+				mWindow = (void*)SDL_CreateWindow(
+					mTitle.c_str(),
+					SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
+					mWidth, mHeight, winFlags);
+			}, aErr) != 0)
+			UwpDebugLog("MakeWindow: SDL_CreateWindow threw: " + aErr);
+		else if (mWindow)
 			UwpDebugLog("MakeWindow: SDL_CreateWindow OK");
 		else
 			UwpDebugLog("MakeWindow: SDL_CreateWindow NULL");
 
+		auto aCreateContext = [&]() {
+			UwpDebugLog("MakeWindow: SDL_GL_CreateContext attempt");
+			if (PvzpUwpRunCxGuarded([&]() {
+					mContext = (void*)SDL_GL_CreateContext((SDL_Window*)mWindow);
+				}, aErr) != 0)
+				UwpDebugLog("MakeWindow: SDL_GL_CreateContext threw: " + aErr);
+		};
 		if (mWindow)
-		{
-			UwpDebugLog("MakeWindow: SDL_GL_CreateContext before");
-			mContext = (void*)SDL_GL_CreateContext((SDL_Window*)mWindow);
-			if (mContext)
-				UwpDebugLog("MakeWindow: SDL_GL_CreateContext OK (first try)");
-		}
+			aCreateContext();
 
 		// EGL surfaces may be transiently unavailable on WinRT while the
 		// swap chain settles (app launch, display handoff, etc.)
@@ -105,10 +145,10 @@ void SexyAppBase::MakeWindow()
 		{
 			SDL_Delay(100);
 			SDL_PumpEvents();
-			mContext = (void*)SDL_GL_CreateContext((SDL_Window*)mWindow);
-			if (mContext)
-				UwpDebugLog("MakeWindow: SDL_GL_CreateContext OK (retry)");
+			aCreateContext();
 		}
+		aWatchdogRunning = false;
+		aWatchdog.join();
 		if (!mContext)
 		{
 			UwpDebugLog("MakeWindow: SDL_GL_CreateContext FAILED after retries");

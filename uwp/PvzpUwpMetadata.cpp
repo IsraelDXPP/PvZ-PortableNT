@@ -11,6 +11,8 @@
  */
 
 #include <string>
+#include <functional>
+#include <exception>
 #include <windows.h>
 
 namespace PvzpUwp
@@ -45,4 +47,42 @@ std::string PvzpUwpGetLocalStatePath()
 	std::string aOut(static_cast<size_t>(aLen), '\0');
 	::WideCharToMultiByte(CP_UTF8, 0, aWide.c_str(), (int)aWide.size(), &aOut[0], aLen, nullptr, nullptr);
 	return aOut;
+}
+
+// Runs a callable, catching C++/CX Platform::Exception (which SDL2's WinRT
+// paths throw on failures) plus std::exception. Returns 0 on success; on
+// failure returns -1 and fills outError with a diagnostic string.
+int PvzpUwpRunCxGuarded(const std::function<void()>& theCallable, std::string& outError)
+{
+	try
+	{
+		theCallable();
+		return 0;
+	}
+	catch (Platform::Exception^ e)
+	{
+		const std::wstring aMsg(e->Message != nullptr ? e->Message->Data() : L"(no message)");
+		char aHex[16];
+		std::snprintf(aHex, sizeof(aHex), "0x%08X", (unsigned int)e->HResult);
+		outError = "Platform::Exception " + std::string(aHex);
+		const int aLen = ::WideCharToMultiByte(CP_UTF8, 0, aMsg.c_str(), (int)aMsg.size(), nullptr, 0, nullptr, nullptr);
+		if (aLen > 0)
+		{
+			std::string aUtf8(static_cast<size_t>(aLen), '\0');
+			::WideCharToMultiByte(CP_UTF8, 0, aMsg.c_str(), (int)aMsg.size(), &aUtf8[0], aLen, nullptr, nullptr);
+			outError += " " + aUtf8;
+		}
+		return -1;
+	}
+	catch (std::exception& e)
+	{
+		outError = "std::exception: ";
+		outError += e.what();
+		return -1;
+	}
+	catch (...)
+	{
+		outError = "unknown exception";
+		return -1;
+	}
 }

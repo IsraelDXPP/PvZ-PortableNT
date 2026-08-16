@@ -456,3 +456,6 @@ build-*/
 
 # Game recordings
 *.dmo
+
+# vcpkg manifest installs
+vcpkg_installed/

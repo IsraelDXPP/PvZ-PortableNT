@@ -113,21 +113,46 @@ jobs:
           # re-installs the manifest into the CMake build dir during
           # configure. UWP apps must ship every non-system DLL next to the exe.
           Copy-Item "build-uwp/vcpkg_installed/x64-uwp/bin/*.dll" dist/
-          # UWP CRT runtime DLLs (vcruntime140_app, msvcp140_app, vccorlib140,
-          # concrt140_app, ...) from the VC redist onecore app layout.
-          $vs = "C:\Program Files\Microsoft Visual Studio\2022\Enterprise"
+          # UWP CRT runtime DLLs (vcruntime140_app, msvcp140_app, concrt140_app,
+          # ...) ship only in the Microsoft.VCLibs.140.00 UWP framework appx:
+          # the VC redist no longer contains the *_app variants, and its
+          # newest leftover _app (a stale 14.30) crashes the app on first
+          # heavy STL use. Prefer the framework appx installed with the
+          # Universal workload, else fetch it via winget.
+          $vclibsAppx = $null
+          $vclibsRoot = "C:\Program Files (x86)\Microsoft SDKs\Windows Kits\10\ExtensionSDKs\Microsoft.VCLibs"
+          if (Test-Path $vclibsRoot) {
+            $vclibsAppx = Get-ChildItem $vclibsRoot -Recurse -Filter "Microsoft.VCLibs.*.appx" -ErrorAction SilentlyContinue |
+              Where-Object { $_.Name -match 'x64' -and $_.Name -notmatch 'Debug|UWPDesktop' } |
+              Sort-Object LastWriteTime -Descending |
+              Select-Object -First 1
+          }
+          if (-not $vclibsAppx) {
+            Write-Host "VCLibs ExtensionSDK appx not found; downloading via winget..."
+            $dlDir = "$env:RUNNER_TEMP\vclibs-dl"
+            winget download --id Microsoft.VCLibs.14 -e --architecture x64 --accept-source-agreements --download-directory $dlDir | Out-Null
+            $zip = Get-ChildItem $dlDir -Recurse -Filter *.zip -ErrorAction SilentlyContinue | Select-Object -First 1
+            if (-not $zip) { throw "winget VCLibs download produced no archive" }
+            $ex = "$env:RUNNER_TEMP\vclibs-x"
+            Expand-Archive -LiteralPath $zip.FullName -DestinationPath $ex -Force
+            $vclibsAppx = Get-ChildItem $ex -Recurse -Filter "Microsoft.VCLibs.140.00_*.appx" -ErrorAction SilentlyContinue |
+              Where-Object { $_.Name -match 'x64' -and $_.Name -notmatch 'Debug|UWPDesktop' } |
+              Select-Object -First 1
+          }
+          if (-not $vclibsAppx) { throw "Microsoft.VCLibs UWP framework appx not found" }
+          $crtUnpack = "$env:RUNNER_TEMP\vclibs-crt"
+          New-Item -ItemType Directory -Force -Path $crtUnpack | Out-Null
+          Expand-Archive -LiteralPath $vclibsAppx.FullName -DestinationPath $crtUnpack -Force
           $crtNames = @('vcruntime140_app.dll', 'vcruntime140_1_app.dll',
             'msvcp140_app.dll', 'msvcp140_1_app.dll', 'msvcp140_2_app.dll',
-            'concrt140_app.dll', 'vccorlib140.dll')
+            'concrt140_app.dll', 'vccorlib140_app.dll')
           $crtDlls = @()
           foreach ($n in $crtNames) {
-            $f = Get-ChildItem "$vs\VC\Redist\MSVC" -Recurse -Filter $n -ErrorAction SilentlyContinue |
-              Where-Object { $_.FullName -match '\\x64\\' } |
-              Sort-Object FullName -Descending |
+            $f = Get-ChildItem $crtUnpack -Recurse -Filter $n -ErrorAction SilentlyContinue |
               Select-Object -First 1
             if ($f) { $crtDlls += $f }
           }
-          if (-not $crtDlls) { throw "UWP CRT DLLs not found in VC redist" }
+          if (-not $crtDlls) { throw "no UWP CRT DLLs found in VCLibs appx" }
           $crtDlls | ForEach-Object { Copy-Item $_.FullName dist/ }
           if (-not (Get-ChildItem dist -Filter *.dll)) { throw "no DLLs staged" }
           # d3dcompiler_47.dll required by ANGLE's D3D11 backend.

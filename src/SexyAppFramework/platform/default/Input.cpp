@@ -342,8 +342,20 @@ void SexyAppBase::InitInput()
 }
 
 #if defined(PVZ_UWP) || defined(__WINRT__)
+// True while the gamepad drives the pointer; cleared once a real OS pointer
+// (mouse/touch) is used so the OS cursor takes over instead of the drawn one.
+namespace Sexy
+{
+// False until the gamepad actually produces input and claims the pointer.
+bool gUwpVirtualCursorActive = false;
+}
+
 namespace
 {
+// SDL's winrt driver reports all real pointer input with which == 0, so any
+// other value uniquely marks the synthetic events we push below.
+static const Uint32 kSyntheticMouseWhich = 0xE1100D00;
+
 struct VirtualPadState
 {
 	SDL_GameController* mController = nullptr;
@@ -359,6 +371,7 @@ static void PushSyntheticMouseMotion(int theX, int theY)
 	SDL_Event aEvent;
 	SDL_zero(aEvent);
 	aEvent.type = SDL_MOUSEMOTION;
+	aEvent.motion.which = kSyntheticMouseWhich;
 	aEvent.motion.x = theX;
 	aEvent.motion.y = theY;
 	SDL_PushEvent(&aEvent);
@@ -369,6 +382,7 @@ static void PushSyntheticMouseButton(Uint32 theType, int theX, int theY, Uint8 t
 	SDL_Event aEvent;
 	SDL_zero(aEvent);
 	aEvent.type = theType;
+	aEvent.button.which = kSyntheticMouseWhich;
 	aEvent.button.x = theX;
 	aEvent.button.y = theY;
 	aEvent.button.button = theButton;
@@ -449,7 +463,7 @@ static bool UpdateVirtualGamepad(SexyAppBase* theApp)
 		if (aMag > kDeadZone)
 		{
 			const float aScale = std::min(1.0f, (aMag - kDeadZone) / (32767.0f - kDeadZone));
-			const float aSpeed = (float)aWinH * 1.2f / 60.0f; // ~1.2 screens/second at 60fps
+			const float aSpeed = (float)aWinH * 0.55f / 60.0f; // ~0.55 screens/second at 60fps
 			const int aDX = (int)std::lround(aStickX / aMag * aScale * aSpeed);
 			const int aDY = (int)std::lround(aStickY / aMag * aScale * aSpeed);
 			if (aDX != 0 || aDY != 0)
@@ -547,6 +561,17 @@ static bool UpdateVirtualGamepad(SexyAppBase* theApp)
 			}
 		}
 		sPrevKeys = aCurKeys;
+	}
+
+	// Only claim the pointer when the gamepad actually produced input this
+	// frame: an idle pad must not steal the cursor back from a real mouse.
+	if (aPushedAnything)
+	{
+		// The gamepad is driving the pointer now: show the drawn cursor and
+		// hide the OS one (on PC this also lets the OS cursor take over once
+		// a real mouse/touch event is seen).
+		gUwpVirtualCursorActive = true;
+		SDL_ShowCursor(SDL_DISABLE);
 	}
 
 	return aPushedAnything;
@@ -893,6 +918,15 @@ bool SexyAppBase::ProcessDeferredMessages(bool singleMessage)
 				if (!mMouseIn)
 					mMouseIn = true;
 
+#if defined(PVZ_UWP) || defined(__WINRT__)
+				if (event.motion.which != kSyntheticMouseWhich)
+				{
+					// A real OS pointer: hand over to the OS cursor.
+					gUwpVirtualCursorActive = false;
+					SDL_ShowCursor(SDL_ENABLE);
+				}
+#endif
+
 				int x = event.motion.x;
 				int y = event.motion.y;
 				mWidgetManager->RemapMouse(x, y);
@@ -907,6 +941,14 @@ bool SexyAppBase::ProcessDeferredMessages(bool singleMessage)
 			{
 				if (!mMouseIn)
 					mMouseIn = true;
+
+#if defined(PVZ_UWP) || defined(__WINRT__)
+				if (event.button.which != kSyntheticMouseWhich)
+				{
+					gUwpVirtualCursorActive = false;
+					SDL_ShowCursor(SDL_ENABLE);
+				}
+#endif
 
 				int x = event.button.x;
 				int y = event.button.y;
@@ -930,6 +972,14 @@ bool SexyAppBase::ProcessDeferredMessages(bool singleMessage)
 			{
 				if (!mMouseIn)
 					mMouseIn = true;
+
+#if defined(PVZ_UWP) || defined(__WINRT__)
+				if (event.button.which != kSyntheticMouseWhich)
+				{
+					gUwpVirtualCursorActive = false;
+					SDL_ShowCursor(SDL_ENABLE);
+				}
+#endif
 
 				int x = event.button.x;
 				int y = event.button.y;

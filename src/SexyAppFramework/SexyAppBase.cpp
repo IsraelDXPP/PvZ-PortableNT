@@ -81,46 +81,72 @@
 using namespace Sexy;
 
 #if defined(PVZ_UWP) || defined(__WINRT__)
+#include "platform/uwp/UwpCursors.h"
+
 namespace
 {
 // UWP/Xbox has no OS mouse cursor (mouse mode only applies to HTML/XAML apps),
 // so the gamepad-driven virtual cursor is drawn manually on top of each frame.
-void DrawVirtualCursor(Graphics* theGraphics, int x, int y)
+// The textures are embedded from the active Windows cursor scheme (see
+// tools/export_cursors.ps1) so the virtual cursor matches the desktop mouse.
+UwpCursorId UwpCursorIdFromNum(int theCursorNum)
 {
-	constexpr int kNumVerts = 7;
-	static const Point aArrow[kNumVerts] =
+	switch (theCursorNum)
 	{
-		{ 0, 0 }, { 0, 44 }, { 10, 34 }, { 16, 50 }, { 24, 50 }, { 18, 34 }, { 46, 34 },
-	};
-
-	double aCentroidX = 0, aCentroidY = 0;
-	for (int i = 0; i < kNumVerts; i++)
-	{
-		aCentroidX += aArrow[i].mX;
-		aCentroidY += aArrow[i].mY;
+		case CURSOR_HAND: return UWP_CURSOR_HAND;
+		case CURSOR_TEXT: return UWP_CURSOR_TEXT;
+		case CURSOR_CIRCLE_SLASH: return UWP_CURSOR_NO;
+		case CURSOR_SIZEALL: return UWP_CURSOR_MOVE;
+		default: return UWP_CURSOR_POINTER;
 	}
-	aCentroidX /= kNumVerts;
-	aCentroidY /= kNumVerts;
+}
 
-	Point aBlack[kNumVerts];
-	for (int i = 0; i < kNumVerts; i++)
+MemoryImage* GetCursorImage(int theCursorNum)
+{
+	const UwpCursorData& aData = kUwpCursorData[UwpCursorIdFromNum(theCursorNum)];
+
+	const bool aIsPressed = (theCursorNum == CURSOR_DRAGGING);
+	static MemoryImage* aNormal[UWP_CURSOR_COUNT] = {};
+	static MemoryImage* aPressed = nullptr;
+	MemoryImage*& aCached = aIsPressed ? aPressed : aNormal[UwpCursorIdFromNum(theCursorNum)];
+	if (aCached != nullptr)
+		return aCached;
+
+	MemoryImage* anImage = new MemoryImage;
+	anImage->Create(aData.mWidth, aData.mHeight);
+	uint32_t* aBits = anImage->GetBits();
+
+	if (aIsPressed)
 	{
-		aBlack[i].mX = x + aArrow[i].mX;
-		aBlack[i].mY = y + aArrow[i].mY;
+		// No separate "click/drag" cursor exists in the scheme; darken the
+		// pointer to suggest a pressed state while dragging.
+		for (int i = 0; i < aData.mWidth * aData.mHeight; i++)
+		{
+			uint32_t aPixel = aData.mPixels[i];
+			uint32_t anAlpha = aPixel & 0xFF000000;
+			uint32_t aRed = ((aPixel >> 16) & 0xFF) * 2 / 3;
+			uint32_t aGreen = ((aPixel >> 8) & 0xFF) * 2 / 3;
+			uint32_t aBlue = (aPixel & 0xFF) * 2 / 3;
+			aBits[i] = anAlpha | (aRed << 16) | (aGreen << 8) | aBlue;
+		}
+	}
+	else
+	{
+		memcpy(aBits, aData.mPixels, static_cast<size_t>(aData.mWidth) * aData.mHeight * sizeof(uint32_t));
 	}
 
-	theGraphics->SetColor(Color(0, 0, 0));
-	theGraphics->PolyFill(aBlack, kNumVerts);
+	anImage->CommitBits();
+	aCached = anImage;
+	return anImage;
+}
 
-	Point aWhite[kNumVerts];
-	for (int i = 0; i < kNumVerts; i++)
-	{
-		aWhite[i].mX = static_cast<int>(aCentroidX + (aArrow[i].mX - aCentroidX) * 0.85) + x;
-		aWhite[i].mY = static_cast<int>(aCentroidY + (aArrow[i].mY - aCentroidY) * 0.85) + y;
-	}
+void DrawVirtualCursor(Graphics* theGraphics, int x, int y, int theCursorNum)
+{
+	if (theCursorNum == CURSOR_NONE)
+		return;
 
-	theGraphics->SetColor(Color(255, 255, 255));
-	theGraphics->PolyFill(aWhite, kNumVerts);
+	const UwpCursorData& aData = kUwpCursorData[UwpCursorIdFromNum(theCursorNum)];
+	theGraphics->DrawImage(GetCursorImage(theCursorNum), x - aData.mHotspotX, y - aData.mHotspotY);
 }
 } // namespace
 #endif
@@ -1908,10 +1934,12 @@ bool SexyAppBase::DrawDirtyStuff()
 
 #if defined(PVZ_UWP) || defined(__WINRT__)
 		// Draw the gamepad-driven virtual cursor on top of the frame.
-		if (mWidgetManager->mMouseIn)
+		// When a real mouse/touch is active, the OS cursor is shown instead
+		// and the virtual cursor is hidden.
+		if (gUwpVirtualCursorActive && mWidgetManager->mMouseIn)
 		{
 			Graphics g(mGLInterface->GetScreenImage());
-			DrawVirtualCursor(&g, mWidgetManager->mLastMouseX, mWidgetManager->mLastMouseY);
+			DrawVirtualCursor(&g, mWidgetManager->mLastMouseX, mWidgetManager->mLastMouseY, mCursorNum);
 		}
 #endif
 

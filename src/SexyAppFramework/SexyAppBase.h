@@ -620,6 +620,12 @@ public:
 
 extern SexyAppBase* gSexyAppBase;
 
+#if defined(PVZ_UWP) || defined(__WINRT__)
+// True while the gamepad-driven virtual cursor is the active pointer source.
+// Cleared when a real OS pointer (mouse/touch) is used so the OS cursor takes over.
+extern bool gUwpVirtualCursorActive;
+#endif
+
 };
 
 #endif //__SEXYAPPBASE_H__

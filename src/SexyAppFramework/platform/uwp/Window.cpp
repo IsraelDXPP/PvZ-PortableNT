@@ -24,8 +24,11 @@
 
 #include <SDL.h>
 
+#include <windows.h>
+
 #include <atomic>
 #include <chrono>
+#include <cstdint>
 #include <fstream>
 #include <functional>
 #include <string>
@@ -82,6 +85,82 @@ void RunUwpWatchdog(const std::atomic<bool>& aRunning)
 			aFile << "watchdog t=" << aMs << "ms\n";
 	}
 }
+
+// SEH crash trap, used as an __except filter. Logs the exception code,
+// faulting address and a module-annotated stack so native crashes inside
+// SDL/ANGLE (which the C++/CX guard cannot catch) leave a trace.
+void UwpLogFault(unsigned int aCode, EXCEPTION_POINTERS* aPointers)
+{
+	std::string aPath = PvzpUwpGetLocalStatePath();
+	if (aPath.empty())
+		return;
+	std::ofstream aFile(aPath + "/uwp_debug.log", std::ios::app);
+	if (!aFile)
+		return;
+	aFile << "SEH FAULT code=0x" << std::hex << aCode << std::dec;
+	if (aPointers && aPointers->ExceptionRecord)
+		aFile << " addr=0x" << std::hex << (uintptr_t)aPointers->ExceptionRecord->ExceptionAddress << std::dec;
+	aFile << "\n";
+	void* aFrames[32];
+	const int aCount = CaptureStackBackTrace(0, 32, aFrames, nullptr);
+	for (int i = 0; i < aCount; i++)
+	{
+		aFile << "  #" << i << " 0x" << std::hex << (uintptr_t)aFrames[i] << std::dec;
+		HMODULE aModule = nullptr;
+		if (GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
+				(LPCWSTR)aFrames[i], &aModule))
+		{
+			wchar_t aWide[MAX_PATH] = {};
+			if (GetModuleFileNameW(aModule, aWide, MAX_PATH) > 0)
+			{
+				std::wstring aMod(aWide);
+				const auto aSlash = aMod.find_last_of(L'\\');
+				if (aSlash != std::wstring::npos)
+					aMod = aMod.substr(aSlash + 1);
+				char aName[MAX_PATH] = {};
+				::WideCharToMultiByte(CP_UTF8, 0, aMod.c_str(), (int)aMod.size(), aName, MAX_PATH, nullptr, nullptr);
+				aFile << " " << aName;
+			}
+		}
+		aFile << "\n";
+	}
+}
+
+int UwpCallLoadLibrary()
+{
+	__try
+	{
+		return SDL_GL_LoadLibrary(nullptr);
+	}
+	__except (UwpLogFault(GetExceptionCode(), GetExceptionInformation()), EXCEPTION_EXECUTE_HANDLER)
+	{
+		return -1001;
+	}
+}
+
+void* UwpCallCreateWindow(const char* aTitle, int aWidth, int aHeight, Uint32 aFlags)
+{
+	__try
+	{
+		return (void*)SDL_CreateWindow(aTitle, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, aWidth, aHeight, aFlags);
+	}
+	__except (UwpLogFault(GetExceptionCode(), GetExceptionInformation()), EXCEPTION_EXECUTE_HANDLER)
+	{
+		return nullptr;
+	}
+}
+
+void* UwpCallCreateContext(SDL_Window* aWindow)
+{
+	__try
+	{
+		return (void*)SDL_GL_CreateContext(aWindow);
+	}
+	__except (UwpLogFault(GetExceptionCode(), GetExceptionInformation()), EXCEPTION_EXECUTE_HANDLER)
+	{
+		return (void*)(intptr_t)-1;
+	}
+}
 } // namespace
 
 // UWP (Xbox One / PC) has no desktop OpenGL: rendering is OpenGL ES 2.0
@@ -117,11 +196,26 @@ void SexyAppBase::MakeWindow()
 		SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
 		SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
 
+		// SDL_CreateWindow(OPENGL) lazily loads the GL/EGL library (ANGLE +
+		// D3D11 device init) as its first step. Load it explicitly first so a
+		// crash there can be isolated from window creation.
+		int aLoadLib = -2;
+		UwpDebugLog("MakeWindow: SDL_GL_LoadLibrary before");
+		if (PvzpUwpRunCxGuarded([&]() { aLoadLib = UwpCallLoadLibrary(); }, aErr) != 0)
+			UwpDebugLog("MakeWindow: SDL_GL_LoadLibrary threw: " + aErr);
+		else if (aLoadLib == -1001)
+			UwpDebugLog("MakeWindow: SDL_GL_LoadLibrary SEH CRASH (see SEH FAULT)");
+		else
+			UwpDebugLog(aLoadLib == 0 ? "MakeWindow: SDL_GL_LoadLibrary OK" : "MakeWindow: SDL_GL_LoadLibrary FAILED");
+		if (aLoadLib == -1001)
+		{
+			aWatchdogRunning = false;
+			aWatchdog.join();
+			return;
+		}
+
 		if (PvzpUwpRunCxGuarded([&]() {
-				mWindow = (void*)SDL_CreateWindow(
-					mTitle.c_str(),
-					SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
-					mWidth, mHeight, winFlags);
+				mWindow = UwpCallCreateWindow(mTitle.c_str(), mWidth, mHeight, winFlags);
 			}, aErr) != 0)
 			UwpDebugLog("MakeWindow: SDL_CreateWindow threw: " + aErr);
 		else if (mWindow)
@@ -132,9 +226,14 @@ void SexyAppBase::MakeWindow()
 		auto aCreateContext = [&]() {
 			UwpDebugLog("MakeWindow: SDL_GL_CreateContext attempt");
 			if (PvzpUwpRunCxGuarded([&]() {
-					mContext = (void*)SDL_GL_CreateContext((SDL_Window*)mWindow);
+					mContext = UwpCallCreateContext((SDL_Window*)mWindow);
 				}, aErr) != 0)
 				UwpDebugLog("MakeWindow: SDL_GL_CreateContext threw: " + aErr);
+			else if (mContext == (void*)(intptr_t)-1)
+			{
+				UwpDebugLog("MakeWindow: SDL_GL_CreateContext SEH CRASH (see SEH FAULT)");
+				mContext = nullptr;
+			}
 		};
 		if (mWindow)
 			aCreateContext();

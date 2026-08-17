@@ -409,6 +409,30 @@ static void PushSyntheticWheel(int theY)
 	SDL_PushEvent(&aEvent);
 }
 
+static bool TryOpenGameController(VirtualPadState& aState)
+{
+	if (aState.mController != nullptr && SDL_GameControllerGetAttached(aState.mController))
+		return true;
+
+	if (aState.mController != nullptr)
+	{
+		SDL_GameControllerClose(aState.mController);
+		aState.mController = nullptr;
+	}
+
+	const int aNumJoy = SDL_NumJoysticks();
+	for (int i = 0; i < aNumJoy; i++)
+	{
+		if (SDL_IsGameController(i))
+		{
+			aState.mController = SDL_GameControllerOpen(i);
+			if (aState.mController != nullptr)
+				return true;
+		}
+	}
+	return false;
+}
+
 static bool UpdateVirtualGamepad(SexyAppBase* theApp)
 {
 	// Don't synthesize while previously-pushed events are still queued:
@@ -420,18 +444,7 @@ static bool UpdateVirtualGamepad(SexyAppBase* theApp)
 
 	static VirtualPadState aState;
 
-	// Lazily open the first controller (Xbox One pads have built-in SDL mappings)
-	if (aState.mController == nullptr || !SDL_GameControllerGetAttached(aState.mController))
-	{
-		if (aState.mController != nullptr)
-		{
-			SDL_GameControllerClose(aState.mController);
-			aState.mController = nullptr;
-		}
-		if (SDL_NumJoysticks() > 0)
-			aState.mController = SDL_GameControllerOpen(0);
-	}
-	if (aState.mController == nullptr)
+	if (!TryOpenGameController(aState))
 		return false;
 
 	SDL_Window* aWindow = (SDL_Window*)theApp->mWindow;

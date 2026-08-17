@@ -1,6 +1,9 @@
 {
   "dependencies": [
-    "angle",
+    {
+      "name": "angle",
+      "platform": "windows"
+    },
     "libjpeg-turbo",
     "libogg",
     "libopenmpt",

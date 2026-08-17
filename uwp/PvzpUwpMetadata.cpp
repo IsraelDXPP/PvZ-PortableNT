@@ -3,11 +3,15 @@
  *
  * SPDX-License-Identifier: LGPL-3.0-or-later
  *
- * This file is compiled with /ZW (C++/CX) and provides a Windows Metadata
- * anchor so the linker emits the app's .winmd. AppX packaging requires the
- * package to contain a .winmd for C++/CX-built apps; without at least one
- * /ZW-compiled translation unit the metadata file is not generated and
- * builds fail with APPX0702.
+ * This file is compiled with /ZW (C++/CX) and provides:
+ *   1. The IFrameworkViewSource / IFrameworkView activation class that the
+ *      UWP runtime looks up via the manifest EntryPoint="PvZPortable.App".
+ *   2. A Windows Metadata anchor so the linker emits the app's .winmd.
+ *      AppX packaging requires the package to contain a .winmd for
+ *      C++/CX-built apps; without at least one /ZW-compiled translation
+ *      unit the metadata file is not generated and builds fail with APPX0702.
+ *   3. The PvzpUwpGetLocalStatePath() helper that SexyAppBase uses as
+ *      the UWP resource-folder fallback.
  */
 
 #include <string>
@@ -15,12 +19,46 @@
 #include <exception>
 #include <windows.h>
 
-namespace PvzpUwp
+// ---- UWP activation entry point (manifest EntryPoint="PvZPortable.App") ----
+//
+// When a packaged UWP app launches, the runtime reads Application/@EntryPoint,
+// looks up that type in the package's .winmd, and calls
+// IFrameworkViewSource::CreateView() → IFrameworkView::Run().
+// Without this class the Xbox immediately crashes (0x8D163E00).
+
+// SDL_main.h renames main → SDL_main so the linker symbol matches.
+#include "SDL_main.h"
+
+namespace PvZPortable
 {
-	ref class PvzpUwpMetadata sealed
+	ref class AppView sealed : Windows::ApplicationModel::Core::IFrameworkView
 	{
 	public:
-		PvzpUwpMetadata() {}
+		AppView() {}
+
+		virtual void Initialize(Windows::ApplicationModel::Core::CoreApplicationView^ /*view*/) {}
+		virtual void Load(Platform::String^ /*entryPoint*/) {}
+
+		virtual void Run()
+		{
+			// The system already set upCoreApplication and CoreWindow.
+			// Hand off to SDL2's main which creates the SexyAppFramework window.
+			SDL_main(0, nullptr);
+		}
+
+		virtual void Uninitialize() {}
+	};
+
+	[Windows::Foundation::Metadata::DefaultAttribute]
+	ref class App sealed : Windows::ApplicationModel::Core::IFrameworkViewSource
+	{
+	public:
+		App() {}
+
+		virtual Windows::ApplicationModel::Core::IFrameworkView^ CreateView()
+		{
+			return ref new AppView();
+		}
 	};
 }
 

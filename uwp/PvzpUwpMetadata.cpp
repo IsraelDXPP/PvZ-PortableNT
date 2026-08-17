@@ -38,18 +38,16 @@ namespace PvZPortable
 
 		virtual void Initialize(Windows::ApplicationModel::Core::CoreApplicationView^ /*view*/) {}
 		virtual void Load(Platform::String^ /*entryPoint*/) {}
+		virtual void SetWindow(Windows::UI::Core::CoreWindow^ /*window*/) {}
 
 		virtual void Run()
 		{
-			// The system already set upCoreApplication and CoreWindow.
-			// Hand off to SDL2's main which creates the SexyAppFramework window.
 			SDL_main(0, nullptr);
 		}
 
 		virtual void Uninitialize() {}
 	};
 
-	[Windows::Foundation::Metadata::DefaultAttribute]
 	ref class App sealed : Windows::ApplicationModel::Core::IFrameworkViewSource
 	{
 	public:

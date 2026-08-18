@@ -27,14 +27,23 @@
 #include "misc/PerfTimer.h"
 #include "graphics/Graphics.h"
 #include "graphics/MemoryImage.h"
+#include "PvzpCommon.h"
+
+static std::vector<ReanimAtlas*> gReanimAtlases;
+static std::map<Image*, std::string> gImagePathCache;
+static std::map<std::string, Image*> gImageCache;
 
 ReanimAtlas::ReanimAtlas()
 {
 	mMemoryImage = nullptr;
+	gReanimAtlases.push_back(this);
 }
 
 ReanimAtlas::~ReanimAtlas()
 {
+	auto aIt = std::find(gReanimAtlases.begin(), gReanimAtlases.end(), this);
+	if (aIt != gReanimAtlases.end())
+		gReanimAtlases.erase(aIt);
 	delete mMemoryImage;
 }
 
@@ -251,4 +260,56 @@ void ReanimAtlas::ReanimAtlasCreate(ReanimatorDefinition* theReanimDef)
 		aMemoryGraphis.DrawImage(aImage->mOriginalImage, aImage->mX, aImage->mY);
 	}
 	FixPixelsOnAlphaEdgeForBlending(mMemoryImage);  // set transparent pixels to the average color of their neighbors
+}
+
+void ReanimAtlas::ReloadMemoryImage(int theWidth, int theHeight)
+{
+	mMemoryImage = ReanimAtlasMakeBlankMemoryImage(theWidth, theHeight);
+	Graphics aMemoryGraphis(mMemoryImage);
+	for (int aImageIndex = 0; aImageIndex < static_cast<int>(mImageArray.size()); aImageIndex++)
+	{
+		ReanimAtlasImage* aImage = &mImageArray[aImageIndex];
+		Image* anImage = aImage->mOriginalImage;
+		if (gSexyAppBase->mResourcePackIndex != -1)
+		{
+			std::string aPath;
+			auto aIt = gImagePathCache.find(anImage);
+			if (aIt != gImagePathCache.end())
+				aPath = aIt->second;
+			else
+			{
+				PvzpFindImagePath(anImage, &aPath);
+				gImagePathCache[anImage] = aPath;
+			}
+			if (!aPath.empty())
+			{
+				auto aItr = gImageCache.find(aPath);
+				if (aItr != gImageCache.end())
+					anImage = aItr->second;
+				else
+				{
+					anImage = gSexyAppBase->mResourceManager->GetImage(aPath);
+					gImageCache[aPath] = anImage;
+				}
+			}
+		}
+		aMemoryGraphis.DrawImage(anImage, aImage->mX, aImage->mY);
+	}
+	FixPixelsOnAlphaEdgeForBlending(mMemoryImage);
+}
+
+void ReloadReanimationAtlases()
+{
+	for (auto aIt = gReanimAtlases.begin(); aIt != gReanimAtlases.end(); ++aIt)
+	{
+		ReanimAtlas* aReanimAtlas = *aIt;
+		if (aReanimAtlas->mMemoryImage)
+		{
+			delete aReanimAtlas->mMemoryImage;
+			aReanimAtlas->mMemoryImage = nullptr;
+		}
+		int aAtlasWidth, aAtlasHeight;
+		aReanimAtlas->ArrangeImages(aAtlasWidth, aAtlasHeight);
+		aReanimAtlas->ReloadMemoryImage(aAtlasWidth, aAtlasHeight);
+	}
 }

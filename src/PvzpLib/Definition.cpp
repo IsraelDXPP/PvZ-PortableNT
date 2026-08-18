@@ -170,6 +170,8 @@ constinit const DefMap gReanimatorDefMap = { .mMapFields = gReanimatorDefFields,
 
 constinit const static DefLoadResPath gDefLoadResPaths[4] = { { .mPrefix = "IMAGE_", .mDirectory = "" }, { .mPrefix = "IMAGE_", .mDirectory = "particles/" }, { .mPrefix = "IMAGE_REANIM_", .mDirectory = "reanim/" }, { .mPrefix = "IMAGE_REANIM_", .mDirectory = "images/" } };
 
+static std::map<std::string, std::string> gResNamePaths;
+
 void* ParticleFieldConstructor(void* thePointer)
 {
 	if (thePointer)
@@ -356,11 +358,43 @@ bool DefinitionLoadImage(Image** theImage, const std::string& theName)
 				PvzpAddImageToMap(&aImageRef, theName);
 				PvzpMarkImageForSanding((Image*)aImageRef);
 				*theImage = (Image*)aImageRef;
+				gResNamePaths[theName] = aPathToTry;
 				return true;
 			}
 		}
 	}
 	return false;
+}
+
+Image* DoDefinitionLoadImage(std::string thePath, const std::string& theName, const std::string& theResourcePack)
+{
+	SharedImageRef aImageRef = gSexyAppBase->GetSharedImage(thePath, "", nullptr, !theResourcePack.empty());
+	if ((Image*)aImageRef != nullptr)
+	{
+		PvzpHesitationTrace("Load Image '%s'", theName.c_str());
+		PvzpAddImageToMap(&aImageRef, theName, theResourcePack);
+		PvzpMarkImageForSanding((Image*)aImageRef);
+		return (Image*)aImageRef;
+	}
+	return nullptr;
+}
+
+void DefinitionLoadResourcePackImages()
+{
+	std::string aPackPath = gSexyAppBase->mResourcePackPath;
+	if (Sexy::filesystem::is_directory(aPackPath))
+	{
+		for (auto& aEntry : Sexy::filesystem::directory_iterator(aPackPath))
+		{
+			if (!aEntry.is_directory())
+				continue;
+			std::string aFolderName = aEntry.path().filename().string();
+			if (aFolderName == "." || aFolderName == "..")
+				continue;
+			for (auto aIt = gResNamePaths.begin(); aIt != gResNamePaths.end(); ++aIt)
+				DoDefinitionLoadImage(aPackPath + "/" + aFolderName + "/" + aIt->second, aIt->first, aFolderName);
+		}
+	}
 }
 
 bool DefinitionLoadFont(_Font** theFont, const std::string& theName)

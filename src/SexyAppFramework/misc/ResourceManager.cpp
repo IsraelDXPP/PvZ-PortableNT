@@ -179,6 +179,10 @@ bool ResourceManager::ParseCommonResource(XMLElement &theElement, BaseRes *theRe
 {
 	mHadAlreadyDefinedError = false;
 
+	bool aIsInResourcePack = theRes->mType == ResType_Image && !mCurResourcePack.empty();
+	if (aIsInResourcePack)
+		((ImageRes*)theRes)->mInResourcePack = aIsInResourcePack;
+
 	const std::string &aPath = theElement.mAttributes["path"];
 	if (aPath.empty())
 		return Fail("No path specified.");
@@ -212,12 +216,15 @@ bool ResourceManager::ParseCommonResource(XMLElement &theElement, BaseRes *theRe
 		return Fail("Resource already defined.");
 	}
 
-	mCurResGroupList->push_back(theRes);
+	if (!aIsInResourcePack)
+		mCurResGroupList->push_back(theRes);
 	return true;
 }
 
 bool ResourceManager::ParseSoundResource(XMLElement &theElement)
 {
+	if (!mCurResourcePack.empty())
+		return true;
 	SoundRes *aRes = new SoundRes;
 	aRes->mSoundId = -1;
 	aRes->mVolume = -1;
@@ -274,7 +281,7 @@ static void ReadIntVector(const std::string &theVal, std::vector<int> &theVector
 bool ResourceManager::ParseImageResource(XMLElement &theElement)
 {
 	ImageRes *aRes = new ImageRes;
-	if (!ParseCommonResource(theElement, aRes, mImageMap))
+	if (!ParseCommonResource(theElement, aRes, mCurResourcePack.empty() ? mImageMap : mResourcePackImageMaps[mCurResourcePack]))
 	{
 		if (mHadAlreadyDefinedError && mAllowAlreadyDefinedResources)
 		{
@@ -390,6 +397,8 @@ bool ResourceManager::ParseImageResource(XMLElement &theElement)
 
 bool ResourceManager::ParseFontResource(XMLElement &theElement)
 {
+	if (!mCurResourcePack.empty())
+		return true;
 	FontRes *aRes = new FontRes;
 	aRes->mFont = nullptr;
 	aRes->mImage = nullptr;
@@ -453,6 +462,8 @@ bool ResourceManager::ParseSetDefaults(XMLElement &theElement)
 	anItr = theElement.mAttributes.find("path");
 	if (anItr != theElement.mAttributes.end())
 		mDefaultPath = RemoveTrailingSlash(anItr->second) + '/';
+	if (!mCurResourcePack.empty())
+		mDefaultPath = mApp->mResourcePackPath + "/" + mCurResourcePack + "/" + mDefaultPath;
 
 	anItr = theElement.mAttributes.find("idprefix");
 	if (anItr != theElement.mAttributes.end())
@@ -582,7 +593,7 @@ bool ResourceManager::DoParseResources()
 	return !mHasFailed;
 }
 
-bool ResourceManager::ParseResourcesFile(const std::string& theFilename)
+bool ResourceManager::DoParseResourcesFile(const std::string& theFilename)
 {
 	mXMLParser = new XMLParser();
 	if (!mXMLParser->OpenFile(theFilename))
@@ -606,6 +617,55 @@ bool ResourceManager::ParseResourcesFile(const std::string& theFilename)
 	Fail("Expecting ResourceManifest tag");
 
 	return DoParseResources();
+}
+
+bool ResourceManager::ParseResourcesFile(const std::string& theFilename, bool theOnlyResourcePacks)
+{
+	mCurResourcePack = "";
+	if (!theOnlyResourcePacks ? DoParseResourcesFile(theFilename) : theOnlyResourcePacks)
+	{
+		bool aResetResourcePack = true;
+		int aResourcePackIndex = mApp->mResourcePackIndex;
+		mApp->mResourcePackIndex = -1;
+		for (auto aIt = mResourcePackImageMaps.begin(); aIt != mResourcePackImageMaps.end(); ++aIt)
+			DeleteMap(aIt->second);
+		mResourcePackImageMaps.clear();
+
+		std::string aPackPath = mApp->mResourcePackPath;
+		if (filesystem::is_directory(aPackPath))
+		{
+			for (auto& aEntry : filesystem::directory_iterator(aPackPath))
+			{
+				if (!aEntry.is_directory())
+					continue;
+				std::string aFolderName = aEntry.path().filename().string();
+				if (aFolderName == "." || aFolderName == "..")
+					continue;
+				mCurResourcePack = aFolderName;
+				mResourcePackImageMaps[mCurResourcePack] = ResMap();
+				if (!DoParseResourcesFile(theFilename))
+					return false;
+			}
+
+			for (auto aIt = mResourcePackImageMaps.begin(); aIt != mResourcePackImageMaps.end(); ++aIt)
+			{
+				if (mApp->mResourcePack == aIt->first)
+				{
+					aResetResourcePack = false;
+					break;
+				}
+			}
+			if (aResetResourcePack)
+			{
+				mApp->mResourcePack = "";
+				mApp->mResourcePackIndex = -1;
+			}
+			else
+				mApp->mResourcePackIndex = aResourcePackIndex;
+			mCurResourcePack = "";
+		}
+	}
+	return !mHasFailed;
 }
 
 bool ResourceManager::ReparseResourcesFile(const std::string& theFilename)

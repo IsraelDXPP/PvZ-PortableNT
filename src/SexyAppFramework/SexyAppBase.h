@@ -348,6 +348,10 @@ public:
 	StringIntMap			mIntProperties;
 	StringDoubleMap			mDoubleProperties;
 	StringStringVectorMap	mStringVectorProperties;
+	std::string				mResourcePackPath;
+	std::string				mResourcePack;
+	int						mResourcePackIndex;
+	std::string				mResourcesPath;
 	ResourceManager*		mResourceManager;
 
 protected:
@@ -487,7 +491,7 @@ public:
 	void					EnableCustomCursors(bool enabled);
 	virtual GLImage*		GetImage(const std::string& theFileName, bool commitBits = true);
 	virtual SharedImageRef	SetSharedImage(const std::string& theFileName, const std::string& theVariant, GLImage* theImage, bool* isNew);
-	virtual SharedImageRef	GetSharedImage(const std::string& theFileName, const std::string& theVariant = "", bool* isNew = nullptr);
+	virtual SharedImageRef	GetSharedImage(const std::string& theFileName, const std::string& theVariant = "", bool* isNew = nullptr, bool theReplace = false);
 
 	void					CleanSharedImages();
 	void					PrecacheAdditive(MemoryImage* theImage);
@@ -556,6 +560,12 @@ public:
 	// Resource access methods
 	void					LoadResourceManifest();
 	void					ShowResourceError(bool doExit = false);
+
+	// Resource pack methods
+	void					SwitchResourcePack();
+	void					ReloadResourcePacks();
+	void					LoadCurrentResourcePack();
+	std::string				GetResourcePackString();
 
 	bool					GetBoolean(std::string_view theId);
 	bool					GetBoolean(std::string_view theId, bool theDefault);

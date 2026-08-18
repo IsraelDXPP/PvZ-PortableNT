@@ -89,14 +89,14 @@ public:
 
 	bool				FindImagePath(Image* theImage, std::string* thePath);
 	bool 				FindFontPath(_Font* theFont, std::string* thePath);
-	void				AddImageToMap(SharedImageRef* theImage, const std::string& thePath);
+	void				AddImageToMap(SharedImageRef* theImage, const std::string& thePath, const std::string& theResourcePack = "");
 	bool				PvzpLoadNextResource();
 	bool				PvzpLoadResources(const std::string& theGroup);
 };
 
 bool			PvzpLoadResources(const std::string& theGroup);
 bool			PvzpLoadNextResource();
-void					PvzpAddImageToMap(SharedImageRef* theImage, const std::string& thePath);
+void					PvzpAddImageToMap(SharedImageRef* theImage, const std::string& thePath, const std::string& theResourcePack = "");
 bool					PvzpFindImagePath(Image* theImage, std::string* thePath);
 bool					PvzpFindFontPath(_Font* theFont, std::string* thePath);
 

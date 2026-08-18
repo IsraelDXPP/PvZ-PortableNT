@@ -83,6 +83,7 @@
 #include "../PvzpLib/Reanimator.h"
 #include "../PvzpLib/Definition.h"
 #include "../Resources.h"
+#include "../Lawn/System/ReanimationLawn.h"
 
 using namespace Sexy;
 

@@ -45,6 +45,7 @@
 #include "Lawn/Widget/UserDialog.h"
 #include "Lawn/System/TypingCheck.h"
 #include "PvzpLib/PvzpParticle.h"
+#include "PvzpLib/Definition.h"
 #include "Lawn/Widget/AwardScreen.h"
 #include "Lawn/Widget/TitleScreen.h"
 #include "Lawn/Widget/StoreScreen.h"
@@ -1262,11 +1263,21 @@ void LawnApp::Init()
 	PvzpLogLn("session id: %u", mSessionID);
 //#endif
 
-	if (!mResourceManager->ParseResourcesFile("properties/resources.xml"))
+	if (!mResourceManager->ParseResourcesFile(mResourcesPath))
 	{
 		ShowResourceError(true);
 		return;
 	}
+	int aIndex = 0;
+	for (auto aIt = mResourceManager->mResourcePackImageMaps.begin(); aIt != mResourceManager->mResourcePackImageMaps.end(); ++aIt, ++aIndex)
+	{
+		if (aIt->first == mResourcePack)
+		{
+			mResourcePackIndex = aIndex;
+			break;
+		}
+	}
+	LoadCurrentResourcePack();
 
 	if (!PvzpLoadResources("Init"))
 	{
@@ -1796,6 +1807,8 @@ void LawnApp::LoadingThreadProc()
 	PvzpParticleLoadDefinitions(gLawnParticleArray, LENGTH(gLawnParticleArray));
 	//aDuration = max(aTimer.GetDuration(), 0.0);
 	aTimer.Start();
+
+	DefinitionLoadResourcePackImages();
 
 	PreloadForUser();
 	if (mLoadingFailed || mShutdown || mCloseRequest)

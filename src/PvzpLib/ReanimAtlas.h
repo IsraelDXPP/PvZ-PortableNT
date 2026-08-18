@@ -67,9 +67,11 @@ public:
 	bool                 PlaceAtlasImage(ReanimAtlasImage* theAtlasImageToPlace, int theImageCount, int theMaxWidth);
 	int                             PickAtlasWidth();
 	void                            ArrangeImages(int& theAtlasWidth, int& theAtlasHeight);
+	void                            ReloadMemoryImage(int theWidth, int theHeight);
 	ReanimAtlasImage*               GetEncodedReanimAtlas(Image* theImage);
 };
 
 MemoryImage*                        ReanimAtlasMakeBlankMemoryImage(int theWidth, int theHeight);
+void                                ReloadReanimationAtlases();
 
 #endif

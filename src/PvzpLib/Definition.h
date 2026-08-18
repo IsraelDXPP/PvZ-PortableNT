@@ -179,6 +179,8 @@ bool                    DefMapReadFromCache(void*& theReadPtr, const DefMap* the
 bool                    DefinitionCompileAndLoad(const std::string& theXMLFilePath, const DefMap* theDefMap, void* theDefinition);
 bool                    DefinitionLoadMap(XMLParser* theXmlParser, const DefMap* theDefMap, void* theDefinition);
 bool                    DefinitionLoadImage(Image** theImage, const std::string& theName);
+Image*                  DoDefinitionLoadImage(std::string thePath, const std::string& theName, const std::string& theResourcePack = "");
+void                    DefinitionLoadResourcePackImages();
 bool                    DefinitionLoadFont(_Font** theFont, const std::string& theName);
 bool                    DefinitionLoadXML(const std::string& theFilename, const DefMap* theDefMap, void* theDefinition);
 void                    DefinitionFreeArrayField(DefinitionArrayDef* theArray, const DefMap* theDefMap);

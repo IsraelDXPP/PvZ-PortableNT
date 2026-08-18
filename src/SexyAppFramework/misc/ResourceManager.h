@@ -88,8 +88,9 @@ public: // TODO: revert to protected
 		int mCols;
 		uint32_t mAlphaColor;
 		AnimInfo mAnimInfo;
+		bool mInResourcePack;
 
-		ImageRes() { mType = ResType_Image; }
+		ImageRes() { mType = ResType_Image; mInResourcePack = false; }
 		void         DeleteResource() override;
 	};
 
@@ -133,6 +134,8 @@ public: // TODO: revert to protected
 	ResMap					mSoundMap;
 	ResMap					mFontMap;
 
+	std::map<std::string, ResMap> mResourcePackImageMaps;
+
 	XMLParser*				mXMLParser;
 	std::string				mError;
 	bool					mHasFailed;
@@ -147,6 +150,7 @@ public: // TODO: revert to protected
 	ResGroupMap				mResGroupMap;
 	ResList*				mCurResGroupList;
 	ResList::iterator		mCurResGroupListItr;
+	std::string				mCurResourcePack;
 
 
 	bool					Fail(const std::string& theErrorText);
@@ -174,7 +178,8 @@ public:
 	ResourceManager(SexyAppBase *theApp);
 	virtual ~ResourceManager();
 
-	bool					ParseResourcesFile(const std::string& theFilename);
+	bool					ParseResourcesFile(const std::string& theFilename, bool theOnlyResourcePacks = false);
+	bool					DoParseResourcesFile(const std::string& theFilename);
 	bool					ReparseResourcesFile(const std::string& theFilename);
 
 	std::string				GetErrorText();

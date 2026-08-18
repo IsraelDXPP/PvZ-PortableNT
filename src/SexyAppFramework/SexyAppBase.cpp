@@ -77,6 +77,12 @@
 #include "sound/DummyMusicInterface.h"
 #include "misc/memmgr.h"
 #include "misc/RegEmu.h"
+#include "../PvzpLib/ReanimAtlas.h"
+#include "../LawnApp.h"
+#include "../PvzpLib/FilterEffect.h"
+#include "../PvzpLib/Reanimator.h"
+#include "../PvzpLib/Definition.h"
+#include "../Resources.h"
 
 using namespace Sexy;
 
@@ -374,6 +380,10 @@ SexyAppBase::SexyAppBase()
 	mEnableMaximizeButton = false;
 	mWriteToSexyCache = true;
 	mSexyCacheBuffers = false;
+	mResourcePackPath = "resourcepacks";
+	mResourcePack = "";
+	mResourcePackIndex = -1;
+	mResourcesPath = "properties/resources.xml";
 
 	mMusicVolume = 0.85;
 	mSfxVolume = 0.85;
@@ -1179,6 +1189,7 @@ void SexyAppBase::WriteToRegistry()
 	RegistryWriteInteger("CustomCursors", mCustomCursorsEnabled ? 1 : 0);
 	RegistryWriteInteger("InProgress", 0);
 	RegistryWriteBoolean("WaitForVSync", mWaitForVSync);
+	RegistryWriteString("ResourcePack", mResourcePack);
 }
 
 bool SexyAppBase::RegistryEraseKey(const std::string& _theKeyName)
@@ -1437,6 +1448,7 @@ void SexyAppBase::ReadFromRegistry()
 		EnableCustomCursors(anInt != 0);
 
 	RegistryReadBoolean("WaitForVSync", &mWaitForVSync);
+	RegistryReadString("ResourcePack", &mResourcePack);
 
 	if (RegistryReadInteger("InProgress", &anInt))
 		mLastShutdownWasGraceful = anInt == 0;
@@ -3148,7 +3160,7 @@ bool SexyAppBase::LoadProperties()
 
 void SexyAppBase::LoadResourceManifest()
 {
-	if (!mResourceManager->ParseResourcesFile("properties/resources.xml"))
+	if (!mResourceManager->ParseResourcesFile(mResourcesPath))
 		ShowResourceError(true);
 }
 
@@ -4344,7 +4356,7 @@ SharedImageRef SexyAppBase::SetSharedImage(const std::string& theFileName, const
 	return aSharedImageRef;
 }
 
-SharedImageRef SexyAppBase::GetSharedImage(const std::string& theFileName, const std::string& theVariant, bool* isNew)
+SharedImageRef SexyAppBase::GetSharedImage(const std::string& theFileName, const std::string& theVariant, bool* isNew, bool theReplace)
 {
 	std::string anUpperFileName = StringToUpper(theFileName);
 	std::string anUpperVariant = StringToUpper(theVariant);
@@ -4361,10 +4373,12 @@ SharedImageRef SexyAppBase::GetSharedImage(const std::string& theFileName, const
 		aSharedImageRef = &aResultPair.first->second;
 	}
 
-	if (isNew != nullptr)
-		*isNew = aResultPair.second;
+	bool aReplaceOrInserted = theReplace || aResultPair.second;
 
-	if (aResultPair.second)
+	if (isNew != nullptr)
+		*isNew = aReplaceOrInserted;
+
+	if (aReplaceOrInserted)
 	{
 		// Leading '!' means create a blank image rather than loading from file
 		if ((theFileName.length() > 0) && (theFileName[0] == '!'))
@@ -4410,4 +4424,58 @@ void SexyAppBase::CleanSharedImages()
 
 	for (GLImage* img : imagesToDelete)
 		delete img;
+}
+
+void SexyAppBase::SwitchResourcePack()
+{
+	if (mResourceManager->mResourcePackImageMaps.empty())
+		return;
+	if (mResourcePackIndex == -1)
+		mResourcePackIndex = 0;
+	else if (mResourcePackIndex < (int)mResourceManager->mResourcePackImageMaps.size() - 1)
+		mResourcePackIndex++;
+	else
+		mResourcePackIndex = -1;
+	if (mResourcePackIndex != -1)
+	{
+		int aIndex = 0;
+		for (auto aIt = mResourceManager->mResourcePackImageMaps.begin(); aIt != mResourceManager->mResourcePackImageMaps.end(); ++aIt, ++aIndex)
+		{
+			if (aIndex == mResourcePackIndex)
+			{
+				mResourcePack = aIt->first;
+				break;
+			}
+		}
+	}
+	else
+		mResourcePack = "";
+	LoadCurrentResourcePack();
+}
+
+void SexyAppBase::ReloadResourcePacks()
+{
+	if (!mResourceManager->ParseResourcesFile(mResourcesPath, true))
+		ShowResourceError(true);
+	DefinitionLoadResourcePackImages();
+	LoadCurrentResourcePack();
+}
+
+void SexyAppBase::LoadCurrentResourcePack()
+{
+	for (auto aIt = mResourceManager->mLoadedGroups.begin(); aIt != mResourceManager->mLoadedGroups.end(); ++aIt)
+		ExtractResourcesByName(mResourceManager, (*aIt).c_str());
+	if (!mLoaded)
+		return;
+	ReloadReanimationAtlases();
+	gLawnApp->mReanimatorCache->ReanimatorCacheDispose();
+	gLawnApp->mReanimatorCache->ReanimatorCacheInitialize();
+	FilterEffectDisposeForApp();
+}
+
+std::string SexyAppBase::GetResourcePackString()
+{
+	std::string aResourcePack = mResourcePack;
+	std::replace(aResourcePack.begin(), aResourcePack.end(), ' ', '_');
+	return mResourcePackIndex == -1 ? "[NO_RESOURCE_PACK]" : "[RESOURCE_PACK_" + aResourcePack + "]";
 }

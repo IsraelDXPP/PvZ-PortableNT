@@ -1065,19 +1065,29 @@ bool PvzpResourceManager::PvzpLoadResources(const std::string& theGroup)
 	return true;
 }
 
-void PvzpAddImageToMap(SharedImageRef* theImage, const std::string& thePath)
+void PvzpAddImageToMap(SharedImageRef* theImage, const std::string& thePath, const std::string& theResourcePack)
 {
-	static_cast<PvzpResourceManager*>(gSexyAppBase->mResourceManager)->AddImageToMap(theImage, thePath);
+	static_cast<PvzpResourceManager*>(gSexyAppBase->mResourceManager)->AddImageToMap(theImage, thePath, theResourcePack);
 }
 
-void PvzpResourceManager::AddImageToMap(SharedImageRef* theImage, const std::string& thePath)
+void PvzpResourceManager::AddImageToMap(SharedImageRef* theImage, const std::string& thePath, const std::string& theResourcePack)
 {
-	PVZP_ASSERT(mImageMap.find(thePath) == mImageMap.end());
+	if (theResourcePack.empty())
+	{
+		PVZP_ASSERT(mImageMap.find(thePath) == mImageMap.end());
+	}
+	else
+	{
+		PVZP_ASSERT(mResourcePackImageMaps[theResourcePack].find(thePath) == mResourcePackImageMaps[theResourcePack].end());
+	}
 
 	ImageRes* aImageRes = new ImageRes();
 	aImageRes->mImage = *theImage;
 	aImageRes->mPath = thePath;
-	mImageMap.insert(ResMap::value_type(thePath, aImageRes));
+	if (theResourcePack.empty())
+		mImageMap.insert(ResMap::value_type(thePath, aImageRes));
+	else
+		mResourcePackImageMaps[theResourcePack].insert(ResMap::value_type(thePath, aImageRes));
 }
 
 bool PvzpLoadNextResource()

@@ -769,6 +769,15 @@ void Coin::Update()
 			AttachmentOverrideColor(mAttachmentID, Color(0, 0, 0, 0));  // moving silver/gold coins use a static image, so hide the attachment's animation
 		}
 	}
+
+	if ((mApp->mAutoCollectSuns && IsSun()) || (mApp->mAutoCollectCoins && IsMoney()))
+	{
+		int aMouseX = mApp->mWidgetManager->mLastMouseX - mPosX;
+		int aMouseY = mApp->mWidgetManager->mLastMouseY - mPosY;
+		HitResult aHitResultCoin;
+		if (MouseHitTest(aMouseX, aMouseY, &aHitResultCoin))
+			MouseDown(aMouseX, aMouseY, 0);
+	}
 }
 
 Color Coin::GetColor()

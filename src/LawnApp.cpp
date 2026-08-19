@@ -1717,7 +1717,7 @@ void LawnApp::UpdateFrames()
 	}
 	else if (gFastMo)
 	{
-		aUpdateCount = 20;
+		aUpdateCount = mSpeedModifier;
 	}
 
 	for (int i = 0; i < aUpdateCount; i++)

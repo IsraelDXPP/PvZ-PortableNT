@@ -338,7 +338,7 @@ void NewOptionsDialog::Resize(int theX, int theY, int theWidth, int theHeight)
 		mSfxVolumeSlider->mY += 10;
 		mHardwareAccelerationCheckbox->mY += 15;
 		mFullscreenCheckbox->mY += 20;
-		mAdvancedButton->Resize(mRestartButton->mX, mAlmanacButton->mY, 209, 46);
+		mAdvancedButton->Resize(mRestartButton->mX, mRestartButton->mY, 209, 46);
 		if (mBackToMainButton->mVisible)
 		{
 			mBackToMainButton->Resize(mRestartButton->mX, mAdvancedButton->mY + 43, 209, 46);
@@ -614,7 +614,12 @@ void NewOptionsDialog::ButtonDepress(int theId)
 
 	case NewOptionsDialog::NewOptionsDialog_MainMenu:
 	{
-		if (mApp->mBoard && mApp->mBoard->NeedSaveGame())
+		if (mFromGameSelector && mBackToMainButton->mLabel == "[CREDITS]")
+		{
+			mApp->KillNewOptionsDialog();
+			mApp->ShowCreditScreen();
+		}
+		else if (mApp->mBoard && mApp->mBoard->NeedSaveGame())
 		{
 			mApp->DoConfirmBackToMain();
 		}

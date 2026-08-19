@@ -3541,6 +3541,11 @@ void SexyAppBase::Init()
 	}
 #endif
 
+	// Resolve relative paths against the resource folder so they work
+	// regardless of CWD (important for UWP/Xbox where CWD ≠ game data).
+	mResourcePackPath = GetResourcePath("resourcepacks");
+	mResourcesPath = GetResourcePath("properties/resources.xml");
+
 	gPakInterface->AddPakFile(GetResourcePath("main.pak"));
 
 	// Set up demo recording stuff

@@ -53,7 +53,6 @@ protected:
 		NewOptionsDialog_Advanced,
 		NewOptionsDialog_ReloadResourcePacks,
 		NewOptionsDialog_ResourcePack,
-		NewOptionsDialog_Real_HardwareAcceleration,
 		NewOptionsDialog_LeftPage,
 		NewOptionsDialog_RightPage,
 		NewOptionsDialog_Back,
@@ -85,7 +84,6 @@ public:
 	Sexy::Checkbox*			mAutoCollectCoinsCheckbox;
 	Sexy::Checkbox*			mZombieHealthbarsCheckbox;
 	Sexy::Checkbox*			mPlantHealthbarsCheckbox;
-	Sexy::Checkbox*			mRealHardwareAccelerationCheckbox;
 
 public:
 	NewOptionsDialog(LawnApp* theApp, bool theFromGameSelector, bool theAdvanced = false);

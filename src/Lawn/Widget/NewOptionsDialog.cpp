@@ -40,7 +40,7 @@ using namespace Sexy;
 
 static const Color cOptionsTextColor(107, 109, 145);
 
-static const int ADVANCEDOPTIONS_MAX_PAGES = 3;
+static const int ADVANCEDOPTIONS_MAX_PAGES = 2;
 static const int ADVANCEDOPTIONS_PAGE_Y = 355;
 static const int ADVANCEDOPTIONS_SPEED_X = 284;
 static const int ADVANCEDOPTIONS_SPEED_Y = 128;
@@ -124,10 +124,6 @@ NewOptionsDialog::NewOptionsDialog(LawnApp* theApp, bool theFromGameSelector, bo
 	mResourcePackButton->mColors[ButtonWidget::COLOR_LABEL] = cOptionsTextColor;
 	mResourcePackButton->mColors[ButtonWidget::COLOR_LABEL_HILITE] = Color(1, 233, 1);
 	mResourcePackButton->SetVisible(false);
-
-	// Advanced page 3: Real Hardware Acceleration
-	mRealHardwareAccelerationCheckbox = MakeNewCheckbox(NewOptionsDialog::NewOptionsDialog_Real_HardwareAcceleration, this, theApp->Is3DAccelerated());
-	mRealHardwareAccelerationCheckbox->SetVisible(false);
 
 	// Page navigation arrows
 	mLeftPageButton = MakeNewButton(NewOptionsDialog::NewOptionsDialog_LeftPage, this, "", nullptr, IMAGE_ZOMBATAR_PREV_BUTTON,
@@ -223,7 +219,6 @@ NewOptionsDialog::~NewOptionsDialog()
 	delete mAutoCollectCoinsCheckbox;
 	delete mZombieHealthbarsCheckbox;
 	delete mPlantHealthbarsCheckbox;
-	delete mRealHardwareAccelerationCheckbox;
 }
 
 int NewOptionsDialog::GetPreferredHeight(int theWidth)
@@ -254,7 +249,6 @@ void NewOptionsDialog::AddedToManager(Sexy::WidgetManager* theWidgetManager)
 	AddWidget(mAutoCollectCoinsCheckbox);
 	AddWidget(mZombieHealthbarsCheckbox);
 	AddWidget(mPlantHealthbarsCheckbox);
-	AddWidget(mRealHardwareAccelerationCheckbox);
 }
 
 void NewOptionsDialog::RemovedFromManager(Sexy::WidgetManager* theWidgetManager)
@@ -278,7 +272,6 @@ void NewOptionsDialog::RemovedFromManager(Sexy::WidgetManager* theWidgetManager)
 	RemoveWidget(mAutoCollectCoinsCheckbox);
 	RemoveWidget(mZombieHealthbarsCheckbox);
 	RemoveWidget(mPlantHealthbarsCheckbox);
-	RemoveWidget(mRealHardwareAccelerationCheckbox);
 }
 
 void NewOptionsDialog::Resize(int theX, int theY, int theWidth, int theHeight)
@@ -311,9 +304,6 @@ void NewOptionsDialog::Resize(int theX, int theY, int theWidth, int theHeight)
 	mReloadResourcePacksButton->Resize(mWidth / 2 - aReloadResourcePacksWidth / 2, mPlantHealthbarsCheckbox->mY + 50, aReloadResourcePacksWidth, 46);
 	mResourcePackButton->Resize(mWidth / 2 + 15, mReloadResourcePacksButton->mY + 50, 0, FONT_DWARVENTODCRAFT18->GetHeight());
 	ResizeResourcePackButton();
-
-	// Page 3: Hardware Acceleration
-	mRealHardwareAccelerationCheckbox->Resize(ADVANCEDOPTIONS_SPEED_X, ADVANCEDOPTIONS_SPEED_Y, 46, 39);
 
 	if ((!mRestartButton->mVisible || !mAlmanacButton->mVisible) && !mFromGameSelector && !mAdvancedMode)
 	{
@@ -398,9 +388,6 @@ void NewOptionsDialog::Draw(Sexy::Graphics* g)
 			PvzpDrawString(g, mApp->GetString("OPTIONS_PLANT_HEALTHBARS", "Plant Healthbars"), mPlantHealthbarsCheckbox->mX - 6, mPlantHealthbarsCheckbox->mY + 22, FONT_DWARVENTODCRAFT18, cOptionsTextColor, DrawStringJustification::DS_ALIGN_RIGHT);
 			PvzpDrawString(g, mApp->GetString("OPTIONS_RESOURCE_PACK", "Resource Pack"), mResourcePackButton->mX - 6, mResourcePackButton->mY + 23, FONT_DWARVENTODCRAFT18, cOptionsTextColor, DrawStringJustification::DS_ALIGN_RIGHT);
 			break;
-		case 3:
-			PvzpDrawString(g, mApp->GetString("OPTIONS_ACTUAL_ACCELERATION", "Hardware Acceleration"), mRealHardwareAccelerationCheckbox->mX - 6, mRealHardwareAccelerationCheckbox->mY + 22, FONT_DWARVENTODCRAFT18, cOptionsTextColor, DrawStringJustification::DS_ALIGN_RIGHT);
-			break;
 		}
 		PvzpDrawString(g, "Page " + std::to_string(mAdvancedPage) + "/" + std::to_string(ADVANCEDOPTIONS_MAX_PAGES), mWidth / 2, 355, FONT_DWARVENTODCRAFT18GREENINSET, Color::White, DrawStringJustification::DS_ALIGN_CENTER);
 	}
@@ -450,7 +437,6 @@ void NewOptionsDialog::CheckboxChecked(int theId, bool checked)
 		break;
 
 	case NewOptionsDialog::NewOptionsDialog_HardwareAcceleration:
-	case NewOptionsDialog::NewOptionsDialog_Real_HardwareAcceleration:
 		if (checked)
 		{
 			if (!mApp->Is3DAccelerationRecommended())
@@ -550,7 +536,6 @@ void NewOptionsDialog::UpdateAdvancedPage()
 	mPlantHealthbarsCheckbox->SetVisible(false);
 	mReloadResourcePacksButton->SetVisible(false);
 	mResourcePackButton->SetVisible(false);
-	mRealHardwareAccelerationCheckbox->SetVisible(false);
 
 	switch (mAdvancedPage)
 	{
@@ -565,9 +550,6 @@ void NewOptionsDialog::UpdateAdvancedPage()
 		mPlantHealthbarsCheckbox->SetVisible(true);
 		mReloadResourcePacksButton->SetVisible(true);
 		mResourcePackButton->SetVisible(true);
-		break;
-	case 3:
-		mRealHardwareAccelerationCheckbox->SetVisible(true);
 		break;
 	}
 }

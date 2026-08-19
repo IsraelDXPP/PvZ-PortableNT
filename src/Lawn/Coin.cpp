@@ -773,11 +773,8 @@ void Coin::Update()
 
 	if ((mApp->mAutoCollectSuns && IsSun()) || (mApp->mAutoCollectCoins && IsMoney()))
 	{
-		int aMouseX = mApp->mWidgetManager->mLastMouseX - mPosX;
-		int aMouseY = mApp->mWidgetManager->mLastMouseY - mPosY;
-		HitResult aHitResultCoin;
-		if (MouseHitTest(aMouseX, aMouseY, &aHitResultCoin))
-			MouseDown(aMouseX, aMouseY, 0);
+		if (!mIsBeingCollected && mFadeCount == 0)
+			MouseDown(0, 0, 0);
 	}
 }
 

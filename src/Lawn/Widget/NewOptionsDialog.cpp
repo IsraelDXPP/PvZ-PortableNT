@@ -150,10 +150,11 @@ NewOptionsDialog::NewOptionsDialog(LawnApp* theApp, bool theFromGameSelector, bo
 		{
 			mBackToMainButton->SetVisible(false);
 		}
+		mAdvancedButton->SetVisible(!theAdvanced);
 	}
 	else
 	{
-		mAdvancedButton->SetVisible(true);
+		mAdvancedButton->SetVisible(!theAdvanced);
 	}
 
 	if (mAdvancedMode)
@@ -366,34 +367,41 @@ void NewOptionsDialog::Draw(Sexy::Graphics* g)
 
 	if (!mAdvancedMode)
 	{
-		PvzpDrawString(g, PvzpStringTranslate("[OPTIONS_MUSIC]"), 186, 140 + aMusicOffset, FONT_DWARVENTODCRAFT18, cOptionsTextColor, DrawStringJustification::DS_ALIGN_RIGHT);
+		float aFontScale = static_cast<float>(mApp->GetDouble("OPTION_DLG_LABEL_FONT_SCALE", 1.0));
+		int aSliderLabelsX = mApp->GetInteger("OPTION_DLG_SLIDER_LABELS_OFFSET_X", 186);
+		int aCheckboxLabelsX = mApp->GetInteger("OPTION_DLG_CHECKBOX_LABELS_OFFSET_X", 274);
+		if (aFontScale != 1.0f)
+			g->SetScale(aFontScale, aFontScale, 0.0f, 0.0f);
+		PvzpDrawString(g, mApp->GetString("OPTIONS_MUSIC_LABEL", "Music"), aSliderLabelsX, 140 + aMusicOffset, FONT_DWARVENTODCRAFT18, cOptionsTextColor, DrawStringJustification::DS_ALIGN_RIGHT);
 		PvzpDrawString(g, std::to_string((int)(mMusicVolumeSlider->mVal * 100)), 203 + mMusicVolumeSlider->mWidth, 143 + aMusicOffset, FONT_DWARVENTODCRAFT18, cOptionsTextColor, DrawStringJustification::DS_ALIGN_LEFT);
-		PvzpDrawString(g, PvzpStringTranslate("[OPTIONS_SOUND]"), 186, 167 + aSfxOffset, FONT_DWARVENTODCRAFT18, cOptionsTextColor, DrawStringJustification::DS_ALIGN_RIGHT);
+		PvzpDrawString(g, mApp->GetString("OPTIONS_SOUNDFX", "Sound FX"), aSliderLabelsX, 167 + aSfxOffset, FONT_DWARVENTODCRAFT18, cOptionsTextColor, DrawStringJustification::DS_ALIGN_RIGHT);
 		PvzpDrawString(g, std::to_string((int)(mSfxVolumeSlider->mVal * 100)), 203 + mSfxVolumeSlider->mWidth, 170 + aSfxOffset, FONT_DWARVENTODCRAFT18, cOptionsTextColor, DrawStringJustification::DS_ALIGN_LEFT);
-		PvzpDrawString(g, PvzpStringTranslate("[OPTIONS_ACCELERATION]"), 274, 197 + a3DAccelOffset, FONT_DWARVENTODCRAFT18, cOptionsTextColor, DrawStringJustification::DS_ALIGN_RIGHT);
-		PvzpDrawString(g, PvzpStringTranslate("[OPTIONS_FULLSCREEN]"), 274, 229 + aFullScreenOffset, FONT_DWARVENTODCRAFT18, cOptionsTextColor, DrawStringJustification::DS_ALIGN_RIGHT);
+		PvzpDrawString(g, mApp->GetString("OPTIONS_3D_ACCELERATION", "3D Acceleration"), aCheckboxLabelsX, 197 + a3DAccelOffset, FONT_DWARVENTODCRAFT18, cOptionsTextColor, DrawStringJustification::DS_ALIGN_RIGHT);
+		PvzpDrawString(g, mApp->GetString("OPTIONS_FULL_SCREEN", "Full Screen"), aCheckboxLabelsX, 229 + aFullScreenOffset, FONT_DWARVENTODCRAFT18, cOptionsTextColor, DrawStringJustification::DS_ALIGN_RIGHT);
+		if (aFontScale != 1.0f)
+			g->SetScale(1.0f, 1.0f, 0.0f, 0.0f);
 	}
 	else
 	{
 		switch (mAdvancedPage)
 		{
 		case 1:
-			PvzpDrawString(g, PvzpStringTranslate("[OPTIONS_DEBUG_MODE]"), mDebugModeCheckbox->mX - 6, mDebugModeCheckbox->mY + 22, FONT_DWARVENTODCRAFT18, cOptionsTextColor, DrawStringJustification::DS_ALIGN_RIGHT);
-			PvzpDrawString(g, PvzpStringTranslate("[OPTIONS_SPEED_MODIFIER]"), ADVANCEDOPTIONS_SPEED_X - 6, ADVANCEDOPTIONS_SPEED_Y + 22, FONT_DWARVENTODCRAFT18, cOptionsTextColor, DrawStringJustification::DS_ALIGN_RIGHT);
-			PvzpDrawString(g, PvzpStringTranslate("[OPTIONS_AUTO_COLLECT_SUNS]"), mAutoCollectSunsCheckbox->mX - 6, mAutoCollectSunsCheckbox->mY + 22, FONT_DWARVENTODCRAFT18, cOptionsTextColor, DrawStringJustification::DS_ALIGN_RIGHT);
-			PvzpDrawString(g, PvzpStringTranslate("[OPTIONS_AUTO_COLLECT_COINS]"), mAutoCollectCoinsCheckbox->mX - 6, mAutoCollectCoinsCheckbox->mY + 22, FONT_DWARVENTODCRAFT18, cOptionsTextColor, DrawStringJustification::DS_ALIGN_RIGHT);
-			PvzpDrawString(g, PvzpStringTranslate("[OPTIONS_ZOMBIE_HEALTHBARS]"), mZombieHealthbarsCheckbox->mX - 6, mZombieHealthbarsCheckbox->mY + 22, FONT_DWARVENTODCRAFT18, cOptionsTextColor, DrawStringJustification::DS_ALIGN_RIGHT);
-			PvzpDrawString(g, PvzpStringTranslate("[OPTIONS_PLANT_HEALTHBARS]"), mPlantHealthbarsCheckbox->mX - 6, mPlantHealthbarsCheckbox->mY + 22, FONT_DWARVENTODCRAFT18, cOptionsTextColor, DrawStringJustification::DS_ALIGN_RIGHT);
+			PvzpDrawString(g, mApp->GetString("OPTIONS_DEBUG_MODE", "Debug Mode"), mDebugModeCheckbox->mX - 6, mDebugModeCheckbox->mY + 22, FONT_DWARVENTODCRAFT18, cOptionsTextColor, DrawStringJustification::DS_ALIGN_RIGHT);
+			PvzpDrawString(g, mApp->GetString("OPTIONS_SPEED_MODIFIER", "Speed Modifier"), ADVANCEDOPTIONS_SPEED_X - 6, ADVANCEDOPTIONS_SPEED_Y + 22, FONT_DWARVENTODCRAFT18, cOptionsTextColor, DrawStringJustification::DS_ALIGN_RIGHT);
+			PvzpDrawString(g, mApp->GetString("OPTIONS_AUTO_COLLECT_SUNS", "Auto Collect Suns"), mAutoCollectSunsCheckbox->mX - 6, mAutoCollectSunsCheckbox->mY + 22, FONT_DWARVENTODCRAFT18, cOptionsTextColor, DrawStringJustification::DS_ALIGN_RIGHT);
+			PvzpDrawString(g, mApp->GetString("OPTIONS_AUTO_COLLECT_COINS", "Auto Collect Coins"), mAutoCollectCoinsCheckbox->mX - 6, mAutoCollectCoinsCheckbox->mY + 22, FONT_DWARVENTODCRAFT18, cOptionsTextColor, DrawStringJustification::DS_ALIGN_RIGHT);
+			PvzpDrawString(g, mApp->GetString("OPTIONS_ZOMBIE_HEALTHBARS", "Zombie Healthbars"), mZombieHealthbarsCheckbox->mX - 6, mZombieHealthbarsCheckbox->mY + 22, FONT_DWARVENTODCRAFT18, cOptionsTextColor, DrawStringJustification::DS_ALIGN_RIGHT);
+			PvzpDrawString(g, mApp->GetString("OPTIONS_PLANT_HEALTHBARS", "Plant Healthbars"), mPlantHealthbarsCheckbox->mX - 6, mPlantHealthbarsCheckbox->mY + 22, FONT_DWARVENTODCRAFT18, cOptionsTextColor, DrawStringJustification::DS_ALIGN_RIGHT);
 			g->DrawImage(IMAGE_OPTIONS_CHECKBOX0, ADVANCEDOPTIONS_SPEED_X, ADVANCEDOPTIONS_SPEED_Y);
 			break;
 		case 2:
-			PvzpDrawString(g, PvzpStringTranslate("[OPTIONS_RESOURCE_PACK]"), mResourcePackButton->mX - 6, mResourcePackButton->mY + 23, FONT_DWARVENTODCRAFT18, cOptionsTextColor, DrawStringJustification::DS_ALIGN_RIGHT);
+			PvzpDrawString(g, mApp->GetString("OPTIONS_RESOURCE_PACK", "Resource Pack"), mResourcePackButton->mX - 6, mResourcePackButton->mY + 23, FONT_DWARVENTODCRAFT18, cOptionsTextColor, DrawStringJustification::DS_ALIGN_RIGHT);
 			break;
 		case 3:
-			PvzpDrawString(g, PvzpStringTranslate("[OPTIONS_ACTUAL_ACCELERATION]"), mRealHardwareAccelerationCheckbox->mX - 6, mRealHardwareAccelerationCheckbox->mY + 22, FONT_DWARVENTODCRAFT18, cOptionsTextColor, DrawStringJustification::DS_ALIGN_RIGHT);
+			PvzpDrawString(g, mApp->GetString("OPTIONS_ACTUAL_ACCELERATION", "Hardware Acceleration"), mRealHardwareAccelerationCheckbox->mX - 6, mRealHardwareAccelerationCheckbox->mY + 22, FONT_DWARVENTODCRAFT18, cOptionsTextColor, DrawStringJustification::DS_ALIGN_RIGHT);
 			break;
 		}
-		PvzpDrawString(g, PvzpReplaceNumberString("[OPTIONS_PAGE]", "{PAGE}", mAdvancedPage), mWidth / 2, ADVANCEDOPTIONS_PAGE_Y, FONT_DWARVENTODCRAFT18GREENINSET, Color::White, DrawStringJustification::DS_ALIGN_CENTER);
+		PvzpDrawString(g, "Page " + std::to_string(mAdvancedPage) + "/" + std::to_string(ADVANCEDOPTIONS_MAX_PAGES), mWidth / 2, 355, FONT_DWARVENTODCRAFT18GREENINSET, Color::White, DrawStringJustification::DS_ALIGN_CENTER);
 	}
 }
 

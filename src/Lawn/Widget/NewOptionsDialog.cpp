@@ -96,11 +96,12 @@ NewOptionsDialog::NewOptionsDialog(LawnApp* theApp, bool theFromGameSelector, bo
 	mDebugModeCheckbox->SetVisible(false);
 
 	// Advanced page 1: Speed Modifier edit widget
-	mSpeedEditWidget = new EditWidget(-1, this);
+	mSpeedEditWidget = CreateEditWidget(-1, this, this);
 	mSpeedEditWidget->mMaxChars = 1;
 	mSpeedEditWidget->SetFont(FONT_DWARVENTODCRAFT18GREENINSET);
 	mSpeedEditWidget->AddWidthCheckFont(FONT_DWARVENTODCRAFT18GREENINSET, IMAGE_OPTIONS_CHECKBOX0->mWidth);
 	mSpeedEditWidget->SetText(StrFormat("%d", theApp->mSpeedModifier));
+	mSpeedEditWidget->SetColor(ButtonWidget::COLOR_LIGHT_OUTLINE, Color(1, 233, 1));
 	mSpeedEditWidget->SetVisible(false);
 	mSpeedEditPrevText = mSpeedEditWidget->mString;
 
@@ -297,21 +298,21 @@ void NewOptionsDialog::Resize(int theX, int theY, int theWidth, int theHeight)
 	mLeftPageButton->Resize(100, ADVANCEDOPTIONS_PAGE_Y - 25, IMAGE_ZOMBATAR_PREV_BUTTON->mWidth, IMAGE_ZOMBATAR_PREV_BUTTON->mHeight);
 	mRightPageButton->Resize(280, ADVANCEDOPTIONS_PAGE_Y - 25, IMAGE_ZOMBATAR_NEXT_BUTTON->mWidth, IMAGE_ZOMBATAR_NEXT_BUTTON->mHeight);
 
-	// Page 1: Debug Mode, Speed Modifier, Auto Collect, Healthbars
-	mDebugModeCheckbox->Resize(284, 148, 46, 39);
-	mSpeedEditWidget->Resize(ADVANCEDOPTIONS_SPEED_X + 9, ADVANCEDOPTIONS_SPEED_Y - 4, IMAGE_OPTIONS_CHECKBOX0->mWidth, IMAGE_OPTIONS_CHECKBOX0->mHeight + 4);
-	mAutoCollectSunsCheckbox->Resize(284, mDebugModeCheckbox->mY + 40, 46, 39);
+	// Page 1: Debug Mode, Speed Modifier, Auto Collect Suns, Auto Collect Coins
+	mDebugModeCheckbox->Resize(284, ADVANCEDOPTIONS_SPEED_Y, 46, 39);
+	mSpeedEditWidget->Resize(ADVANCEDOPTIONS_SPEED_X + 9, ADVANCEDOPTIONS_SPEED_Y + 36, IMAGE_OPTIONS_CHECKBOX0->mWidth, IMAGE_OPTIONS_CHECKBOX0->mHeight + 4);
+	mAutoCollectSunsCheckbox->Resize(284, ADVANCEDOPTIONS_SPEED_Y + 76, 46, 39);
 	mAutoCollectCoinsCheckbox->Resize(mAutoCollectSunsCheckbox->mX, mAutoCollectSunsCheckbox->mY + 40, 46, 39);
-	mZombieHealthbarsCheckbox->Resize(mAutoCollectCoinsCheckbox->mX, mAutoCollectCoinsCheckbox->mY + 40, 46, 39);
-	mPlantHealthbarsCheckbox->Resize(mZombieHealthbarsCheckbox->mX, mZombieHealthbarsCheckbox->mY + 40, 46, 39);
 
-	// Page 2: Resource Packs
+	// Page 2: Zombie Healthbars, Plant Healthbars, Reload Resource Packs, Resource Pack
+	mZombieHealthbarsCheckbox->Resize(284, ADVANCEDOPTIONS_SPEED_Y, 46, 39);
+	mPlantHealthbarsCheckbox->Resize(mZombieHealthbarsCheckbox->mX, mZombieHealthbarsCheckbox->mY + 40, 46, 39);
 	int aReloadResourcePacksWidth = 260;
-	mReloadResourcePacksButton->Resize(mWidth / 2 - aReloadResourcePacksWidth / 2, ADVANCEDOPTIONS_SPEED_Y, aReloadResourcePacksWidth, 46);
+	mReloadResourcePacksButton->Resize(mWidth / 2 - aReloadResourcePacksWidth / 2, mPlantHealthbarsCheckbox->mY + 50, aReloadResourcePacksWidth, 46);
 	mResourcePackButton->Resize(mWidth / 2 + 15, mReloadResourcePacksButton->mY + 50, 0, FONT_DWARVENTODCRAFT18->GetHeight());
 	ResizeResourcePackButton();
 
-	// Page 3: Real Hardware Acceleration
+	// Page 3: Hardware Acceleration
 	mRealHardwareAccelerationCheckbox->Resize(ADVANCEDOPTIONS_SPEED_X, ADVANCEDOPTIONS_SPEED_Y, 46, 39);
 
 	if ((!mRestartButton->mVisible || !mAlmanacButton->mVisible) && !mFromGameSelector && !mAdvancedMode)
@@ -387,14 +388,14 @@ void NewOptionsDialog::Draw(Sexy::Graphics* g)
 		{
 		case 1:
 			PvzpDrawString(g, mApp->GetString("OPTIONS_DEBUG_MODE", "Debug Mode"), mDebugModeCheckbox->mX - 6, mDebugModeCheckbox->mY + 22, FONT_DWARVENTODCRAFT18, cOptionsTextColor, DrawStringJustification::DS_ALIGN_RIGHT);
-			PvzpDrawString(g, mApp->GetString("OPTIONS_SPEED_MODIFIER", "Speed Modifier"), ADVANCEDOPTIONS_SPEED_X - 6, ADVANCEDOPTIONS_SPEED_Y + 22, FONT_DWARVENTODCRAFT18, cOptionsTextColor, DrawStringJustification::DS_ALIGN_RIGHT);
+			PvzpDrawString(g, mApp->GetString("OPTIONS_SPEED_MODIFIER", "Speed Modifier"), ADVANCEDOPTIONS_SPEED_X - 6, ADVANCEDOPTIONS_SPEED_Y + 58, FONT_DWARVENTODCRAFT18, cOptionsTextColor, DrawStringJustification::DS_ALIGN_RIGHT);
 			PvzpDrawString(g, mApp->GetString("OPTIONS_AUTO_COLLECT_SUNS", "Auto Collect Suns"), mAutoCollectSunsCheckbox->mX - 6, mAutoCollectSunsCheckbox->mY + 22, FONT_DWARVENTODCRAFT18, cOptionsTextColor, DrawStringJustification::DS_ALIGN_RIGHT);
 			PvzpDrawString(g, mApp->GetString("OPTIONS_AUTO_COLLECT_COINS", "Auto Collect Coins"), mAutoCollectCoinsCheckbox->mX - 6, mAutoCollectCoinsCheckbox->mY + 22, FONT_DWARVENTODCRAFT18, cOptionsTextColor, DrawStringJustification::DS_ALIGN_RIGHT);
-			PvzpDrawString(g, mApp->GetString("OPTIONS_ZOMBIE_HEALTHBARS", "Zombie Healthbars"), mZombieHealthbarsCheckbox->mX - 6, mZombieHealthbarsCheckbox->mY + 22, FONT_DWARVENTODCRAFT18, cOptionsTextColor, DrawStringJustification::DS_ALIGN_RIGHT);
-			PvzpDrawString(g, mApp->GetString("OPTIONS_PLANT_HEALTHBARS", "Plant Healthbars"), mPlantHealthbarsCheckbox->mX - 6, mPlantHealthbarsCheckbox->mY + 22, FONT_DWARVENTODCRAFT18, cOptionsTextColor, DrawStringJustification::DS_ALIGN_RIGHT);
-			g->DrawImage(IMAGE_OPTIONS_CHECKBOX0, ADVANCEDOPTIONS_SPEED_X, ADVANCEDOPTIONS_SPEED_Y);
+			g->DrawImage(IMAGE_OPTIONS_CHECKBOX0, ADVANCEDOPTIONS_SPEED_X, ADVANCEDOPTIONS_SPEED_Y + 40);
 			break;
 		case 2:
+			PvzpDrawString(g, mApp->GetString("OPTIONS_ZOMBIE_HEALTHBARS", "Zombie Healthbars"), mZombieHealthbarsCheckbox->mX - 6, mZombieHealthbarsCheckbox->mY + 22, FONT_DWARVENTODCRAFT18, cOptionsTextColor, DrawStringJustification::DS_ALIGN_RIGHT);
+			PvzpDrawString(g, mApp->GetString("OPTIONS_PLANT_HEALTHBARS", "Plant Healthbars"), mPlantHealthbarsCheckbox->mX - 6, mPlantHealthbarsCheckbox->mY + 22, FONT_DWARVENTODCRAFT18, cOptionsTextColor, DrawStringJustification::DS_ALIGN_RIGHT);
 			PvzpDrawString(g, mApp->GetString("OPTIONS_RESOURCE_PACK", "Resource Pack"), mResourcePackButton->mX - 6, mResourcePackButton->mY + 23, FONT_DWARVENTODCRAFT18, cOptionsTextColor, DrawStringJustification::DS_ALIGN_RIGHT);
 			break;
 		case 3:
@@ -507,7 +508,7 @@ void NewOptionsDialog::Update()
 			mSpeedEditWidget->SetFont(FONT_DWARVENTODCRAFT18BRIGHTGREENINSET);
 		if (mSpeedEditPrevText != mSpeedEditWidget->mString)
 		{
-			if ((mSpeedEditWidget->mString == "" || mSpeedEditWidget->mString == " ") && (mSpeedEditPrevText != "" || mSpeedEditPrevText != " "))
+			if (mSpeedEditWidget->mString.empty() && !mSpeedEditPrevText.empty())
 				mSpeedEditWidget->mString = mSpeedEditPrevText;
 			int num;
 			try
@@ -558,10 +559,10 @@ void NewOptionsDialog::UpdateAdvancedPage()
 		mSpeedEditWidget->SetVisible(true);
 		mAutoCollectSunsCheckbox->SetVisible(true);
 		mAutoCollectCoinsCheckbox->SetVisible(true);
-		mZombieHealthbarsCheckbox->SetVisible(true);
-		mPlantHealthbarsCheckbox->SetVisible(true);
 		break;
 	case 2:
+		mZombieHealthbarsCheckbox->SetVisible(true);
+		mPlantHealthbarsCheckbox->SetVisible(true);
 		mReloadResourcePacksButton->SetVisible(true);
 		mResourcePackButton->SetVisible(true);
 		break;

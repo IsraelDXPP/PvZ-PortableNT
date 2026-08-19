@@ -33,6 +33,7 @@
 #include "../../PvzpLib/PvzpStringFile.h"
 #include "widget/Slider.h"
 #include "widget/Checkbox.h"
+#include "../../SexyAppFramework/Font.h"
 
 using namespace Sexy;
 

@@ -1114,11 +1114,29 @@ int	ResourceManager::GetNumResources(const std::string &theGroup)
 
 SharedImageRef ResourceManager::GetImage(const std::string &theId)
 {
-	ResMap::iterator anItr = mImageMap.find(theId);
-	if (anItr != mImageMap.end())
-		return ((ImageRes*)anItr->second)->mImage;
-	else
-		return nullptr;
+	ResMap aImageMap = mApp->mResourcePackIndex == -1 ? mImageMap : mResourcePackImageMaps[mApp->mResourcePack];
+	ResMap::iterator anItr = aImageMap.find(theId);
+	ImageRes* aRes;
+	MemoryImage* aImage = NULL;
+	if (anItr != aImageMap.end())
+	{
+		aRes = (ImageRes*)anItr->second;
+		aImage = aRes->mImage;
+		if (aImage != NULL)
+			return aRes->mImage;
+	}
+	if (mApp->mResourcePackIndex != -1 && aImage == NULL)
+	{
+		anItr = mImageMap.find(theId);
+		if (anItr != mImageMap.end())
+		{
+			aRes = (ImageRes*)anItr->second;
+			aImage = aRes->mImage;
+			if (aImage != NULL)
+				return aRes->mImage;
+		}
+	}
+	return NULL;
 }
 
 intptr_t	ResourceManager::GetSound(const std::string &theId)
@@ -1141,17 +1159,31 @@ _Font* ResourceManager::GetFont(const std::string &theId)
 
 SharedImageRef ResourceManager::GetImageThrow(const std::string &theId)
 {
-	ResMap::iterator anItr = mImageMap.find(theId);
-	if (anItr != mImageMap.end())
+	ResMap aImageMap = mApp->mResourcePackIndex == -1 ? mImageMap : mResourcePackImageMaps[mApp->mResourcePack];
+	ResMap::iterator anItr = aImageMap.find(theId);
+	ImageRes* aRes;
+	MemoryImage* aImage = NULL;
+	if (anItr != aImageMap.end())
 	{
-		ImageRes *aRes = (ImageRes*)anItr->second;
-		if ((MemoryImage*) aRes->mImage != nullptr)
+		aRes = (ImageRes*)anItr->second;
+		aImage = aRes->mImage;
+		if (aImage != NULL)
 			return aRes->mImage;
-
-		if (mAllowMissingProgramResources && aRes->mFromProgram)
-			return nullptr;
+	}
+	if (mApp->mResourcePackIndex != -1 && aImage == NULL)
+	{
+		anItr = mImageMap.find(theId);
+		if (anItr != mImageMap.end())
+		{
+			aRes = (ImageRes*)anItr->second;
+			aImage = aRes->mImage;
+			if (aImage != NULL)
+				return aRes->mImage;
+		}
 	}
 
+	if (mAllowMissingProgramResources && aRes->mFromProgram)
+		return NULL;
 
 	Fail(StrFormat("Image resource not found: %s",theId.c_str()));
 	throw ResourceManagerException(GetErrorText());

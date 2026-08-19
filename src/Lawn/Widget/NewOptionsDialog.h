@@ -69,6 +69,7 @@ public:
 	LawnStoneButton*		mRestartButton;
 	NewLawnButton*			mBackToGameButton;
 	LawnStoneButton*		mAdvancedButton;
+	NewLawnButton*			mGameAdvancedButton;
 	NewLawnButton*			mLeftPageButton;
 	NewLawnButton*			mRightPageButton;
 	LawnStoneButton*		mReloadResourcePacksButton;

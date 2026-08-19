@@ -89,6 +89,13 @@ public:
 	std::string						mMod;
 	bool							mRegisterResourcesLoaded;
 	bool							mCheatKeys;
+	bool							mBankKeybinds;
+	bool							mZeroNineBankFormat;
+	bool							mAutoCollectSuns;
+	bool							mAutoCollectCoins;
+	bool							mZombieHealthbars;
+	bool							mPlantHealthbars;
+	int								mSpeedModifier;
 	GameMode						mGameMode;
 	GameScenes						mGameScene;
 	bool							mLoadingZombiesThreadCompleted;

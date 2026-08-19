@@ -25,6 +25,7 @@
 #include "widget/Dialog.h"
 #include "widget/SliderListener.h"
 #include "widget/CheckboxListener.h"
+#include "widget/EditListener.h"
 
 class LawnApp;
 class LawnStoneButton;
@@ -33,9 +34,10 @@ namespace Sexy
 {
 	class Slider;
 	class Checkbox;
+	class EditWidget;
 };
 
-class NewOptionsDialog : public Sexy::Dialog, public Sexy::SliderListener, public Sexy::CheckboxListener
+class NewOptionsDialog : public Sexy::Dialog, public Sexy::SliderListener, public Sexy::CheckboxListener, public Sexy::EditListener
 {
 protected:
 	enum
@@ -51,6 +53,8 @@ protected:
 		NewOptionsDialog_Advanced,
 		NewOptionsDialog_ReloadResourcePacks,
 		NewOptionsDialog_ResourcePack,
+		NewOptionsDialog_Real_HardwareAcceleration,
+		NewOptionsDialog_CustomCursor,
 		NewOptionsDialog_LeftPage,
 		NewOptionsDialog_RightPage,
 		NewOptionsDialog_Back,
@@ -75,6 +79,17 @@ public:
 	bool					mAdvancedMode;
 	int						mAdvancedPage;
 
+	Sexy::Checkbox*			mDebugModeCheckbox;
+	Sexy::Checkbox*			mBankKeybindsCheckbox;
+	Sexy::Checkbox*			m09FormatCheckbox;
+	Sexy::EditWidget*		mSpeedEditWidget;
+	Sexy::Checkbox*			mAutoCollectSunsCheckbox;
+	Sexy::Checkbox*			mAutoCollectCoinsCheckbox;
+	Sexy::Checkbox*			mZombieHealthbarsCheckbox;
+	Sexy::Checkbox*			mPlantHealthbarsCheckbox;
+	Sexy::Checkbox*			mRealHardwareAccelerationCheckbox;
+	Sexy::Checkbox*			mCustomCursorCheckbox;
+
 public:
 	NewOptionsDialog(LawnApp* theApp, bool theFromGameSelector, bool theAdvanced = false);
 	~NewOptionsDialog() override;
@@ -86,6 +101,7 @@ public:
 	void					Draw(Sexy::Graphics* g) override;
 	void					SliderVal(int theId, double theVal) override;
 	void					CheckboxChecked(int theId, bool checked) override;
+	void					EditWidgetText(int theId, const std::string& theString) override;
 	void					ButtonPress(int theId) override;
 	void					ButtonDepress(int theId) override;
 	void					KeyDown(Sexy::KeyCode theKey) override;

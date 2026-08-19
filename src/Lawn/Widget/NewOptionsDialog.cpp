@@ -614,12 +614,7 @@ void NewOptionsDialog::ButtonDepress(int theId)
 
 	case NewOptionsDialog::NewOptionsDialog_MainMenu:
 	{
-		if (mFromGameSelector && mBackToMainButton->mLabel == "[CREDITS]")
-		{
-			mApp->KillNewOptionsDialog();
-			mApp->ShowCreditScreen();
-		}
-		else if (mApp->mBoard && mApp->mBoard->NeedSaveGame())
+		if (mApp->mBoard && mApp->mBoard->NeedSaveGame())
 		{
 			mApp->DoConfirmBackToMain();
 		}

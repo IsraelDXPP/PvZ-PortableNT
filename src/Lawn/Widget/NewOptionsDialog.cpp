@@ -151,7 +151,7 @@ NewOptionsDialog::NewOptionsDialog(LawnApp* theApp, bool theFromGameSelector, bo
 		mBackToGameButton->SetLabel("[DIALOG_BUTTON_OK]");
 		if (mApp->HasFinishedAdventure() && !mApp->IsTrialStageLocked())
 		{
-			mBackToMainButton->mLabel = "[CREDITS]";
+			mBackToMainButton->SetLabel("[CREDITS]");
 		}
 		else
 		{
@@ -614,6 +614,12 @@ void NewOptionsDialog::ButtonDepress(int theId)
 
 	case NewOptionsDialog::NewOptionsDialog_MainMenu:
 	{
+		if (mFromGameSelector)
+		{
+			mApp->KillNewOptionsDialog();
+			mApp->ShowCreditScreen();
+			break;
+		}
 		if (mApp->mBoard && mApp->mBoard->NeedSaveGame())
 		{
 			mApp->DoConfirmBackToMain();

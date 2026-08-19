@@ -115,6 +115,7 @@ NewOptionsDialog::NewOptionsDialog(LawnApp* theApp, bool theFromGameSelector, bo
 		{
 			mBackToMainButton->SetVisible(false);
 		}
+		mAdvancedButton->SetVisible(!theAdvanced);
 	}
 	else
 	{
@@ -231,9 +232,13 @@ void NewOptionsDialog::Resize(int theX, int theY, int theWidth, int theHeight)
 	mResourcePackButton->Resize(mWidth / 2 + 15, mReloadResourcePacksButton->mY + 50, 0, FONT_DWARVENTODCRAFT18->GetHeight());
 	ResizeResourcePackButton();
 
-	if ((!mRestartButton->mVisible || !mAlmanacButton->mVisible) && !mFromGameSelector && !mAdvancedMode)
+	if ((!mRestartButton->mVisible || !mAlmanacButton->mVisible) && !mAdvancedMode)
 	{
-		LawnStoneButton* button = mRestartButton->mVisible ? mRestartButton : mAlmanacButton;
+		LawnStoneButton* button;
+		if (!mRestartButton->mVisible)
+			button = mRestartButton;
+		else
+			button = mAlmanacButton;
 		mAdvancedButton->Resize(button->mX, button->mY, button->mWidth, button->mHeight);
 	}
 

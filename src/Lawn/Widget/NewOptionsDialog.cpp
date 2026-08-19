@@ -136,7 +136,7 @@ NewOptionsDialog::NewOptionsDialog(LawnApp* theApp, bool theFromGameSelector, bo
 
 	// In-game advanced button (small "A" button, top-right)
 	mGameAdvancedButton = MakeNewButton(NewOptionsDialog::NewOptionsDialog_Advanced, this, "[ADVANCED_OPTIONS_BUTTON_SHORT]", nullptr,
-		IMAGE_BLANK, IMAGE_BLANK, IMAGE_BLANK);
+		IMAGE_BUTTON_SMALL, IMAGE_BUTTON_DOWN_SMALL, IMAGE_BUTTON_DOWN_SMALL);
 	mGameAdvancedButton->SetFont(FONT_DWARVENTODCRAFT18GREENINSET);
 	mGameAdvancedButton->SetColor(ButtonWidget::COLOR_LABEL, Color::White);
 	mGameAdvancedButton->SetColor(ButtonWidget::COLOR_LABEL_HILITE, Color::White);
@@ -151,7 +151,7 @@ NewOptionsDialog::NewOptionsDialog(LawnApp* theApp, bool theFromGameSelector, bo
 		mBackToGameButton->SetLabel("[DIALOG_BUTTON_OK]");
 		if (mApp->HasFinishedAdventure() && !mApp->IsTrialStageLocked())
 		{
-			mBackToMainButton->mLabel = "[CREDITS]";
+			mBackToMainButton->SetLabel("[CREDITS]");
 		}
 		else
 		{
@@ -300,7 +300,7 @@ void NewOptionsDialog::Resize(int theX, int theY, int theWidth, int theHeight)
 	mAlmanacButton->Resize(107, 241, 209, 46);
 	mRestartButton->Resize(mAlmanacButton->mX, mAlmanacButton->mY + 43, 209, 46);
 	mBackToMainButton->Resize(mRestartButton->mX, mRestartButton->mY + 43, 209, 46);
-	mAdvancedButton->Resize(mRestartButton->mX, mRestartButton->mY + 43, 209, 46);
+	mAdvancedButton->Resize(mRestartButton->mX, mRestartButton->mY, 209, 46);
 	mBackToGameButton->Resize(30, 381, mBackToGameButton->mWidth, mBackToGameButton->mHeight);
 	mGameAdvancedButton->Resize(mWidth - 61, mRestartButton->mY, 52, 46);
 
@@ -338,6 +338,11 @@ void NewOptionsDialog::Resize(int theX, int theY, int theWidth, int theHeight)
 		mSfxVolumeSlider->mY += 10;
 		mHardwareAccelerationCheckbox->mY += 15;
 		mFullscreenCheckbox->mY += 20;
+		mAdvancedButton->Resize(mRestartButton->mX, mRestartButton->mY, 209, 46);
+		if (mBackToMainButton->mVisible)
+		{
+			mBackToMainButton->Resize(mRestartButton->mX, mAdvancedButton->mY + 43, 209, 46);
+		}
 	}
 
 	if (mAdvancedMode)
@@ -609,7 +614,13 @@ void NewOptionsDialog::ButtonDepress(int theId)
 
 	case NewOptionsDialog::NewOptionsDialog_MainMenu:
 	{
-		if (mApp->mBoard && mApp->mBoard->NeedSaveGame())
+		if (mFromGameSelector)
+		{
+			mApp->KillNewOptionsDialog();
+			mApp->KillGameSelector();
+			mApp->ShowAwardScreen(AwardType::AWARD_CREDITS_ZOMBIENOTE, false);
+		}
+		else if (mApp->mBoard && mApp->mBoard->NeedSaveGame())
 		{
 			mApp->DoConfirmBackToMain();
 		}

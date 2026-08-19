@@ -30,6 +30,7 @@
 #include "NewOptionsDialog.h"
 #include "../../ConstEnums.h"
 #include "../../PvzpLib/PvzpFoley.h"
+#include "../../PvzpLib/PvzpCommon.h"
 #include "../../PvzpLib/PvzpStringFile.h"
 #include "widget/Slider.h"
 #include "widget/Checkbox.h"
@@ -133,6 +134,15 @@ NewOptionsDialog::NewOptionsDialog(LawnApp* theApp, bool theFromGameSelector, bo
 		IMAGE_ZOMBATAR_NEXT_BUTTON_HIGHLIGHT, IMAGE_ZOMBATAR_NEXT_BUTTON_HIGHLIGHT);
 	mRightPageButton->SetVisible(false);
 
+	// In-game advanced button (small "A" button, top-right)
+	mGameAdvancedButton = MakeNewButton(NewOptionsDialog::NewOptionsDialog_Advanced, this, "[ADVANCED_OPTIONS_BUTTON_SHORT]", nullptr,
+		IMAGE_BLANK, IMAGE_BLANK, IMAGE_BLANK);
+	mGameAdvancedButton->SetFont(FONT_DWARVENTODCRAFT18GREENINSET);
+	mGameAdvancedButton->SetColor(ButtonWidget::COLOR_LABEL, Color::White);
+	mGameAdvancedButton->SetColor(ButtonWidget::COLOR_LABEL_HILITE, Color::White);
+	mGameAdvancedButton->mHiliteFont = FONT_DWARVENTODCRAFT18BRIGHTGREENINSET;
+	mGameAdvancedButton->SetVisible(false);
+
 	mAdvancedButton->SetVisible(false);
 
 	if (mFromGameSelector)
@@ -151,7 +161,8 @@ NewOptionsDialog::NewOptionsDialog(LawnApp* theApp, bool theFromGameSelector, bo
 	}
 	else
 	{
-		mAdvancedButton->SetVisible(!theAdvanced);
+		mAdvancedButton->SetVisible(false);
+		mGameAdvancedButton->SetVisible(!theAdvanced);
 	}
 
 	if (mAdvancedMode)
@@ -160,6 +171,7 @@ NewOptionsDialog::NewOptionsDialog(LawnApp* theApp, bool theFromGameSelector, bo
 		mAlmanacButton->SetVisible(false);
 		mBackToMainButton->SetVisible(false);
 		mAdvancedButton->SetVisible(false);
+		mGameAdvancedButton->SetVisible(false);
 		mBackToGameButton->SetLabel("[DIALOG_BUTTON_BACK]");
 		mBackToGameButton->mId = NewOptionsDialog::NewOptionsDialog_Back;
 	}
@@ -167,6 +179,7 @@ NewOptionsDialog::NewOptionsDialog(LawnApp* theApp, bool theFromGameSelector, bo
 	if ((!mRestartButton->mVisible || !mAlmanacButton->mVisible) && !mFromGameSelector && !mAdvancedMode)
 	{
 		mAdvancedButton->SetVisible(true);
+		mGameAdvancedButton->SetVisible(false);
 	}
 
 	if (mApp->mGameMode == GameMode::GAMEMODE_CHALLENGE_ICE ||
@@ -208,6 +221,7 @@ NewOptionsDialog::~NewOptionsDialog()
 	delete mRestartButton;
 	delete mBackToMainButton;
 	delete mAdvancedButton;
+	delete mGameAdvancedButton;
 	delete mLeftPageButton;
 	delete mRightPageButton;
 	delete mReloadResourcePacksButton;
@@ -234,6 +248,7 @@ void NewOptionsDialog::AddedToManager(Sexy::WidgetManager* theWidgetManager)
 	AddWidget(mRestartButton);
 	AddWidget(mBackToMainButton);
 	AddWidget(mAdvancedButton);
+	AddWidget(mGameAdvancedButton);
 	AddWidget(mMusicVolumeSlider);
 	AddWidget(mSfxVolumeSlider);
 	AddWidget(mHardwareAccelerationCheckbox);
@@ -262,6 +277,7 @@ void NewOptionsDialog::RemovedFromManager(Sexy::WidgetManager* theWidgetManager)
 	RemoveWidget(mBackToMainButton);
 	RemoveWidget(mRestartButton);
 	RemoveWidget(mAdvancedButton);
+	RemoveWidget(mGameAdvancedButton);
 	RemoveWidget(mLeftPageButton);
 	RemoveWidget(mRightPageButton);
 	RemoveWidget(mReloadResourcePacksButton);
@@ -286,6 +302,7 @@ void NewOptionsDialog::Resize(int theX, int theY, int theWidth, int theHeight)
 	mBackToMainButton->Resize(mRestartButton->mX, mRestartButton->mY + 43, 209, 46);
 	mAdvancedButton->Resize(mRestartButton->mX, mRestartButton->mY + 43, 209, 46);
 	mBackToGameButton->Resize(30, 381, mBackToGameButton->mWidth, mBackToGameButton->mHeight);
+	mGameAdvancedButton->Resize(mWidth - 61, mRestartButton->mY, 52, 46);
 
 	// Page navigation
 	mLeftPageButton->Resize(100, ADVANCEDOPTIONS_PAGE_Y - 25, IMAGE_ZOMBATAR_PREV_BUTTON->mWidth, IMAGE_ZOMBATAR_PREV_BUTTON->mHeight);
@@ -379,17 +396,17 @@ void NewOptionsDialog::Draw(Sexy::Graphics* g)
 		case 1:
 			PvzpDrawString(g, mApp->GetString("OPTIONS_DEBUG_MODE", "Debug Mode"), mDebugModeCheckbox->mX - 6, mDebugModeCheckbox->mY + 22, FONT_DWARVENTODCRAFT18, cOptionsTextColor, DrawStringJustification::DS_ALIGN_RIGHT);
 			PvzpDrawString(g, mApp->GetString("OPTIONS_SPEED_MODIFIER", "Speed Modifier"), ADVANCEDOPTIONS_SPEED_X - 6, ADVANCEDOPTIONS_SPEED_Y + 58, FONT_DWARVENTODCRAFT18, cOptionsTextColor, DrawStringJustification::DS_ALIGN_RIGHT);
-			PvzpDrawString(g, mApp->GetString("OPTIONS_AUTO_COLLECT_SUNS", "Auto Collect Suns"), mAutoCollectSunsCheckbox->mX - 6, mAutoCollectSunsCheckbox->mY + 22, FONT_DWARVENTODCRAFT18, cOptionsTextColor, DrawStringJustification::DS_ALIGN_RIGHT);
-			PvzpDrawString(g, mApp->GetString("OPTIONS_AUTO_COLLECT_COINS", "Auto Collect Coins"), mAutoCollectCoinsCheckbox->mX - 6, mAutoCollectCoinsCheckbox->mY + 22, FONT_DWARVENTODCRAFT18, cOptionsTextColor, DrawStringJustification::DS_ALIGN_RIGHT);
+			PvzpDrawString(g, mApp->GetString("OPTIONS_AUTO_COLLECT_SUNS", "Auto-Collect Suns"), mAutoCollectSunsCheckbox->mX - 6, mAutoCollectSunsCheckbox->mY + 22, FONT_DWARVENTODCRAFT18, cOptionsTextColor, DrawStringJustification::DS_ALIGN_RIGHT);
+			PvzpDrawString(g, mApp->GetString("OPTIONS_AUTO_COLLECT_COINS", "Auto-Collect Coins"), mAutoCollectCoinsCheckbox->mX - 6, mAutoCollectCoinsCheckbox->mY + 22, FONT_DWARVENTODCRAFT18, cOptionsTextColor, DrawStringJustification::DS_ALIGN_RIGHT);
 			g->DrawImage(IMAGE_OPTIONS_CHECKBOX0, ADVANCEDOPTIONS_SPEED_X, ADVANCEDOPTIONS_SPEED_Y + 40);
 			break;
 		case 2:
 			PvzpDrawString(g, mApp->GetString("OPTIONS_ZOMBIE_HEALTHBARS", "Zombie Healthbars"), mZombieHealthbarsCheckbox->mX - 6, mZombieHealthbarsCheckbox->mY + 22, FONT_DWARVENTODCRAFT18, cOptionsTextColor, DrawStringJustification::DS_ALIGN_RIGHT);
 			PvzpDrawString(g, mApp->GetString("OPTIONS_PLANT_HEALTHBARS", "Plant Healthbars"), mPlantHealthbarsCheckbox->mX - 6, mPlantHealthbarsCheckbox->mY + 22, FONT_DWARVENTODCRAFT18, cOptionsTextColor, DrawStringJustification::DS_ALIGN_RIGHT);
-			PvzpDrawString(g, mApp->GetString("OPTIONS_RESOURCE_PACK", "Resource Pack"), mResourcePackButton->mX - 6, mResourcePackButton->mY + 23, FONT_DWARVENTODCRAFT18, cOptionsTextColor, DrawStringJustification::DS_ALIGN_RIGHT);
+			PvzpDrawString(g, mApp->GetString("OPTIONS_RESOURCE_PACK", "Resource Pack:"), mResourcePackButton->mX - 6, mResourcePackButton->mY + 23, FONT_DWARVENTODCRAFT18, cOptionsTextColor, DrawStringJustification::DS_ALIGN_RIGHT);
 			break;
 		}
-		PvzpDrawString(g, "Page " + std::to_string(mAdvancedPage) + "/" + std::to_string(ADVANCEDOPTIONS_MAX_PAGES), mWidth / 2, 355, FONT_DWARVENTODCRAFT18GREENINSET, Color::White, DrawStringJustification::DS_ALIGN_CENTER);
+		PvzpDrawString(g, PvzpReplaceNumberString("[OPTIONS_PAGE]", "{PAGE}", mAdvancedPage), mWidth / 2, 355, FONT_DWARVENTODCRAFT18GREENINSET, Color::White, DrawStringJustification::DS_ALIGN_CENTER);
 	}
 }
 
@@ -444,9 +461,9 @@ void NewOptionsDialog::CheckboxChecked(int theId, bool checked)
 				mApp->DoDialog(
 					Dialogs::DIALOG_INFO,
 					true,
-					mApp->GetString("NOT_RECOMMENDED_ACCELERATION_HEADER", "Not Recommended"),
+					mApp->GetString("NOT_RECOMMENDED_ACCELERATION_HEADER", "Warning"),
 					mApp->GetString("NOT_RECOMMENDED_ACCELERATION",
-						"Your video card does not fully support hardware acceleration.\n\n"
+						"Your video card may not fully support this feature.\n\n"
 						"If you experience slower performance, please disable Hardware Acceleration."),
 					"[DIALOG_BUTTON_OK]",
 					Dialog::BUTTONS_FOOTER
@@ -488,6 +505,10 @@ void NewOptionsDialog::KeyDown(Sexy::KeyCode theKey)
 
 void NewOptionsDialog::Update()
 {
+	bool isGameAdvancedDown = mGameAdvancedButton->mIsDown;
+	mGameAdvancedButton->mTextDownOffsetX = isGameAdvancedDown;
+	mGameAdvancedButton->mTextDownOffsetY = isGameAdvancedDown;
+
 	if (mAdvancedMode)
 	{
 		if (mSpeedEditWidget->mHasFocus && mSpeedEditWidget->mFont != FONT_DWARVENTODCRAFT18BRIGHTGREENINSET)

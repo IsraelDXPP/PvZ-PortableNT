@@ -4469,6 +4469,7 @@ void SexyAppBase::LoadCurrentResourcePack()
 	if (!mLoaded)
 		return;
 	ReloadReanimationAtlases();
+	ClearReanimAtlasCache();
 	gLawnApp->mReanimatorCache->ReanimatorCacheDispose();
 	gLawnApp->mReanimatorCache->ReanimatorCacheInitialize();
 	FilterEffectDisposeForApp();
@@ -4478,5 +4479,5 @@ std::string SexyAppBase::GetResourcePackString()
 {
 	std::string aResourcePack = mResourcePack;
 	std::replace(aResourcePack.begin(), aResourcePack.end(), ' ', '_');
-	return mResourcePackIndex == -1 ? "[NO_RESOURCE_PACK]" : "[RESOURCE_PACK_" + aResourcePack + "]";
+	return mResourcePackIndex == -1 ? "[NO_RESOURCE_PACK]" : "[RESOURCE_PACK_" + Upper(aResourcePack) + "]";
 }

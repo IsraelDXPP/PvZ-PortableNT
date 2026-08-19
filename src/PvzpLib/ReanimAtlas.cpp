@@ -313,3 +313,9 @@ void ReloadReanimationAtlases()
 		aReanimAtlas->ReloadMemoryImage(aAtlasWidth, aAtlasHeight);
 	}
 }
+
+void ClearReanimAtlasCache()
+{
+	gImagePathCache.clear();
+	gImageCache.clear();
+}

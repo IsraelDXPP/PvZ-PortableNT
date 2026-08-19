@@ -445,6 +445,7 @@ public:
 	int					GetNumWavesPerSurvivalStage();
 	int								GetLevelRandSeed();
 	void							AddBossRenderItem(RenderItem* theRenderList, int& theCurRenderItem, Zombie* theBossZombie);
+	void							DrawHealthbar(Graphics* g, Rect rect, Color maxColor, int maxNumber, Color baseColor, int baseNumber, int barWidth, int barHeight, int barOffsetX, int barOffsetY, Color textColor, _Font* textFont, int textOffsetY, Color textOutlineColor, int textOutlineOffset, bool drawBarOutline);
 	GridItem*			GetCraterAt(int theGridX, int theGridY);
 	GridItem*			GetGraveStoneAt(int theGridX, int theGridY);
 	GridItem*			GetLadderAt(int theGridX, int theGridY);

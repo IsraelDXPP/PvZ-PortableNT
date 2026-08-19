@@ -614,7 +614,13 @@ void NewOptionsDialog::ButtonDepress(int theId)
 
 	case NewOptionsDialog::NewOptionsDialog_MainMenu:
 	{
-		if (mApp->mBoard && mApp->mBoard->NeedSaveGame())
+		if (mFromGameSelector)
+		{
+			mApp->KillNewOptionsDialog();
+			mApp->KillGameSelector();
+			mApp->ShowAwardScreen(AwardType::AWARD_CREDITS_ZOMBIENOTE, false);
+		}
+		else if (mApp->mBoard && mApp->mBoard->NeedSaveGame())
 		{
 			mApp->DoConfirmBackToMain();
 		}

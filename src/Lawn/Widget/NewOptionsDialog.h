@@ -48,6 +48,12 @@ protected:
 		NewOptionsDialog_SoundVolume,
 		NewOptionsDialog_Fullscreen,
 		NewOptionsDialog_HardwareAcceleration,
+		NewOptionsDialog_Advanced,
+		NewOptionsDialog_ReloadResourcePacks,
+		NewOptionsDialog_ResourcePack,
+		NewOptionsDialog_LeftPage,
+		NewOptionsDialog_RightPage,
+		NewOptionsDialog_Back,
 	};
 
 public:
@@ -60,10 +66,17 @@ public:
 	LawnStoneButton*		mBackToMainButton;
 	LawnStoneButton*		mRestartButton;
 	NewLawnButton*			mBackToGameButton;
+	LawnStoneButton*		mAdvancedButton;
+	NewLawnButton*			mLeftPageButton;
+	NewLawnButton*			mRightPageButton;
+	LawnStoneButton*		mReloadResourcePacksButton;
+	NewLawnButton*			mResourcePackButton;
 	bool					mFromGameSelector;
+	bool					mAdvancedMode;
+	int						mAdvancedPage;
 
 public:
-	NewOptionsDialog(LawnApp* theApp, bool theFromGameSelector);
+	NewOptionsDialog(LawnApp* theApp, bool theFromGameSelector, bool theAdvanced = false);
 	~NewOptionsDialog() override;
 
 	int						GetPreferredHeight(int theWidth) override;
@@ -76,6 +89,8 @@ public:
 	void					ButtonPress(int theId) override;
 	void					ButtonDepress(int theId) override;
 	void					KeyDown(Sexy::KeyCode theKey) override;
+	void					UpdateAdvancedPage();
+	void					ResizeResourcePackButton();
 };
 
 #endif

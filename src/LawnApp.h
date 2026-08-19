@@ -195,7 +195,7 @@ public:
 	void							DoHighScoreDialog();
 	void							DoBackToMain();
 	void							DoConfirmBackToMain();
-	void							DoNewOptions(bool theFromGameSelector);
+	void							DoNewOptions(bool theFromGameSelector, bool theAdvanced = false);
 	void							ShowZombatarTOS();
 	void							DoRegister();
 	void							DoRegisterError();

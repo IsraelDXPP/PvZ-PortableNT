@@ -727,11 +727,11 @@ void LawnApp::DoConfirmBackToMain()
 	//aDialog->CalcSize(0, 0);
 }
 
-void LawnApp::DoNewOptions(bool theFromGameSelector)
+void LawnApp::DoNewOptions(bool theFromGameSelector, bool theAdvanced)
 {
 	//FinishModelessDialogs();
 
-	NewOptionsDialog* aDialog = new NewOptionsDialog(this, theFromGameSelector);
+	NewOptionsDialog* aDialog = new NewOptionsDialog(this, theFromGameSelector, theAdvanced);
 	CenterDialog(aDialog, IMAGE_OPTIONS_MENUBACK->mWidth, IMAGE_OPTIONS_MENUBACK->mHeight);
 	AddDialog(Dialogs::DIALOG_NEWOPTIONS, aDialog);
 	mWidgetManager->SetFocus(aDialog);

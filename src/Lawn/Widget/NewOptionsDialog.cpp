@@ -300,7 +300,7 @@ void NewOptionsDialog::Resize(int theX, int theY, int theWidth, int theHeight)
 	mAlmanacButton->Resize(107, 241, 209, 46);
 	mRestartButton->Resize(mAlmanacButton->mX, mAlmanacButton->mY + 43, 209, 46);
 	mBackToMainButton->Resize(mRestartButton->mX, mRestartButton->mY + 43, 209, 46);
-	mAdvancedButton->Resize(mRestartButton->mX, mRestartButton->mY + 43, 209, 46);
+	mAdvancedButton->Resize(mRestartButton->mX, mBackToMainButton->mY + 43, 209, 46);
 	mBackToGameButton->Resize(30, 381, mBackToGameButton->mWidth, mBackToGameButton->mHeight);
 	mGameAdvancedButton->Resize(mWidth - 61, mRestartButton->mY, 52, 46);
 

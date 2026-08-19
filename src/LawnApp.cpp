@@ -186,6 +186,13 @@ LawnApp::LawnApp()
 	mProfileMgr = new ProfileMgr();
 	mRegisterResourcesLoaded = false;
 	mCheatKeys = false;
+	mBankKeybinds = false;
+	mZeroNineBankFormat = false;
+	mAutoCollectSuns = false;
+	mAutoCollectCoins = false;
+	mZombieHealthbars = false;
+	mPlantHealthbars = false;
+	mSpeedModifier = 2;
 	mCrazyDaveReanimID = ReanimationID::REANIMATIONID_NULL;
 	mCrazyDaveState = CrazyDaveState::CRAZY_DAVE_OFF;
 	mCrazyDaveBlinkCounter = 0;
@@ -1151,6 +1158,23 @@ bool LawnApp::KillNewOptionsDialog()
 
 	bool wantWindowed = !aNewOptionsDialog->mFullscreenCheckbox->IsChecked();
 	bool want3D = aNewOptionsDialog->mHardwareAccelerationCheckbox->IsChecked();
+	if (aNewOptionsDialog->mAdvancedMode)
+	{
+		mCheatKeys = aNewOptionsDialog->mDebugModeCheckbox->IsChecked();
+		mBankKeybinds = aNewOptionsDialog->mBankKeybindsCheckbox->IsChecked();
+		mZeroNineBankFormat = aNewOptionsDialog->m09FormatCheckbox->IsChecked();
+		mAutoCollectSuns = aNewOptionsDialog->mAutoCollectSunsCheckbox->IsChecked();
+		mAutoCollectCoins = aNewOptionsDialog->mAutoCollectCoinsCheckbox->IsChecked();
+		mZombieHealthbars = aNewOptionsDialog->mZombieHealthbarsCheckbox->IsChecked();
+		mPlantHealthbars = aNewOptionsDialog->mPlantHealthbarsCheckbox->IsChecked();
+		want3D = aNewOptionsDialog->mRealHardwareAccelerationCheckbox->IsChecked();
+		bool aCustomCursor = aNewOptionsDialog->mCustomCursorCheckbox->IsChecked();
+		if (mCustomCursorsEnabled != aCustomCursor)
+		{
+			mCustomCursorsEnabled = aCustomCursor;
+			EnforceCursor();
+		}
+	}
 	SwitchScreenMode(wantWindowed, want3D, false);
 
 	KillDialog(Dialogs::DIALOG_NEWOPTIONS);

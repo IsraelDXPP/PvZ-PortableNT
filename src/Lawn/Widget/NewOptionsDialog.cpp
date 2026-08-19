@@ -33,11 +33,19 @@
 #include "../../PvzpLib/PvzpStringFile.h"
 #include "widget/Slider.h"
 #include "widget/Checkbox.h"
+#include "widget/EditWidget.h"
 #include "../../SexyAppFramework/graphics/Font.h"
 
 using namespace Sexy;
 
-const Color cOptionsTextColor(107, 109, 145);
+static const Color cOptionsTextColor(107, 109, 145);
+
+static const int ADVANCEDOPTIONS_MAX_PAGES = 4;
+static const int ADVANCEDOPTIONS_PAGE_Y = 355;
+static const int ADVANCEDOPTIONS_SPEED_X = 284;
+static const int ADVANCEDOPTIONS_SPEED_Y = 128;
+static const int SPEED_MODIFIER_MIN = 2;
+static const int SPEED_MODIFIER_MAX = 9;
 
 NewOptionsDialog::NewOptionsDialog(LawnApp* theApp, bool theFromGameSelector, bool theAdvanced) :
 	Dialog(nullptr, nullptr, Dialogs::DIALOG_NEWOPTIONS, true, "Options", "", "", Dialog::BUTTONS_NONE)
@@ -83,23 +91,53 @@ NewOptionsDialog::NewOptionsDialog(LawnApp* theApp, bool theFromGameSelector, bo
 	mFullscreenCheckbox = MakeNewCheckbox(NewOptionsDialog::NewOptionsDialog_Fullscreen, this, !theApp->mIsWindowed);
 	mHardwareAccelerationCheckbox = MakeNewCheckbox(NewOptionsDialog::NewOptionsDialog_HardwareAcceleration, this, theApp->Is3DAccelerated());
 
-	mLeftPageButton = MakeNewButton(NewOptionsDialog::NewOptionsDialog_LeftPage, this, "", nullptr, IMAGE_ZOMBATAR_PREV_BUTTON,
-		IMAGE_ZOMBATAR_PREV_BUTTON_HIGHLIGHT, IMAGE_ZOMBATAR_PREV_BUTTON_HIGHLIGHT);
-	mLeftPageButton->SetVisible(false);
+	// Advanced page 1: Debug / Keybinds
+	mDebugModeCheckbox = MakeNewCheckbox(-1, this, theApp->mCheatKeys);
+	mDebugModeCheckbox->SetVisible(false);
+	mBankKeybindsCheckbox = MakeNewCheckbox(-1, this, theApp->mBankKeybinds);
+	mBankKeybindsCheckbox->SetVisible(false);
+	m09FormatCheckbox = MakeNewCheckbox(-1, this, theApp->mZeroNineBankFormat);
+	m09FormatCheckbox->SetVisible(false);
 
-	mRightPageButton = MakeNewButton(NewOptionsDialog::NewOptionsDialog_RightPage, this, "", nullptr, IMAGE_ZOMBATAR_NEXT_BUTTON,
-		IMAGE_ZOMBATAR_NEXT_BUTTON_HIGHLIGHT, IMAGE_ZOMBATAR_NEXT_BUTTON_HIGHLIGHT);
-	mRightPageButton->SetVisible(false);
+	// Advanced page 2: Gameplay Tweaks
+	mSpeedEditWidget = new EditWidget(-1, this);
+	mSpeedEditWidget->mMaxChars = 1;
+	mSpeedEditWidget->SetFont(FONT_DWARVENTODCRAFT18GREENINSET);
+	mSpeedEditWidget->AddWidthCheckFont(FONT_DWARVENTODCRAFT18GREENINSET, IMAGE_OPTIONS_CHECKBOX0->mWidth);
+	mSpeedEditWidget->SetText(StrFormat("%d", theApp->mSpeedModifier));
+	mSpeedEditWidget->SetVisible(false);
+	mAutoCollectSunsCheckbox = MakeNewCheckbox(-1, this, theApp->mAutoCollectSuns);
+	mAutoCollectSunsCheckbox->SetVisible(false);
+	mAutoCollectCoinsCheckbox = MakeNewCheckbox(-1, this, theApp->mAutoCollectCoins);
+	mAutoCollectCoinsCheckbox->SetVisible(false);
+	mZombieHealthbarsCheckbox = MakeNewCheckbox(-1, this, theApp->mZombieHealthbars);
+	mZombieHealthbarsCheckbox->SetVisible(false);
+	mPlantHealthbarsCheckbox = MakeNewCheckbox(-1, this, theApp->mPlantHealthbars);
+	mPlantHealthbarsCheckbox->SetVisible(false);
 
+	// Advanced page 3: Resource Packs
 	mReloadResourcePacksButton = MakeButton(NewOptionsDialog::NewOptionsDialog_ReloadResourcePacks, this, "[OPTIONS_RELOAD_RESOURCE_PACKS]");
 	mReloadResourcePacksButton->SetVisible(false);
-
 	mResourcePackButton = MakeNewButton(NewOptionsDialog::NewOptionsDialog_ResourcePack, this, mApp->GetResourcePackString(), nullptr,
 		IMAGE_BLANK, IMAGE_BLANK, IMAGE_BLANK);
 	mResourcePackButton->SetFont(FONT_DWARVENTODCRAFT18);
 	mResourcePackButton->mColors[ButtonWidget::COLOR_LABEL] = cOptionsTextColor;
 	mResourcePackButton->mColors[ButtonWidget::COLOR_LABEL_HILITE] = Color(1, 233, 1);
 	mResourcePackButton->SetVisible(false);
+
+	// Advanced page 4: Hardware / Display
+	mRealHardwareAccelerationCheckbox = MakeNewCheckbox(NewOptionsDialog::NewOptionsDialog_Real_HardwareAcceleration, this, theApp->Is3DAccelerated());
+	mRealHardwareAccelerationCheckbox->SetVisible(false);
+	mCustomCursorCheckbox = MakeNewCheckbox(NewOptionsDialog::NewOptionsDialog_CustomCursor, this, theApp->mCustomCursorsEnabled);
+	mCustomCursorCheckbox->SetVisible(false);
+
+	// Page navigation arrows
+	mLeftPageButton = MakeNewButton(NewOptionsDialog::NewOptionsDialog_LeftPage, this, "", nullptr, IMAGE_ZOMBATAR_PREV_BUTTON,
+		IMAGE_ZOMBATAR_PREV_BUTTON_HIGHLIGHT, IMAGE_ZOMBATAR_PREV_BUTTON_HIGHLIGHT);
+	mLeftPageButton->SetVisible(false);
+	mRightPageButton = MakeNewButton(NewOptionsDialog::NewOptionsDialog_RightPage, this, "", nullptr, IMAGE_ZOMBATAR_NEXT_BUTTON,
+		IMAGE_ZOMBATAR_NEXT_BUTTON_HIGHLIGHT, IMAGE_ZOMBATAR_NEXT_BUTTON_HIGHLIGHT);
+	mRightPageButton->SetVisible(false);
 
 	mAdvancedButton->SetVisible(false);
 
@@ -150,9 +188,14 @@ NewOptionsDialog::NewOptionsDialog(LawnApp* theApp, bool theFromGameSelector, bo
 	{
 		mAlmanacButton->SetVisible(false);
 	}
-	if ((!mRestartButton->mVisible || !mAlmanacButton->mVisible) && !mFromGameSelector && !mAdvancedMode)
+	if ((!mRestartButton->mVisible || !mAlmanacButton->mVisible) && !mAdvancedMode)
 	{
-		mAdvancedButton->SetVisible(true);
+		LawnStoneButton* button;
+		if (!mRestartButton->mVisible)
+			button = mRestartButton;
+		else
+			button = mAlmanacButton;
+		mAdvancedButton->Resize(button->mX, button->mY, button->mWidth, button->mHeight);
 	}
 }
 
@@ -171,6 +214,16 @@ NewOptionsDialog::~NewOptionsDialog()
 	delete mReloadResourcePacksButton;
 	delete mResourcePackButton;
 	delete mBackToGameButton;
+	delete mDebugModeCheckbox;
+	delete mBankKeybindsCheckbox;
+	delete m09FormatCheckbox;
+	delete mSpeedEditWidget;
+	delete mAutoCollectSunsCheckbox;
+	delete mAutoCollectCoinsCheckbox;
+	delete mZombieHealthbarsCheckbox;
+	delete mPlantHealthbarsCheckbox;
+	delete mRealHardwareAccelerationCheckbox;
+	delete mCustomCursorCheckbox;
 }
 
 int NewOptionsDialog::GetPreferredHeight(int theWidth)
@@ -195,6 +248,16 @@ void NewOptionsDialog::AddedToManager(Sexy::WidgetManager* theWidgetManager)
 	AddWidget(mRightPageButton);
 	AddWidget(mReloadResourcePacksButton);
 	AddWidget(mResourcePackButton);
+	AddWidget(mDebugModeCheckbox);
+	AddWidget(mBankKeybindsCheckbox);
+	AddWidget(m09FormatCheckbox);
+	AddWidget(mSpeedEditWidget);
+	AddWidget(mAutoCollectSunsCheckbox);
+	AddWidget(mAutoCollectCoinsCheckbox);
+	AddWidget(mZombieHealthbarsCheckbox);
+	AddWidget(mPlantHealthbarsCheckbox);
+	AddWidget(mRealHardwareAccelerationCheckbox);
+	AddWidget(mCustomCursorCheckbox);
 }
 
 void NewOptionsDialog::RemovedFromManager(Sexy::WidgetManager* theWidgetManager)
@@ -212,6 +275,16 @@ void NewOptionsDialog::RemovedFromManager(Sexy::WidgetManager* theWidgetManager)
 	RemoveWidget(mRightPageButton);
 	RemoveWidget(mReloadResourcePacksButton);
 	RemoveWidget(mResourcePackButton);
+	RemoveWidget(mDebugModeCheckbox);
+	RemoveWidget(mBankKeybindsCheckbox);
+	RemoveWidget(m09FormatCheckbox);
+	RemoveWidget(mSpeedEditWidget);
+	RemoveWidget(mAutoCollectSunsCheckbox);
+	RemoveWidget(mAutoCollectCoinsCheckbox);
+	RemoveWidget(mZombieHealthbarsCheckbox);
+	RemoveWidget(mPlantHealthbarsCheckbox);
+	RemoveWidget(mRealHardwareAccelerationCheckbox);
+	RemoveWidget(mCustomCursorCheckbox);
 }
 
 void NewOptionsDialog::Resize(int theX, int theY, int theWidth, int theHeight)
@@ -226,11 +299,31 @@ void NewOptionsDialog::Resize(int theX, int theY, int theWidth, int theHeight)
 	mBackToMainButton->Resize(mRestartButton->mX, mRestartButton->mY + 43, 209, 46);
 	mAdvancedButton->Resize(mRestartButton->mX, mRestartButton->mY + 43, 209, 46);
 	mBackToGameButton->Resize(30, 381, mBackToGameButton->mWidth, mBackToGameButton->mHeight);
-	mLeftPageButton->Resize(100, 330, IMAGE_ZOMBATAR_PREV_BUTTON->mWidth, IMAGE_ZOMBATAR_PREV_BUTTON->mHeight);
-	mRightPageButton->Resize(280, 330, IMAGE_ZOMBATAR_NEXT_BUTTON->mWidth, IMAGE_ZOMBATAR_NEXT_BUTTON->mHeight);
-	mReloadResourcePacksButton->Resize(mWidth / 2 - 130, 160, 260, 46);
+
+	// Page navigation
+	mLeftPageButton->Resize(100, ADVANCEDOPTIONS_PAGE_Y - 25, IMAGE_ZOMBATAR_PREV_BUTTON->mWidth, IMAGE_ZOMBATAR_PREV_BUTTON->mHeight);
+	mRightPageButton->Resize(280, ADVANCEDOPTIONS_PAGE_Y - 25, IMAGE_ZOMBATAR_NEXT_BUTTON->mWidth, IMAGE_ZOMBATAR_NEXT_BUTTON->mHeight);
+
+	// Page 1: Debug / Keybinds
+	mDebugModeCheckbox->Resize(284, 148, 46, 39);
+	mBankKeybindsCheckbox->Resize(mDebugModeCheckbox->mX, mDebugModeCheckbox->mY + 40, 46, 39);
+	m09FormatCheckbox->Resize(mBankKeybindsCheckbox->mX, mBankKeybindsCheckbox->mY + 40, 46, 39);
+
+	// Page 2: Gameplay Tweaks
+	mSpeedEditWidget->Resize(ADVANCEDOPTIONS_SPEED_X + 9, ADVANCEDOPTIONS_SPEED_Y - 4, IMAGE_OPTIONS_CHECKBOX0->mWidth, IMAGE_OPTIONS_CHECKBOX0->mHeight + 4);
+	mAutoCollectSunsCheckbox->Resize(284, ADVANCEDOPTIONS_SPEED_Y + 40, 46, 39);
+	mAutoCollectCoinsCheckbox->Resize(mAutoCollectSunsCheckbox->mX, mAutoCollectSunsCheckbox->mY + 40, 46, 39);
+	mZombieHealthbarsCheckbox->Resize(mAutoCollectCoinsCheckbox->mX, mAutoCollectCoinsCheckbox->mY + 40, 46, 39);
+	mPlantHealthbarsCheckbox->Resize(mZombieHealthbarsCheckbox->mX, mZombieHealthbarsCheckbox->mY + 40, 46, 39);
+
+	// Page 3: Resource Packs
+	mReloadResourcePacksButton->Resize(mWidth / 2 - 130, ADVANCEDOPTIONS_SPEED_Y, 260, 46);
 	mResourcePackButton->Resize(mWidth / 2 + 15, mReloadResourcePacksButton->mY + 50, 0, FONT_DWARVENTODCRAFT18->GetHeight());
 	ResizeResourcePackButton();
+
+	// Page 4: Hardware / Display
+	mRealHardwareAccelerationCheckbox->Resize(ADVANCEDOPTIONS_SPEED_X, ADVANCEDOPTIONS_SPEED_Y, 46, 39);
+	mCustomCursorCheckbox->Resize(mRealHardwareAccelerationCheckbox->mX, mRealHardwareAccelerationCheckbox->mY + 40, 46, 39);
 
 	if ((!mRestartButton->mVisible || !mAlmanacButton->mVisible) && !mAdvancedMode)
 	{
@@ -302,10 +395,31 @@ void NewOptionsDialog::Draw(Sexy::Graphics* g)
 		switch (mAdvancedPage)
 		{
 		case 1:
+			PvzpDrawString(g, mApp->GetString("OPTIONS_DEBUG_MODE", "Debug Mode"), mDebugModeCheckbox->mX - 6, mDebugModeCheckbox->mY + 22, FONT_DWARVENTODCRAFT18, cOptionsTextColor, DrawStringJustification::DS_ALIGN_RIGHT);
+			PvzpDrawString(g, mApp->GetString("OPTIONS_SEED_BANK_KEYBINDS", "Seed Bank Keybinds"), mBankKeybindsCheckbox->mX - 6, mBankKeybindsCheckbox->mY + 22, FONT_DWARVENTODCRAFT18, cOptionsTextColor, DrawStringJustification::DS_ALIGN_RIGHT);
+			{
+				std::string aFormatLabel = m09FormatCheckbox->mChecked ? "1-0" : "0-9";
+				PvzpDrawString(g, mApp->GetString("OPTIONS_SEED_BANK_KEYBIND", "Seed Bank Format") + " (" + aFormatLabel + ")", m09FormatCheckbox->mX - 6, m09FormatCheckbox->mY + 22, FONT_DWARVENTODCRAFT18, cOptionsTextColor, DrawStringJustification::DS_ALIGN_RIGHT);
+			}
+			PvzpDrawString(g, mApp->GetString("OPTIONS_SHOVEL_KEYBIND", "Shovel Keybind"), mWidth / 2, m09FormatCheckbox->mY + 55, FONT_DWARVENTODCRAFT18, cOptionsTextColor, DrawStringJustification::DS_ALIGN_CENTER);
+			break;
+		case 2:
+			g->DrawImage(IMAGE_OPTIONS_CHECKBOX0, ADVANCEDOPTIONS_SPEED_X, ADVANCEDOPTIONS_SPEED_Y);
+			PvzpDrawString(g, mApp->GetString("OPTIONS_SPEED_MODIFIER", "Speed Modifier"), ADVANCEDOPTIONS_SPEED_X - 6, ADVANCEDOPTIONS_SPEED_Y + 22, FONT_DWARVENTODCRAFT18, cOptionsTextColor, DrawStringJustification::DS_ALIGN_RIGHT);
+			PvzpDrawString(g, mApp->GetString("OPTIONS_AUTO_COLLECT_SUNS", "Auto Collect Suns"), mAutoCollectSunsCheckbox->mX - 6, mAutoCollectSunsCheckbox->mY + 22, FONT_DWARVENTODCRAFT18, cOptionsTextColor, DrawStringJustification::DS_ALIGN_RIGHT);
+			PvzpDrawString(g, mApp->GetString("OPTIONS_AUTO_COLLECT_COINS", "Auto Collect Coins"), mAutoCollectCoinsCheckbox->mX - 6, mAutoCollectCoinsCheckbox->mY + 22, FONT_DWARVENTODCRAFT18, cOptionsTextColor, DrawStringJustification::DS_ALIGN_RIGHT);
+			PvzpDrawString(g, mApp->GetString("OPTIONS_ZOMBIE_HEALTHBARS", "Zombie Healthbars"), mZombieHealthbarsCheckbox->mX - 6, mZombieHealthbarsCheckbox->mY + 22, FONT_DWARVENTODCRAFT18, cOptionsTextColor, DrawStringJustification::DS_ALIGN_RIGHT);
+			PvzpDrawString(g, mApp->GetString("OPTIONS_PLANT_HEALTHBARS", "Plant Healthbars"), mPlantHealthbarsCheckbox->mX - 6, mPlantHealthbarsCheckbox->mY + 22, FONT_DWARVENTODCRAFT18, cOptionsTextColor, DrawStringJustification::DS_ALIGN_RIGHT);
+			break;
+		case 3:
 			PvzpDrawString(g, mApp->GetString("OPTIONS_RESOURCE_PACK", "Resource Pack"), mResourcePackButton->mX - 6, mResourcePackButton->mY + 23, FONT_DWARVENTODCRAFT18, cOptionsTextColor, DrawStringJustification::DS_ALIGN_RIGHT);
 			break;
+		case 4:
+			PvzpDrawString(g, mApp->GetString("OPTIONS_ACTUAL_ACCELERATION", "Real Hardware Acceleration"), mRealHardwareAccelerationCheckbox->mX - 6, mRealHardwareAccelerationCheckbox->mY + 22, FONT_DWARVENTODCRAFT18, cOptionsTextColor, DrawStringJustification::DS_ALIGN_RIGHT);
+			PvzpDrawString(g, mApp->GetString("OPTIONS_CUSTOM_CURSOR", "Custom Cursor"), mCustomCursorCheckbox->mX - 6, mCustomCursorCheckbox->mY + 22, FONT_DWARVENTODCRAFT18, cOptionsTextColor, DrawStringJustification::DS_ALIGN_RIGHT);
+			break;
 		}
-		PvzpDrawString(g, "Page " + std::to_string(mAdvancedPage) + "/1", mWidth / 2, 355, FONT_DWARVENTODCRAFT18GREENINSET, Color::White, DrawStringJustification::DS_ALIGN_CENTER);
+		PvzpDrawString(g, "Page " + std::to_string(mAdvancedPage) + " / " + std::to_string(ADVANCEDOPTIONS_MAX_PAGES), mWidth / 2, ADVANCEDOPTIONS_PAGE_Y, FONT_DWARVENTODCRAFT18GREENINSET, Color::White, DrawStringJustification::DS_ALIGN_CENTER);
 	}
 }
 
@@ -389,6 +503,16 @@ void NewOptionsDialog::CheckboxChecked(int theId, bool checked)
 	}
 }
 
+void NewOptionsDialog::EditWidgetText(int theId, const std::string& theString)
+{
+	(void)theId;
+	int aVal = 2;
+	try { aVal = std::stoi(theString); } catch (...) {}
+	aVal = std::max(SPEED_MODIFIER_MIN, std::min(SPEED_MODIFIER_MAX, aVal));
+	mSpeedEditWidget->SetText(StrFormat("%d", aVal));
+	mApp->mSpeedModifier = aVal;
+}
+
 void NewOptionsDialog::KeyDown(Sexy::KeyCode theKey)
 {
 	if (mApp->mBoard)
@@ -416,14 +540,46 @@ void NewOptionsDialog::UpdateAdvancedPage()
 	else
 		mLeftPageButton->SetVisible(true);
 
+	if (mAdvancedPage >= ADVANCEDOPTIONS_MAX_PAGES)
+		mRightPageButton->SetVisible(false);
+	else
+		mRightPageButton->SetVisible(true);
+
+	// Hide all advanced widgets
+	mDebugModeCheckbox->SetVisible(false);
+	mBankKeybindsCheckbox->SetVisible(false);
+	m09FormatCheckbox->SetVisible(false);
+	mSpeedEditWidget->SetVisible(false);
+	mAutoCollectSunsCheckbox->SetVisible(false);
+	mAutoCollectCoinsCheckbox->SetVisible(false);
+	mZombieHealthbarsCheckbox->SetVisible(false);
+	mPlantHealthbarsCheckbox->SetVisible(false);
 	mReloadResourcePacksButton->SetVisible(false);
 	mResourcePackButton->SetVisible(false);
+	mRealHardwareAccelerationCheckbox->SetVisible(false);
+	mCustomCursorCheckbox->SetVisible(false);
 
 	switch (mAdvancedPage)
 	{
 	case 1:
+		mDebugModeCheckbox->SetVisible(true);
+		mBankKeybindsCheckbox->SetVisible(true);
+		m09FormatCheckbox->SetVisible(true);
+		break;
+	case 2:
+		mSpeedEditWidget->SetVisible(true);
+		mAutoCollectSunsCheckbox->SetVisible(true);
+		mAutoCollectCoinsCheckbox->SetVisible(true);
+		mZombieHealthbarsCheckbox->SetVisible(true);
+		mPlantHealthbarsCheckbox->SetVisible(true);
+		break;
+	case 3:
 		mReloadResourcePacksButton->SetVisible(true);
 		mResourcePackButton->SetVisible(true);
+		break;
+	case 4:
+		mRealHardwareAccelerationCheckbox->SetVisible(true);
+		mCustomCursorCheckbox->SetVisible(true);
 		break;
 	}
 }

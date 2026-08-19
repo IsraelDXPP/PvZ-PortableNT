@@ -136,7 +136,7 @@ NewOptionsDialog::NewOptionsDialog(LawnApp* theApp, bool theFromGameSelector, bo
 
 	// In-game advanced button (small "A" button, top-right)
 	mGameAdvancedButton = MakeNewButton(NewOptionsDialog::NewOptionsDialog_Advanced, this, "[ADVANCED_OPTIONS_BUTTON_SHORT]", nullptr,
-		IMAGE_BLANK, IMAGE_BLANK, IMAGE_BLANK);
+		IMAGE_BUTTON_SMALL, IMAGE_BUTTON_DOWN_SMALL, IMAGE_BUTTON_DOWN_SMALL);
 	mGameAdvancedButton->SetFont(FONT_DWARVENTODCRAFT18GREENINSET);
 	mGameAdvancedButton->SetColor(ButtonWidget::COLOR_LABEL, Color::White);
 	mGameAdvancedButton->SetColor(ButtonWidget::COLOR_LABEL_HILITE, Color::White);

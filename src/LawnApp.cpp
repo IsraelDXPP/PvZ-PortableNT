@@ -1152,6 +1152,7 @@ bool LawnApp::KillNewOptionsDialog()
 	if (aNewOptionsDialog->mAdvancedMode)
 	{
 		mCheatKeys = aNewOptionsDialog->mDebugModeCheckbox->IsChecked();
+		mDebugKeysEnabled = mCheatKeys;
 		try { mSpeedModifier = std::stoi(aNewOptionsDialog->mSpeedEditWidget->mString); } catch (...) {}
 		mSpeedModifier = std::max(2, std::min(9, mSpeedModifier));
 		mAutoCollectSuns = aNewOptionsDialog->mAutoCollectSunsCheckbox->IsChecked();

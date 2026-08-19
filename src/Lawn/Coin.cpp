@@ -23,7 +23,6 @@
 #include "Board.h"
 #include <algorithm>
 #include "Cutscene.h"
-#include <SexyAppFramework/widget/WidgetManager.h>
 #include "ZenGarden.h"
 #include "Challenge.h"
 #include "../LawnApp.h"

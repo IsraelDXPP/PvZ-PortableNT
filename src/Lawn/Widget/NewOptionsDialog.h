@@ -54,7 +54,6 @@ protected:
 		NewOptionsDialog_ReloadResourcePacks,
 		NewOptionsDialog_ResourcePack,
 		NewOptionsDialog_Real_HardwareAcceleration,
-		NewOptionsDialog_CustomCursor,
 		NewOptionsDialog_LeftPage,
 		NewOptionsDialog_RightPage,
 		NewOptionsDialog_Back,
@@ -80,15 +79,13 @@ public:
 	int						mAdvancedPage;
 
 	Sexy::Checkbox*			mDebugModeCheckbox;
-	Sexy::Checkbox*			mBankKeybindsCheckbox;
-	Sexy::Checkbox*			m09FormatCheckbox;
 	Sexy::EditWidget*		mSpeedEditWidget;
+	std::string				mSpeedEditPrevText;
 	Sexy::Checkbox*			mAutoCollectSunsCheckbox;
 	Sexy::Checkbox*			mAutoCollectCoinsCheckbox;
 	Sexy::Checkbox*			mZombieHealthbarsCheckbox;
 	Sexy::Checkbox*			mPlantHealthbarsCheckbox;
 	Sexy::Checkbox*			mRealHardwareAccelerationCheckbox;
-	Sexy::Checkbox*			mCustomCursorCheckbox;
 
 public:
 	NewOptionsDialog(LawnApp* theApp, bool theFromGameSelector, bool theAdvanced = false);
@@ -105,6 +102,7 @@ public:
 	void					ButtonPress(int theId) override;
 	void					ButtonDepress(int theId) override;
 	void					KeyDown(Sexy::KeyCode theKey) override;
+	void					Update() override;
 	void					UpdateAdvancedPage();
 	void					ResizeResourcePackButton();
 };

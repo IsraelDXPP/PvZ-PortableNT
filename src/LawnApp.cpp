@@ -182,8 +182,6 @@ LawnApp::LawnApp()
 	mProfileMgr = new ProfileMgr();
 	mRegisterResourcesLoaded = false;
 	mCheatKeys = false;
-	mBankKeybinds = false;
-	mZeroNineBankFormat = false;
 	mAutoCollectSuns = false;
 	mAutoCollectCoins = false;
 	mZombieHealthbars = false;
@@ -1135,19 +1133,13 @@ bool LawnApp::KillNewOptionsDialog()
 	if (aNewOptionsDialog->mAdvancedMode)
 	{
 		mCheatKeys = aNewOptionsDialog->mDebugModeCheckbox->IsChecked();
-		mBankKeybinds = aNewOptionsDialog->mBankKeybindsCheckbox->IsChecked();
-		mZeroNineBankFormat = aNewOptionsDialog->m09FormatCheckbox->IsChecked();
+		try { mSpeedModifier = std::stoi(aNewOptionsDialog->mSpeedEditWidget->mString); } catch (...) {}
+		mSpeedModifier = std::max(2, std::min(9, mSpeedModifier));
 		mAutoCollectSuns = aNewOptionsDialog->mAutoCollectSunsCheckbox->IsChecked();
 		mAutoCollectCoins = aNewOptionsDialog->mAutoCollectCoinsCheckbox->IsChecked();
 		mZombieHealthbars = aNewOptionsDialog->mZombieHealthbarsCheckbox->IsChecked();
 		mPlantHealthbars = aNewOptionsDialog->mPlantHealthbarsCheckbox->IsChecked();
 		want3D = aNewOptionsDialog->mRealHardwareAccelerationCheckbox->IsChecked();
-		bool aCustomCursor = aNewOptionsDialog->mCustomCursorCheckbox->IsChecked();
-		if (mCustomCursorsEnabled != aCustomCursor)
-		{
-			mCustomCursorsEnabled = aCustomCursor;
-			EnforceCursor();
-		}
 	}
 	SwitchScreenMode(wantWindowed, want3D, false);
 

@@ -1159,7 +1159,6 @@ bool LawnApp::KillNewOptionsDialog()
 		mAutoCollectCoins = aNewOptionsDialog->mAutoCollectCoinsCheckbox->IsChecked();
 		mZombieHealthbars = aNewOptionsDialog->mZombieHealthbarsCheckbox->IsChecked();
 		mPlantHealthbars = aNewOptionsDialog->mPlantHealthbarsCheckbox->IsChecked();
-		want3D = aNewOptionsDialog->mRealHardwareAccelerationCheckbox->IsChecked();
 	}
 	SwitchScreenMode(wantWindowed, want3D, false);
 

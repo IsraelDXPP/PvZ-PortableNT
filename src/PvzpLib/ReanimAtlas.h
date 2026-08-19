@@ -73,5 +73,6 @@ public:
 
 MemoryImage*                        ReanimAtlasMakeBlankMemoryImage(int theWidth, int theHeight);
 void                                ReloadReanimationAtlases();
+void                                ClearReanimAtlasCache();
 
 #endif

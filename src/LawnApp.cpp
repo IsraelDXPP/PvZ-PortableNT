@@ -412,12 +412,31 @@ void LawnApp::WriteToRegistry()
 		mPlayerInfo->SaveDetails();
 	}
 
+	RegistryWriteInteger("QE_SpeedModifier", mSpeedModifier);
+	RegistryWriteBoolean("QE_AutoCollectSuns", mAutoCollectSuns);
+	RegistryWriteBoolean("QE_AutoCollectCoins", mAutoCollectCoins);
+	RegistryWriteBoolean("QE_ZombieHealthbars", mZombieHealthbars);
+	RegistryWriteBoolean("QE_PlantHealthbars", mPlantHealthbars);
+
 	SexyAppBase::WriteToRegistry();
 }
 
 void LawnApp::ReadFromRegistry()
 {
 	SexyApp::ReadFromRegistry();
+
+	int anInt;
+	if (RegistryReadInteger("QE_SpeedModifier", &anInt))
+		mSpeedModifier = std::max(2, std::min(anInt, 9));
+	bool aBool;
+	if (RegistryReadBoolean("QE_AutoCollectSuns", &aBool))
+		mAutoCollectSuns = aBool;
+	if (RegistryReadBoolean("QE_AutoCollectCoins", &aBool))
+		mAutoCollectCoins = aBool;
+	if (RegistryReadBoolean("QE_ZombieHealthbars", &aBool))
+		mZombieHealthbars = aBool;
+	if (RegistryReadBoolean("QE_PlantHealthbars", &aBool))
+		mPlantHealthbars = aBool;
 }
 
 bool LawnApp::WriteCurrentUserConfig()

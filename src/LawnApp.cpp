@@ -159,9 +159,6 @@ LawnApp::LawnApp()
 	mSfxVolume = 0.5525;
 	mAutoStartLoadingThread = false;
 	mDebugKeysEnabled = false;
-#ifdef PVZ_DEBUG
-	mDebugKeysEnabled = true;
-#endif
 	mProdName = "io.github.wszqkzqk.pvz-portable";
 	mProductVersion = PVZP_VERSION;
 	mBuildNum = PVZP_BUILD_NUMBER;
@@ -185,9 +182,6 @@ LawnApp::LawnApp()
 	mProfileMgr = new ProfileMgr();
 	mRegisterResourcesLoaded = false;
 	mCheatKeys = false;
-#ifdef PVZ_DEBUG
-	mCheatKeys = true;
-#endif
 	mAutoCollectSuns = false;
 	mAutoCollectCoins = false;
 	mZombieHealthbars = false;

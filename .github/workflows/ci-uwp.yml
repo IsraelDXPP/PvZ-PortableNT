@@ -15,18 +15,6 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
-    inputs:
-      build_type:
-        description: "Build type (Debug / Release)"
-        required: false
-        default: "Release"
-        type: choice
-        options:
-          - Release
-          - Debug
-
-env:
-  BUILD_TYPE: ${{ inputs.build_type || 'Release' }}
 
 jobs:
   uwp-x64:
@@ -101,7 +89,7 @@ jobs:
           cmake -G Ninja -B build-uwp `
             -DCMAKE_SYSTEM_NAME=WindowsStore `
             -DCMAKE_SYSTEM_VERSION=10.0 `
-            -DCMAKE_BUILD_TYPE=$env:BUILD_TYPE `
+            -DCMAKE_BUILD_TYPE=Release `
             -DCONSOLE=OFF `
             -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake" `
             -DVCPKG_TARGET_TRIPLET=x64-uwp
@@ -110,7 +98,7 @@ jobs:
       - name: Build
         shell: pwsh
         run: |
-          cmake --build build-uwp --config $env:BUILD_TYPE
+          cmake --build build-uwp --config Release
           if ($LASTEXITCODE -ne 0) { throw "cmake build failed" }
 
       - name: Stage artifacts

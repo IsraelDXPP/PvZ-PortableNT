@@ -7,12 +7,22 @@ on:
   pull_request:
     branches: [ "main" ]
   workflow_dispatch:
+    inputs:
+      build_type:
+        description: "Build type (Debug / Release)"
+        required: false
+        default: "Release"
+        type: choice
+        options:
+          - Release
+          - Debug
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 env:
+  BUILD_TYPE: ${{ inputs.build_type || 'Release' }}
   # vcpkg binary cache; restored/saved per-OS via actions/cache below
   VCPKG_BINARY_SOURCES: clear;files,${{ github.workspace }}/vcpkg-cache,readwrite
 
@@ -55,12 +65,12 @@ jobs:
       run: |
         sudo -u builder bash -lc '
           mkdir build
-          cmake -G Ninja -B build -DCMAKE_BUILD_TYPE=Release
+          cmake -G Ninja -B build -DCMAKE_BUILD_TYPE=$BUILD_TYPE
           cmake --build build
 
           mkdir -p dist
           cp build/pvz-portable dist/
-          strip dist/pvz-portable
+          strip dist/pvz-portable || true
         '
 
     - name: Upload Artifact
@@ -272,7 +282,7 @@ jobs:
     - name: Build PvZ-Portable
       run: |
         cmake -G Ninja -B build \
-          -DCMAKE_BUILD_TYPE=Release \
+          -DCMAKE_BUILD_TYPE=$BUILD_TYPE \
           -DBUILD_STATIC=ON \
           -DCMAKE_EXE_LINKER_FLAGS="-static-libgcc -static-libstdc++" \
           -DCMAKE_PREFIX_PATH="$HOME/pvz-deps"
@@ -280,7 +290,7 @@ jobs:
 
         mkdir -p dist
         cp build/pvz-portable dist/
-        strip dist/pvz-portable
+        strip dist/pvz-portable || true
 
     - name: Upload Artifact
       uses: actions/upload-artifact@v7
@@ -317,12 +327,12 @@ jobs:
       shell: msys2 {0}
       run: |
         mkdir build
-        cmake -G Ninja -B build -DCMAKE_BUILD_TYPE=Release -DCONSOLE=OFF -DBUILD_STATIC=ON -DCMAKE_COLOR_DIAGNOSTICS=ON
+        cmake -G Ninja -B build -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DCONSOLE=OFF -DBUILD_STATIC=ON -DCMAKE_COLOR_DIAGNOSTICS=ON
         cmake --build build
         
         mkdir -p dist
         cp build/pvz-portable.exe dist/
-        strip dist/pvz-portable.exe
+        strip dist/pvz-portable.exe || true
 
     - name: Upload Artifact
       uses: actions/upload-artifact@v7
@@ -369,7 +379,7 @@ jobs:
     - name: Compile PvZ-Portable for Windows (MSVC)
       shell: pwsh
       run: |
-        cmake -G "Ninja" -B build -DCMAKE_BUILD_TYPE=Release -DCONSOLE=OFF -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake" -DVCPKG_TARGET_TRIPLET=x64-windows-static
+        cmake -G "Ninja" -B build -DCMAKE_BUILD_TYPE=$env:BUILD_TYPE -DCONSOLE=OFF -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake" -DVCPKG_TARGET_TRIPLET=x64-windows-static
         cmake --build build
 
         New-Item -ItemType Directory -Force -Path dist | Out-Null
@@ -423,7 +433,7 @@ jobs:
     - name: Compile PvZ-Portable for Windows (MSVC)
       shell: pwsh
       run: |
-        cmake -G "Ninja" -B build -DCMAKE_BUILD_TYPE=Release -DCONSOLE=OFF -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake" -DVCPKG_TARGET_TRIPLET=x86-windows-static
+        cmake -G "Ninja" -B build -DCMAKE_BUILD_TYPE=$env:BUILD_TYPE -DCONSOLE=OFF -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake" -DVCPKG_TARGET_TRIPLET=x86-windows-static
         cmake --build build
 
         New-Item -ItemType Directory -Force -Path dist | Out-Null
@@ -496,13 +506,13 @@ jobs:
     - name: Build PvZ-Portable
       run: |
         mkdir build
-        cmake -G Ninja -B build -DCMAKE_BUILD_TYPE=Release
+        cmake -G Ninja -B build -DCMAKE_BUILD_TYPE=$BUILD_TYPE
         cmake --build build
 
         mkdir -p dist
         mkdir -p dist/libs
         cp build/pvz-portable dist/
-        strip -x dist/pvz-portable
+        strip -x dist/pvz-portable || true
 
         echo "Bundling dependencies..."
         dylibbundler -of -b -x dist/pvz-portable -d dist/libs -p @executable_path/libs/
@@ -615,7 +625,7 @@ jobs:
           -DANDROID_ABI=$ABI \
           -DANDROID_PLATFORM=android-$ANDROID_API \
           -DSDL2_DIR=$SDL2_PREFIX/lib/cmake/SDL2 \
-          -DCMAKE_BUILD_TYPE=Release
+          -DCMAKE_BUILD_TYPE=$BUILD_TYPE
 
         cmake --build $BUILD_DIR -j$(nproc)
 
@@ -782,7 +792,7 @@ jobs:
           -DANDROID_PLATFORM=android-$ANDROID_API \
           -DSDL2_DIR=$SDL2_PREFIX/lib/cmake/SDL2 \
           -DLOW_MEMORY=ON \
-          -DCMAKE_BUILD_TYPE=Release
+          -DCMAKE_BUILD_TYPE=$BUILD_TYPE
 
         cmake --build $BUILD_DIR -j$(nproc)
 
@@ -893,10 +903,10 @@ jobs:
           -DCMAKE_SYSTEM_NAME=iOS \
           -DCMAKE_OSX_DEPLOYMENT_TARGET=$IOS_DEPLOY_TARGET \
           -DCMAKE_OSX_ARCHITECTURES=arm64 \
-          -DCMAKE_BUILD_TYPE=Release \
+          -DCMAKE_BUILD_TYPE=$BUILD_TYPE \
           -G Xcode
 
-        cmake --build $BUILD_DIR --config Release -- \
+        cmake --build $BUILD_DIR --config $BUILD_TYPE -- \
           -sdk iphoneos \
           CODE_SIGN_IDENTITY="-" \
           CODE_SIGNING_ALLOWED=NO
@@ -999,12 +1009,12 @@ jobs:
           -DCMAKE_EXE_LINKER_FLAGS="-F$GITHUB_WORKSPACE/dummy_frameworks -lobjc -Wl,-undefined,dynamic_lookup" \
           -DLOW_MEMORY=ON \
           -DPVZ_DEBUG=ON \
-          -DCMAKE_BUILD_TYPE=Release \
+          -DCMAKE_BUILD_TYPE=$BUILD_TYPE \
           -DCMAKE_C_COMPILER_LAUNCHER=ccache \
           -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
           -G Ninja
 
-        cmake --build $BUILD_DIR --config Release > build_log.txt 2>&1 || (tail -n 100 build_log.txt && exit 1)
+        cmake --build $BUILD_DIR --config $BUILD_TYPE > build_log.txt 2>&1 || (tail -n 100 build_log.txt && exit 1)
 
     - name: Create unsigned IPA for iPad mini 1
       run: |
@@ -1108,7 +1118,7 @@ jobs:
     - name: Build PvZ-Portable for WebAssembly
       run: |
         mkdir build-wasm
-        emcmake cmake -G Ninja -B build-wasm -DCMAKE_BUILD_TYPE=Release
+        emcmake cmake -G Ninja -B build-wasm -DCMAKE_BUILD_TYPE=$BUILD_TYPE
         cmake --build build-wasm -j$(nproc)
 
     - name: Upload Artifact
@@ -1173,7 +1183,7 @@ jobs:
         cmake -B build-switch \
           -DCMAKE_TOOLCHAIN_FILE=$DEVKITPRO/cmake/Switch.cmake \
           -DNINTENDO_SWITCH=ON \
-          -DCMAKE_BUILD_TYPE=Release
+          -DCMAKE_BUILD_TYPE=$BUILD_TYPE
         cmake --build build-switch
 
     - name: Upload Artifact

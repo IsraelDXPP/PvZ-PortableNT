@@ -81,12 +81,12 @@ NewOptionsDialog::NewOptionsDialog(LawnApp* theApp, bool theFromGameSelector, bo
 	mBackToGameButton->SetColor(ButtonWidget::COLOR_LABEL_HILITE, Color::White);
 	mBackToGameButton->mHiliteFont = FONT_DWARVENTODCRAFT36BRIGHTGREENINSET;
 
-	mMusicVolumeSlider = new Slider(IMAGE_OPTIONS_SLIDERSLOT, IMAGE_OPTIONS_SLIDERKNOB2, NewOptionsDialog::NewOptionsDialog_MusicVolume, this);
+	mMusicVolumeSlider = std::make_unique<Slider>(IMAGE_OPTIONS_SLIDERSLOT, IMAGE_OPTIONS_SLIDERKNOB2, NewOptionsDialog::NewOptionsDialog_MusicVolume, this);
 	double aMusicVolume = theApp->GetMusicVolume();
 	aMusicVolume = std::max(0.0, std::min(1.0, aMusicVolume));
 	mMusicVolumeSlider->SetValue(aMusicVolume);
 
-	mSfxVolumeSlider = new Slider(IMAGE_OPTIONS_SLIDERSLOT, IMAGE_OPTIONS_SLIDERKNOB2, NewOptionsDialog::NewOptionsDialog_SoundVolume, this);
+	mSfxVolumeSlider = std::make_unique<Slider>(IMAGE_OPTIONS_SLIDERSLOT, IMAGE_OPTIONS_SLIDERKNOB2, NewOptionsDialog::NewOptionsDialog_SoundVolume, this);
 	mSfxVolumeSlider->SetValue(theApp->GetSfxVolume() / 0.65);
 
 	mFullscreenCheckbox = MakeNewCheckbox(NewOptionsDialog::NewOptionsDialog_Fullscreen, this, !theApp->mIsWindowed);
@@ -211,29 +211,7 @@ NewOptionsDialog::NewOptionsDialog(LawnApp* theApp, bool theFromGameSelector, bo
 	}
 }
 
-NewOptionsDialog::~NewOptionsDialog()
-{
-	delete mMusicVolumeSlider;
-	delete mSfxVolumeSlider;
-	delete mFullscreenCheckbox;
-	delete mHardwareAccelerationCheckbox;
-	delete mAlmanacButton;
-	delete mRestartButton;
-	delete mBackToMainButton;
-	delete mAdvancedButton;
-	delete mGameAdvancedButton;
-	delete mLeftPageButton;
-	delete mRightPageButton;
-	delete mReloadResourcePacksButton;
-	delete mResourcePackButton;
-	delete mBackToGameButton;
-	delete mDebugModeCheckbox;
-	delete mSpeedEditWidget;
-	delete mAutoCollectSunsCheckbox;
-	delete mAutoCollectCoinsCheckbox;
-	delete mZombieHealthbarsCheckbox;
-	delete mPlantHealthbarsCheckbox;
-}
+NewOptionsDialog::~NewOptionsDialog() = default;
 
 int NewOptionsDialog::GetPreferredHeight(int theWidth)
 {
@@ -244,20 +222,20 @@ int NewOptionsDialog::GetPreferredHeight(int theWidth)
 void NewOptionsDialog::AddedToManager(Sexy::WidgetManager* theWidgetManager)
 {
 	Dialog::AddedToManager(theWidgetManager);
-	AddWidget(mAlmanacButton);
-	AddWidget(mRestartButton);
-	AddWidget(mBackToMainButton);
-	AddWidget(mAdvancedButton);
-	AddWidget(mGameAdvancedButton);
-	AddWidget(mMusicVolumeSlider);
-	AddWidget(mSfxVolumeSlider);
-	AddWidget(mHardwareAccelerationCheckbox);
-	AddWidget(mFullscreenCheckbox);
-	AddWidget(mBackToGameButton);
-	AddWidget(mLeftPageButton);
-	AddWidget(mRightPageButton);
-	AddWidget(mReloadResourcePacksButton);
-	AddWidget(mResourcePackButton);
+	AddWidget(mAlmanacButton.get());
+	AddWidget(mRestartButton.get());
+	AddWidget(mBackToMainButton.get());
+	AddWidget(mAdvancedButton.get());
+	AddWidget(mGameAdvancedButton.get());
+	AddWidget(mMusicVolumeSlider.get());
+	AddWidget(mSfxVolumeSlider.get());
+	AddWidget(mHardwareAccelerationCheckbox.get());
+	AddWidget(mFullscreenCheckbox.get());
+	AddWidget(mBackToGameButton.get());
+	AddWidget(mLeftPageButton.get());
+	AddWidget(mRightPageButton.get());
+	AddWidget(mReloadResourcePacksButton.get());
+	AddWidget(mResourcePackButton.get());
 	AddWidget(mDebugModeCheckbox);
 	AddWidget(mSpeedEditWidget);
 	AddWidget(mAutoCollectSunsCheckbox);
@@ -269,19 +247,20 @@ void NewOptionsDialog::AddedToManager(Sexy::WidgetManager* theWidgetManager)
 void NewOptionsDialog::RemovedFromManager(Sexy::WidgetManager* theWidgetManager)
 {
 	Dialog::RemovedFromManager(theWidgetManager);
-	RemoveWidget(mAlmanacButton);
-	RemoveWidget(mMusicVolumeSlider);
-	RemoveWidget(mSfxVolumeSlider);
-	RemoveWidget(mHardwareAccelerationCheckbox);
-	RemoveWidget(mFullscreenCheckbox);
-	RemoveWidget(mBackToMainButton);
-	RemoveWidget(mRestartButton);
-	RemoveWidget(mAdvancedButton);
-	RemoveWidget(mGameAdvancedButton);
-	RemoveWidget(mLeftPageButton);
-	RemoveWidget(mRightPageButton);
-	RemoveWidget(mReloadResourcePacksButton);
-	RemoveWidget(mResourcePackButton);
+	RemoveWidget(mAlmanacButton.get());
+	RemoveWidget(mMusicVolumeSlider.get());
+	RemoveWidget(mSfxVolumeSlider.get());
+	RemoveWidget(mHardwareAccelerationCheckbox.get());
+	RemoveWidget(mFullscreenCheckbox.get());
+	RemoveWidget(mBackToMainButton.get());
+	RemoveWidget(mRestartButton.get());
+	RemoveWidget(mAdvancedButton.get());
+	RemoveWidget(mGameAdvancedButton.get());
+	RemoveWidget(mLeftPageButton.get());
+	RemoveWidget(mRightPageButton.get());
+	RemoveWidget(mReloadResourcePacksButton.get());
+	RemoveWidget(mResourcePackButton.get());
+	RemoveWidget(mBackToGameButton.get());
 	RemoveWidget(mDebugModeCheckbox);
 	RemoveWidget(mSpeedEditWidget);
 	RemoveWidget(mAutoCollectSunsCheckbox);

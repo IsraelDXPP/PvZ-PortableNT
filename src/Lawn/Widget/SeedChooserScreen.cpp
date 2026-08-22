@@ -62,11 +62,11 @@ SeedChooserScreen::SeedChooserScreen()
 	mScrollAmount = 0;
 	mScrollPosition = 0;
 	mMaxScrollPosition = 0;
-	mToolTip = new ToolTipWidget();
+	mToolTip = std::make_unique<ToolTipWidget>();
 	mToolTip->mMaxLinesWidth = mApp->GetInteger("SEED_CHOOSER_SCREEN_TOOL_TIP_MAX_LINE_WIDTH", 0);
 	mToolTipSeed = -1;
 
-	mStartButton = new GameButton(SeedChooserScreen::SeedChooserScreen_Start);
+	mStartButton = std::make_unique<GameButton>(SeedChooserScreen::SeedChooserScreen_Start);
 	mStartButton->SetLabel("[LETS_ROCK_BUTTON]"); // the localization key name is wrong
 	mStartButton->mButtonImage = Sexy::IMAGE_SEEDCHOOSER_BUTTON;
 	mStartButton->mOverImage = nullptr;
@@ -80,12 +80,12 @@ SeedChooserScreen::SeedChooserScreen()
 	EnableStartButton(false);
 
 	int aButtonOffsetX = BOARD_ADDITIONAL_WIDTH * 2;
-	mMenuButton = new GameButton(SeedChooserScreen::SeedChooserScreen_Menu);
+	mMenuButton = std::make_unique<GameButton>(SeedChooserScreen::SeedChooserScreen_Menu);
 	mMenuButton->SetLabel("[MENU_BUTTON]");
 	mMenuButton->Resize(681 + aButtonOffsetX, -10, 117, 46);
 	mMenuButton->mDrawStoneButton = true;
 
-	mRandomButton = new GameButton(SeedChooserScreen::SeedChooserScreen_Random);
+	mRandomButton = std::make_unique<GameButton>(SeedChooserScreen::SeedChooserScreen_Random);
 	mRandomButton->SetLabel("(Debug Play)");
 	mRandomButton->mButtonImage = Sexy::IMAGE_BLANK;
 	mRandomButton->mOverImage = Sexy::IMAGE_BLANK;
@@ -106,7 +106,7 @@ SeedChooserScreen::SeedChooserScreen()
 	int aImageWidth = aBtnImage->GetWidth();
 	int aImageHeight = aOverImage->GetHeight();
 
-	mViewLawnButton = new GameButton(SeedChooserScreen::SeedChooserScreen_ViewLawn);
+	mViewLawnButton = std::make_unique<GameButton>(SeedChooserScreen::SeedChooserScreen_ViewLawn);
 	mViewLawnButton->SetLabel("[VIEW_LAWN]");
 	mViewLawnButton->mButtonImage = aBtnImage;
 	mViewLawnButton->mOverImage = aOverImage;
@@ -123,7 +123,7 @@ SeedChooserScreen::SeedChooserScreen()
 		mViewLawnButton->mDisabled = true;
 	}
 
-	mAlmanacButton = new GameButton(SeedChooserScreen::SeedChooserScreen_Almanac);
+	mAlmanacButton = std::make_unique<GameButton>(SeedChooserScreen::SeedChooserScreen_Almanac);
 	mAlmanacButton->SetLabel("[ALMANAC_BUTTON]");
 	mAlmanacButton->mButtonImage = aBtnImage;
 	mAlmanacButton->mOverImage = aOverImage;
@@ -135,7 +135,7 @@ SeedChooserScreen::SeedChooserScreen()
 	mAlmanacButton->mParentWidget = this;
 	mAlmanacButton->mTextOffsetY = 1;
 
-	mStoreButton = new GameButton(SeedChooserScreen::SeedChooserScreen_Store);
+	mStoreButton = std::make_unique<GameButton>(SeedChooserScreen::SeedChooserScreen_Store);
 	mStoreButton->SetLabel("[SHOP_BUTTON]");
 	mStoreButton->mButtonImage = aBtnImage;
 	mStoreButton->mOverImage = aOverImage;
@@ -147,7 +147,7 @@ SeedChooserScreen::SeedChooserScreen()
 	mStoreButton->mParentWidget = this;
 	mStoreButton->mTextOffsetY = 1;
 
-	mImitaterButton = new GameButton(SeedChooserScreen::SeedChooserScreen_Imitater);
+	mImitaterButton = std::make_unique<GameButton>(SeedChooserScreen::SeedChooserScreen_Imitater);
 	mImitaterButton->mButtonImage = Sexy::IMAGE_IMITATERSEED;
 	mImitaterButton->mOverImage = Sexy::IMAGE_IMITATERSEED;
 	mImitaterButton->mDownImage = Sexy::IMAGE_IMITATERSEED;
@@ -319,15 +319,7 @@ void SeedChooserScreen::GetSeedPositionInBank(int theIndex, int& x, int& y)
 
 SeedChooserScreen::~SeedChooserScreen()
 {
-	if (mStartButton) delete mStartButton;
-	if (mRandomButton) delete mRandomButton;
-	if (mViewLawnButton) delete mViewLawnButton;
-	if (mAlmanacButton) delete mAlmanacButton;
-	if (mImitaterButton) delete mImitaterButton;
-	if (mStoreButton) delete mStoreButton;
-	if (mSlider) delete mSlider;
-	if (mToolTip) delete mToolTip;
-	if (mMenuButton) delete mMenuButton;
+	delete mSlider;
 }
 
 void SeedChooserScreen::AddedToManager(WidgetManager* theWidgetManager)
@@ -674,7 +666,7 @@ bool SeedChooserScreen::CheckSeedUpgrade(SeedType theSeedTypeTo, SeedType theSee
 	if (mApp->IsSurvivalMode() || !PickedPlantType(theSeedTypeTo) || PickedPlantType(theSeedTypeFrom))
 		return true;
 
-	std::string aWarning = PvzpStringTranslate("[SEED_CHOOSER_UPGRADE_WARNING]");
+	std::string aWarning(PvzpStringTranslate("[SEED_CHOOSER_UPGRADE_WARNING]"));
 	aWarning = PvzpReplaceString(aWarning, "{UPGRADE_TO}", Plant::GetNameString(theSeedTypeTo));
 	aWarning = PvzpReplaceString(aWarning, "{UPGRADE_FROM}", Plant::GetNameString(theSeedTypeFrom));
 	return DisplayRepickWarningDialog(aWarning.c_str());

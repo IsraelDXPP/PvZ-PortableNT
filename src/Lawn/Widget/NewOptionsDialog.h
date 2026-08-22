@@ -26,6 +26,7 @@
 #include "widget/SliderListener.h"
 #include "widget/CheckboxListener.h"
 #include "widget/EditListener.h"
+#include <memory>
 
 class LawnApp;
 class LawnStoneButton;
@@ -59,24 +60,24 @@ protected:
 	};
 
 public:
-	LawnApp*				mApp;
-	Sexy::Slider*			mMusicVolumeSlider;
-	Sexy::Slider*			mSfxVolumeSlider;
-	Sexy::Checkbox*			mFullscreenCheckbox;
-	Sexy::Checkbox*			mHardwareAccelerationCheckbox;
-	LawnStoneButton*		mAlmanacButton;
-	LawnStoneButton*		mBackToMainButton;
-	LawnStoneButton*		mRestartButton;
-	NewLawnButton*			mBackToGameButton;
-	LawnStoneButton*		mAdvancedButton;
-	NewLawnButton*			mGameAdvancedButton;
-	NewLawnButton*			mLeftPageButton;
-	NewLawnButton*			mRightPageButton;
-	LawnStoneButton*		mReloadResourcePacksButton;
-	NewLawnButton*			mResourcePackButton;
-	bool					mFromGameSelector;
-	bool					mAdvancedMode;
-	int						mAdvancedPage;
+	LawnApp*							mApp;
+	std::unique_ptr<Sexy::Slider>		mMusicVolumeSlider;
+	std::unique_ptr<Sexy::Slider>		mSfxVolumeSlider;
+	std::unique_ptr<Sexy::Checkbox>		mFullscreenCheckbox;
+	std::unique_ptr<Sexy::Checkbox>		mHardwareAccelerationCheckbox;
+	std::unique_ptr<LawnStoneButton>	mAlmanacButton;
+	std::unique_ptr<LawnStoneButton>	mBackToMainButton;
+	std::unique_ptr<LawnStoneButton>	mRestartButton;
+	std::unique_ptr<NewLawnButton>		mBackToGameButton;
+	std::unique_ptr<LawnStoneButton>	mAdvancedButton;
+	std::unique_ptr<NewLawnButton>		mGameAdvancedButton;
+	std::unique_ptr<NewLawnButton>		mLeftPageButton;
+	std::unique_ptr<NewLawnButton>		mRightPageButton;
+	std::unique_ptr<LawnStoneButton>	mReloadResourcePacksButton;
+	std::unique_ptr<NewLawnButton>		mResourcePackButton;
+	bool								mFromGameSelector;
+	bool								mAdvancedMode;
+	int									mAdvancedPage;
 
 	Sexy::Checkbox*			mDebugModeCheckbox;
 	Sexy::EditWidget*		mSpeedEditWidget;

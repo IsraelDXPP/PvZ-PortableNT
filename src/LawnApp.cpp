@@ -113,8 +113,7 @@ bool LawnHasUsedCheatKeys()
 LawnApp::LawnApp()
 {
 	// Replace the base-class resource manager with the PvZP-capable subclass.
-	delete mResourceManager;
-	mResourceManager = new PvzpResourceManager(this);
+	mResourceManager = std::make_unique<PvzpResourceManager>(this);
 
 	mBoard = nullptr;
 	mGameSelector = nullptr;
@@ -847,9 +846,9 @@ int LawnApp::LawnMessageBox(int theDialogId, const char* theHeaderName, const ch
 
 Dialog* LawnApp::DoDialog(int theDialogId, bool isModal, const std::string& theDialogHeader, const std::string& theDialogLines, const std::string& theDialogFooter, int theButtonMode)
 {
-	std::string aHeader = PvzpStringTranslate(theDialogHeader);
-	std::string aLines = PvzpStringTranslate(theDialogLines);
-	std::string aFooter = PvzpStringTranslate(theDialogFooter);
+	std::string aHeader(PvzpStringTranslate(theDialogHeader));
+	std::string aLines(PvzpStringTranslate(theDialogLines));
+	std::string aFooter(PvzpStringTranslate(theDialogFooter));
 
 	Dialog* aDialog = SexyAppBase::DoDialog(theDialogId, isModal, aHeader, aLines, aFooter, theButtonMode);
 	if (mWidgetManager->mFocusWidget == nullptr)
@@ -1099,7 +1098,7 @@ void LawnApp::FinishNameError(int theId)
 	NewUserDialog* aNewUserDialog = (NewUserDialog*)GetDialog(theId == Dialogs::DIALOG_CREATEUSERERROR ? Dialogs::DIALOG_CREATEUSER : Dialogs::DIALOG_RENAMEUSER);
 	if (aNewUserDialog)
 	{
-		mWidgetManager->SetFocus(aNewUserDialog->mNameEditWidget);
+		mWidgetManager->SetFocus(aNewUserDialog->mNameEditWidget.get());
 	}
 }
 
@@ -1295,7 +1294,7 @@ void LawnApp::Init()
 	// these debug checks break the whole exe in release mode
 //#ifdef PVZ_DEBUG
 	PvzpAssertInitForApp();
-	PvzpLogLn("session id: %u", mSessionID);
+	PvzpLogLn("session id: %lld", static_cast<long long>(mSessionID));
 //#endif
 
 	if (!mResourceManager->ParseResourcesFile(mResourcesPath))
@@ -1768,7 +1767,7 @@ void LawnApp::LoadGroup(const char* theGroupName, int theGroupAveMsToLoad)
 	if (mShutdown || mCloseRequest)
 		return;
 
-	if (mResourceManager->HadError() || !ExtractResourcesByName(mResourceManager, theGroupName))
+	if (mResourceManager->HadError() || !ExtractResourcesByName(mResourceManager.get(), theGroupName))
 	{
 		PvzpLogLn("LoadGroup '%s' FAILED: %s", theGroupName, mResourceManager->GetErrorText().c_str());
 		ShowResourceError();
@@ -1922,8 +1921,8 @@ bool LawnApp::OpenURL(const std::string& theURL, bool shutdownOnOpen)
 
 void LawnApp::ConfirmQuit()
 {
-	std::string aBody = PvzpStringTranslate("[QUIT_MESSAGE]");
-	std::string aHeader = PvzpStringTranslate("[QUIT_HEADER]");
+	std::string aBody(PvzpStringTranslate("[QUIT_MESSAGE]"));
+	std::string aHeader(PvzpStringTranslate("[QUIT_HEADER]"));
 	LawnDialog* aDialog = (LawnDialog*)DoDialog(Dialogs::DIALOG_QUIT, true, aHeader, aBody, "", Dialog::BUTTONS_OK_CANCEL);
 	aDialog->mLawnYesButton->mLabel = PvzpStringTranslate("[QUIT_BUTTON]");
 	CenterDialog(aDialog, aDialog->mWidth, aDialog->mHeight);
@@ -3359,7 +3358,7 @@ std::string LawnGetCurrentLevelName()
 	}
 	if (gLawnApp->IsAdventureMode())
 	{
-		return StrFormat("F%d", gLawnApp->GetStageString(gLawnApp->mBoard->mLevel).c_str());
+		return StrFormat("F%s", gLawnApp->GetStageString(gLawnApp->mBoard->mLevel).c_str());
 	}
 
 	return gLawnApp->GetCurrentChallengeDef().mChallengeName;

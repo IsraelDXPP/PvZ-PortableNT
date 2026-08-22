@@ -27,6 +27,7 @@
 
 #include "Widget.h"
 #include "ButtonListener.h"
+#include <memory>
 
 namespace Sexy
 {
@@ -75,8 +76,8 @@ public:
 
 	DialogListener*			mDialogListener;
 	Image*					mComponentImage;
-	DialogButton*			mYesButton;
-	DialogButton*			mNoButton;
+	std::unique_ptr<DialogButton>	mYesButton;
+	std::unique_ptr<DialogButton>	mNoButton;
 	int						mNumButtons;
 
 	std::string				mDialogHeader;
@@ -84,8 +85,8 @@ public:
 	std::string				mDialogLines;
 
 	int						mButtonMode;
-	_Font*					mHeaderFont;
-	_Font*					mLinesFont;
+	std::unique_ptr<_Font>		mHeaderFont;
+	std::unique_ptr<_Font>		mLinesFont;
 	int						mTextAlign;
 	int						mLineSpacingOffset;
 	int						mButtonHeight;

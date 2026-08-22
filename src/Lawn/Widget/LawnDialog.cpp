@@ -39,7 +39,7 @@ LawnDialog::LawnDialog(LawnApp* theApp, int theId, bool isModal, const std::stri
 {
 	mApp = theApp;
 	mButtonDelay = -1;
-	mReanimation = new ReanimationWidget();
+	mReanimation = std::make_unique<ReanimationWidget>();
 	mReanimation->mLawnDialog = this;
 	mDrawStandardBack = true;
 	mTallBottom = false;
@@ -78,12 +78,7 @@ LawnDialog::LawnDialog(LawnApp* theApp, int theId, bool isModal, const std::stri
 	CalcSize(0, 0);
 }
 
-LawnDialog::~LawnDialog()
-{
-	if (mReanimation) delete mReanimation;
-	if (mLawnYesButton) delete mLawnYesButton;
-	if (mLawnNoButton) delete mLawnNoButton;
-}
+LawnDialog::~LawnDialog() = default;
 
 int LawnDialog::GetLeft()
 {
@@ -135,7 +130,7 @@ void LawnDialog::CalcSize(int theExtraX, int theExtraY)
 	{
 		aWidth += aTopMidWidth;
 		Graphics g;
-		g.SetFont(mLinesFont);
+		g.SetFont(mLinesFont.get());
 		int aBasicWidth = aWidth - mBackgroundInsets.mLeft - mBackgroundInsets.mRight - mContentInsets.mLeft - mContentInsets.mRight - 4;
 		aHeight += GetWordWrappedHeight(&g, aBasicWidth, mDialogLines, mLinesFont->GetLineSpacing() + mLineSpacingOffset) + 30;
 	}
@@ -161,17 +156,17 @@ void LawnDialog::CalcSize(int theExtraX, int theExtraY)
 void LawnDialog::AddedToManager(WidgetManager* theWidgetManager)
 {
 	Dialog::AddedToManager(theWidgetManager);
-	AddWidget(mReanimation);
-	if (mLawnYesButton) AddWidget(mLawnYesButton);
-	if (mLawnNoButton) AddWidget(mLawnNoButton);
+	AddWidget(mReanimation.get());
+	if (mLawnYesButton) AddWidget(mLawnYesButton.get());
+	if (mLawnNoButton) AddWidget(mLawnNoButton.get());
 }
 
 void LawnDialog::RemovedFromManager(WidgetManager* theWidgetManager)
 {
 	Dialog::RemovedFromManager(theWidgetManager);
-	if (mLawnYesButton) RemoveWidget(mLawnYesButton);
-	if (mLawnNoButton) RemoveWidget(mLawnNoButton);
-	RemoveWidget(mReanimation);
+	if (mLawnYesButton) RemoveWidget(mLawnYesButton.get());
+	if (mLawnNoButton) RemoveWidget(mLawnNoButton.get());
+	RemoveWidget(mReanimation.get());
 
 	if (mReanimation->mReanim)
 	{
@@ -369,13 +364,13 @@ void LawnDialog::Draw(Graphics* g)
 	if (mDialogHeader.size() > 0)
 	{
 		int aOffsetY = aFontY - mHeaderFont->GetAscentPadding() + mHeaderFont->GetAscent();
-		g->SetFont(mHeaderFont);
+		g->SetFont(mHeaderFont.get());
 		g->SetColor(mColors[Dialog::COLOR_HEADER]);
 		WriteCenteredLine(g, aOffsetY, mDialogHeader);
 		aFontY = aOffsetY - mHeaderFont->GetAscent() + mHeaderFont->GetHeight() + mSpaceAfterHeader;
 	}
 
-	g->SetFont(mLinesFont);
+	g->SetFont(mLinesFont.get());
 	g->SetColor(mColors[Dialog::COLOR_LINES]);
 	int aLinesAreaWidth = mWidth - mContentInsets.mLeft - mContentInsets.mRight - mBackgroundInsets.mLeft - mBackgroundInsets.mRight - 4;
 	Rect aRect(mBackgroundInsets.mLeft + mContentInsets.mLeft + 2, aFontY, aLinesAreaWidth, 0);
@@ -479,10 +474,7 @@ GameOverDialog::GameOverDialog(const std::string& theMessage, bool theShowChalle
 	gLawnApp->mBoard->mMenuButton->mBtnNoDraw = true;
 }
 
-GameOverDialog::~GameOverDialog()
-{
-	delete mMenuButton;
-}
+GameOverDialog::~GameOverDialog() = default;
 
 void GameOverDialog::KeyDown(KeyCode theKey)
 {
@@ -530,7 +522,7 @@ void GameOverDialog::AddedToManager(WidgetManager* theWidgetManager)
 	LawnDialog::AddedToManager(theWidgetManager);
 	if (mMenuButton)
 	{
-		AddWidget(mMenuButton);
+		AddWidget(mMenuButton.get());
 	}
 }
 
@@ -539,7 +531,7 @@ void GameOverDialog::RemovedFromManager(WidgetManager* theWidgetManager)
 	LawnDialog::RemovedFromManager(theWidgetManager);
 	if (mMenuButton)
 	{
-		RemoveWidget(mMenuButton);
+		RemoveWidget(mMenuButton.get());
 	}
 }
 

@@ -39,6 +39,7 @@
 #include "graphics/SharedImage.h"
 #include "misc/Ratio.h"
 #include <atomic>
+#include <memory>
 
 struct SDL_Cursor;
 
@@ -183,7 +184,7 @@ public:
 	bool					mOnlyAllowOneCopyToRun;
 	unsigned int			mNotifyGameMessage;
 	uchar					mAdd8BitMaxTable[512];
-	WidgetManager*			mWidgetManager;
+	std::unique_ptr<WidgetManager>	mWidgetManager;
 	DialogMap				mDialogMap;
 	DialogList				mDialogList;
 	std::thread::id			mPrimaryThreadId;
@@ -204,9 +205,9 @@ public:
 	bool					mNoDefer;
 	bool					mFullScreenPageFlip;
 	bool					mTabletPC;
-	GLInterface*			mGLInterface;
+	std::unique_ptr<GLInterface>	mGLInterface;
 	bool					mAlphaDisabled;
-	MusicInterface*			mMusicInterface;
+	std::unique_ptr<MusicInterface>	mMusicInterface;
 	bool					mReadFromRegistry;
 	std::string				mRegisterLink;
 	std::string				mProductVersion;
@@ -258,7 +259,7 @@ public:
 	SDL_Cursor*				mCustomCursor;
 	Image*					mCustomCursorImage;
 	int						mCustomCursorImageNum;
-	SoundManager*			mSoundManager;
+	std::unique_ptr<SoundManager>	mSoundManager;
 	std::atomic<_Font*>		mDefaultFont = nullptr; // app-injected fallback for widgets without an explicit font
 	WidgetSafeDeleteList	mSafeDeleteList;
 	bool					mMouseIn;
@@ -352,7 +353,7 @@ public:
 	std::string				mResourcePack;
 	int						mResourcePackIndex;
 	std::string				mResourcesPath;
-	ResourceManager*		mResourceManager;
+	std::unique_ptr<ResourceManager>	mResourceManager;
 
 protected:
 	void					RehupFocus();

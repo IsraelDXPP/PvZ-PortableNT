@@ -415,7 +415,7 @@ float RandRangeFloat(float theMin, float theMax)
 
 void PvzpDrawString(Graphics* g, std::string_view theText, int thePosX, int thePosY, _Font* theFont, const Color& theColor, DrawStringJustification theJustification)
 {
-	std::string aFinalString = PvzpStringTranslate(theText);
+	std::string_view aFinalString = PvzpStringTranslate(theText);
 
 	int aPosX = thePosX;
 	if (theJustification == DrawStringJustification::DS_ALIGN_RIGHT || theJustification == DrawStringJustification::DS_ALIGN_RIGHT_VERTICAL_MIDDLE)
@@ -449,7 +449,7 @@ static RenderCommand* gRenderHead[256];
 
 void PvzpDrawStringMatrix(Graphics* g, const _Font* theFont, const SexyMatrix3& theMatrix, std::string_view theString, const Color& theColor)
 {
-	std::string aFinalString = PvzpStringTranslate(theString);
+	std::string_view aFinalString = PvzpStringTranslate(theString);
 
 	memset(gRenderTail, 0, sizeof(gRenderTail));
 	memset(gRenderHead, 0, sizeof(gRenderHead));
@@ -897,7 +897,7 @@ void FixPixelsOnAlphaEdgeForBlending(Image* theImage)
 	PerfTimer aTimer;
 	aTimer.Start();
 
-	uint32_t* aBitsPtr = aImage->mBits;
+	uint32_t* aBitsPtr = aImage->mBits.get();
 	for (int y = 0; y < theImage->mHeight; y++)
 	{
 		for (int x = 0; x < theImage->mWidth; x++)
@@ -1026,7 +1026,7 @@ Color ColorsMultiply(const Color& theColor1, const Color& theColor2)
 
 bool PvzpLoadResources(const std::string& theGroup)
 {
-	return static_cast<PvzpResourceManager*>(gSexyAppBase->mResourceManager)->PvzpLoadResources(theGroup);
+	return static_cast<PvzpResourceManager*>(gSexyAppBase->mResourceManager.get())->PvzpLoadResources(theGroup);
 }
 
 bool PvzpResourceManager::PvzpLoadResources(const std::string& theGroup)
@@ -1067,7 +1067,7 @@ bool PvzpResourceManager::PvzpLoadResources(const std::string& theGroup)
 
 void PvzpAddImageToMap(SharedImageRef* theImage, const std::string& thePath, const std::string& theResourcePack)
 {
-	static_cast<PvzpResourceManager*>(gSexyAppBase->mResourceManager)->AddImageToMap(theImage, thePath, theResourcePack);
+	static_cast<PvzpResourceManager*>(gSexyAppBase->mResourceManager.get())->AddImageToMap(theImage, thePath, theResourcePack);
 }
 
 void PvzpResourceManager::AddImageToMap(SharedImageRef* theImage, const std::string& thePath, const std::string& theResourcePack)
@@ -1092,7 +1092,7 @@ void PvzpResourceManager::AddImageToMap(SharedImageRef* theImage, const std::str
 
 bool PvzpLoadNextResource()
 {
-	return static_cast<PvzpResourceManager*>(gSexyAppBase->mResourceManager)->PvzpLoadNextResource();
+	return static_cast<PvzpResourceManager*>(gSexyAppBase->mResourceManager.get())->PvzpLoadNextResource();
 }
 
 bool PvzpResourceManager::PvzpLoadNextResource()
@@ -1170,11 +1170,11 @@ bool PvzpResourceManager::PvzpLoadNextResource()
 
 bool PvzpFindImagePath(Image* theImage, std::string* thePath)
 {
-	return static_cast<PvzpResourceManager*>(gSexyAppBase->mResourceManager)->FindImagePath(theImage, thePath);
+	return static_cast<PvzpResourceManager*>(gSexyAppBase->mResourceManager.get())->FindImagePath(theImage, thePath);
 }
 
 bool PvzpFindFontPath(_Font* theFont, std::string* thePath) {
-	return static_cast<PvzpResourceManager*>(gSexyAppBase->mResourceManager)->FindFontPath(theFont, thePath);
+	return static_cast<PvzpResourceManager*>(gSexyAppBase->mResourceManager.get())->FindFontPath(theFont, thePath);
 }
 
 bool PvzpResourceManager::FindFontPath(_Font* theFont, std::string* thePath)
@@ -1182,7 +1182,7 @@ bool PvzpResourceManager::FindFontPath(_Font* theFont, std::string* thePath)
 	for (auto anItr = mFontMap.begin(); anItr != mFontMap.end(); anItr++)
 	{
 		FontRes* aFontRes = (FontRes*)anItr->second;
-		_Font* aFont = (_Font*)aFontRes->mFont;
+		_Font* aFont = (_Font*)aFontRes->mFont.get();
 		if (aFont == theFont)
 		{
 			*thePath = anItr->first;
@@ -1239,11 +1239,11 @@ void FreeGlobalAllocators()
 
 std::string PvzpReplaceString(std::string_view theText, const char* theStringToFind, std::string_view theStringToSubstitute)
 {
-	std::string aFinalString = PvzpStringTranslate(theText);
+	std::string aFinalString(PvzpStringTranslate(theText));
 	size_t aPos = aFinalString.find(theStringToFind);
 	if (aPos != std::string::npos)
 	{
-		std::string aFinalStringToSubstitute = PvzpStringTranslate(theStringToSubstitute);
+		std::string aFinalStringToSubstitute(PvzpStringTranslate(theStringToSubstitute));
 		aFinalString.replace(aPos, strlen(theStringToFind), aFinalStringToSubstitute);
 	}
 
@@ -1252,7 +1252,7 @@ std::string PvzpReplaceString(std::string_view theText, const char* theStringToF
 
 std::string PvzpReplaceNumberString(std::string_view theText, const char* theStringToFind, int theNumber)
 {
-	std::string aFinalString = PvzpStringTranslate(theText);
+	std::string aFinalString(PvzpStringTranslate(theText));
 	size_t aPos = aFinalString.find(theStringToFind);
 	if (aPos != std::string::npos)
 	{

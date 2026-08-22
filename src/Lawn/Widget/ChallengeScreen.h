@@ -26,6 +26,8 @@
 #include "widget/Dialog.h"
 #include "widget/Slider.h"
 #include "widget/SliderListener.h"
+#include <array>
+#include <memory>
 using namespace Sexy;
 
 #define NUM_CHALLENGE_MODES (static_cast<int>(GameMode::NUM_GAME_MODES) - 1)
@@ -44,11 +46,11 @@ private:
 	};
 
 public:
-	NewLawnButton*              mBackButton;
-	NewLawnButton*              mChallengesButton;
-	ButtonWidget*               mChallengeButtons[NUM_CHALLENGE_MODES];
+	std::unique_ptr<NewLawnButton>                                 mBackButton;
+	std::array<std::unique_ptr<ButtonWidget>, MAX_CHALLANGE_PAGES> mPageButton;
+	std::array<std::unique_ptr<ButtonWidget>, NUM_CHALLENGE_MODES> mChallengeButtons;
 	LawnApp*                    mApp;
-	ToolTipWidget*              mToolTip;
+	std::unique_ptr<ToolTipWidget>                                 mToolTip;
 	ChallengePage               mPageIndex;
 	bool                        mCheatEnableChallenges;
 	UnlockingState              mUnlockState;

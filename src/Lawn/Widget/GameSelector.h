@@ -27,6 +27,7 @@
 #include "widget/ButtonListener.h"
 #include "AchievementsScreen.h"
 #include "GameButton.h"
+#include <memory>
 
 class LawnApp;
 class ToolTipWidget;
@@ -70,6 +71,7 @@ private:
 
 public:
 	LawnApp*                    mApp;
+	// Non-owning: owned by the widget container (RemoveAllWidgets(true)); do not delete or wrap in unique_ptr.
 	NewLawnButton*              mAdventureButton;
 	NewLawnButton*              mMinigameButton;
 	NewLawnButton*              mPuzzleButton;
@@ -102,7 +104,7 @@ public:
 	SelectorAnimState           mSelectorState;
 	int                         mLevel;
 	bool                        mLoading;
-	ToolTipWidget*              mToolTip;
+	std::unique_ptr<ToolTipWidget>      mToolTip;
 	bool                        mHasTrophy;
 	bool                        mUnlockSelectorCheat;
 	int                         mSlideCounter;              //+0x154
@@ -110,8 +112,8 @@ public:
 	int                         mStartY;                    //+0x15C
 	int                         mDestX;                     //+0x160
 	int                         mDestY;                     //+0x164
-	ZombatarWidget*             mZombatarWidget;            //+0x168
-	AchievementsWidget*         mAchievementsWidget;        //+0x16C
+	std::unique_ptr<ZombatarWidget>     mZombatarWidget;       //+0x168
+	std::unique_ptr<AchievementsWidget> mAchievementsWidget;   //+0x16C
 	QuickPlayWidget*            mQuickPlayWidget;
 
 public:

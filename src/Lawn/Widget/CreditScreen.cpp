@@ -34,6 +34,7 @@
 #include "../../PvzpLib/EffectSystem.h"
 #include "../../PvzpLib/PvzpStringFile.h"
 #include "graphics/Font.h"
+#include <optional>
 
 static constexpr float CREDIT_SCREEN_ANIM_RATE = 0.3f;
 
@@ -360,7 +361,7 @@ CreditScreen::CreditScreen(LawnApp* theApp)
 	mReplayButton->mTextOffsetX = 33;
 	mReplayButton->mTextOffsetY = -5;
 
-	mOverlayWidget = new CreditsOverlay(this);
+	mOverlayWidget = std::make_unique<CreditsOverlay>(this);
 	mOverlayWidget->Resize(0, 0, BOARD_WIDTH, BOARD_HEIGHT);
 
 	mOriginalMusicVolume = mApp->mMusicVolume;
@@ -373,25 +374,22 @@ CreditScreen::CreditScreen(LawnApp* theApp)
 CreditScreen::~CreditScreen()
 {
 	mApp->SetMusicVolume(mOriginalMusicVolume);
-	delete mReplayButton;
-	delete mMainMenuButton;
-	delete mOverlayWidget;
 }
 
 void CreditScreen::AddedToManager(WidgetManager* theWidgetManager)
 {
 	Widget::AddedToManager(theWidgetManager);
-	AddWidget(mMainMenuButton);
-	AddWidget(mReplayButton);
-	AddWidget(mOverlayWidget);
+	AddWidget(mMainMenuButton.get());
+	AddWidget(mReplayButton.get());
+	AddWidget(mOverlayWidget.get());
 }
 
 void CreditScreen::RemovedFromManager(WidgetManager* theWidgetManager)
 {
 	Widget::RemovedFromManager(theWidgetManager);
-	RemoveWidget(mMainMenuButton);
-	RemoveWidget(mReplayButton);
-	RemoveWidget(mOverlayWidget);
+	RemoveWidget(mMainMenuButton.get());
+	RemoveWidget(mReplayButton.get());
+	RemoveWidget(mOverlayWidget.get());
 }
 
 void CreditScreen::PreLoadCredits()
@@ -763,10 +761,11 @@ static int DrawCreditsContent(Graphics* g, int theYPos, bool theDraw)
 	for (int aSection = 3; aSection <= 11; aSection++)
 	{
 		std::string aRolesKey = StrFormat("[CREDITS_ROLES%d]", aSection);
-		if (!PvzpStringListExists(aRolesKey))
+		std::optional<std::string_view> aRolesLookup = PvzpStringTryTranslate(aRolesKey);
+		if (!aRolesLookup)
 			continue;
 
-		std::string aRoles = PvzpStringTranslate(aRolesKey);
+		std::string_view aRoles = *aRolesLookup;
 
 		// ^ prefix: spacer or centered header
 		if (!aRoles.empty() && aRoles[0] == '^')
@@ -774,14 +773,14 @@ static int DrawCreditsContent(Graphics* g, int theYPos, bool theDraw)
 			if (aRoles.size() > 1)
 			{
 				if (theDraw && aYPos > -aLineHeight && aYPos < BOARD_HEIGHT + aLineHeight)
-					PvzpDrawString(g, std::string_view(aRoles).substr(1), BOARD_WIDTH / 2, aYPos, aCreditsFont, Color::White, DrawStringJustification::DS_ALIGN_CENTER);
+					PvzpDrawString(g, aRoles.substr(1), BOARD_WIDTH / 2, aYPos, aCreditsFont, Color::White, DrawStringJustification::DS_ALIGN_CENTER);
 			}
 			aYPos += aLineHeight + 10;
 			continue;
 		}
 
 		std::string aNamesKey = StrFormat("[CREDITS_NAMES%d]", aSection);
-		std::string aNames = PvzpStringListExists(aNamesKey) ? PvzpStringTranslate(aNamesKey) : "";
+		std::string_view aNames = PvzpStringTryTranslate(aNamesKey).value_or("");
 
 		// Split roles and names by newline, draw side by side
 		size_t aRolePos = 0;
@@ -792,17 +791,17 @@ static int DrawCreditsContent(Graphics* g, int theYPos, bool theDraw)
 			if (aRolePos < aRoles.size())
 			{
 				size_t aRoleEnd = aRoles.find('\n', aRolePos);
-				if (aRoleEnd == std::string::npos) aRoleEnd = aRoles.size();
+				if (aRoleEnd == std::string_view::npos) aRoleEnd = aRoles.size();
 				if (aVisible && aRoleEnd > aRolePos)
-					PvzpDrawString(g, std::string_view(aRoles).substr(aRolePos, aRoleEnd - aRolePos), ROLES_RIGHT_X, aYPos, aCreditsFont, Color::White, DrawStringJustification::DS_ALIGN_RIGHT);
+					PvzpDrawString(g, aRoles.substr(aRolePos, aRoleEnd - aRolePos), ROLES_RIGHT_X, aYPos, aCreditsFont, Color::White, DrawStringJustification::DS_ALIGN_RIGHT);
 				aRolePos = aRoleEnd + 1;
 			}
 			if (aNamePos < aNames.size())
 			{
 				size_t aNameEnd = aNames.find('\n', aNamePos);
-				if (aNameEnd == std::string::npos) aNameEnd = aNames.size();
+				if (aNameEnd == std::string_view::npos) aNameEnd = aNames.size();
 				if (aVisible && aNameEnd > aNamePos)
-					PvzpDrawString(g, std::string_view(aNames).substr(aNamePos, aNameEnd - aNamePos), NAMES_LEFT_X, aYPos, aCreditsFont, Color::White, DrawStringJustification::DS_ALIGN_LEFT);
+					PvzpDrawString(g, aNames.substr(aNamePos, aNameEnd - aNamePos), NAMES_LEFT_X, aYPos, aCreditsFont, Color::White, DrawStringJustification::DS_ALIGN_LEFT);
 				aNamePos = aNameEnd + 1;
 			}
 			aYPos += aLineHeight;

@@ -51,18 +51,19 @@ void ResourceManager::SoundRes::DeleteResource()
 
 void ResourceManager::FontRes::DeleteResource()
 {
-	delete mFont;
-	mFont = nullptr;
+	mFont.reset();
+	mImage.reset();
+}
 
-	delete mImage;
-	mImage = nullptr;
+ResourceManager::FontRes::FontRes()
+{
+	mType = ResType_Font;
 }
 
 ResourceManager::ResourceManager(SexyAppBase *theApp)
 {
 	mApp = theApp;
 	mHasFailed = false;
-	mXMLParser = nullptr;
 
 	mAllowMissingProgramResources = false;
 	mAllowAlreadyDefinedResources = false;
@@ -225,7 +226,8 @@ bool ResourceManager::ParseSoundResource(XMLElement &theElement)
 {
 	if (!mCurResourcePack.empty())
 		return true;
-	SoundRes *aRes = new SoundRes;
+	auto aNewRes = std::make_unique<SoundRes>();
+	SoundRes *aRes = aNewRes.get();
 	aRes->mSoundId = -1;
 	aRes->mVolume = -1;
 	aRes->mPanning = 0;
@@ -236,18 +238,15 @@ bool ResourceManager::ParseSoundResource(XMLElement &theElement)
 		{
 			mError = "";
 			mHasFailed = false;
-			SoundRes *oldRes = aRes;
-			aRes = (SoundRes*)mSoundMap[oldRes->mId];
-			aRes->mPath = oldRes->mPath;
-			aRes->mXMLAttributes = oldRes->mXMLAttributes;
-			delete oldRes;
+			aRes = (SoundRes*)mSoundMap[aRes->mId];
+			aRes->mPath = aNewRes->mPath;
+			aRes->mXMLAttributes = aNewRes->mXMLAttributes;
 		}
 		else
-		{
-			delete aRes;
 			return false;
-		}
 	}
+	else
+		aNewRes.release();
 
 	XMLParamMap::iterator anItr;
 
@@ -280,25 +279,23 @@ static void ReadIntVector(const std::string &theVal, std::vector<int> &theVector
 
 bool ResourceManager::ParseImageResource(XMLElement &theElement)
 {
-	ImageRes *aRes = new ImageRes;
+	auto aNewRes = std::make_unique<ImageRes>();
+	ImageRes *aRes = aNewRes.get();
 	if (!ParseCommonResource(theElement, aRes, mCurResourcePack.empty() ? mImageMap : mResourcePackImageMaps[mCurResourcePack]))
 	{
 		if (mHadAlreadyDefinedError && mAllowAlreadyDefinedResources)
 		{
 			mError = "";
 			mHasFailed = false;
-			ImageRes *oldRes = aRes;
-			aRes = (ImageRes*)mImageMap[oldRes->mId];
-			aRes->mPath = oldRes->mPath;
-			aRes->mXMLAttributes = oldRes->mXMLAttributes;
-			delete oldRes;
+			aRes = (ImageRes*)mImageMap[aRes->mId];
+			aRes->mPath = aNewRes->mPath;
+			aRes->mXMLAttributes = aNewRes->mXMLAttributes;
 		}
 		else
-		{
-			delete aRes;
 			return false;
-		}
 	}
+	else
+		aNewRes.release();
 
 	aRes->mPalletize = theElement.mAttributes.find("nopal") == theElement.mAttributes.end();
 	aRes->mA4R4G4B4 = theElement.mAttributes.find("a4r4g4b4") != theElement.mAttributes.end();
@@ -399,7 +396,8 @@ bool ResourceManager::ParseFontResource(XMLElement &theElement)
 {
 	if (!mCurResourcePack.empty())
 		return true;
-	FontRes *aRes = new FontRes;
+	auto aNewRes = std::make_unique<FontRes>();
+	FontRes *aRes = aNewRes.get();
 	aRes->mFont = nullptr;
 	aRes->mImage = nullptr;
 
@@ -409,18 +407,15 @@ bool ResourceManager::ParseFontResource(XMLElement &theElement)
 		{
 			mError = "";
 			mHasFailed = false;
-			FontRes *oldRes = aRes;
-			aRes = (FontRes*)mFontMap[oldRes->mId];
-			aRes->mPath = oldRes->mPath;
-			aRes->mXMLAttributes = oldRes->mXMLAttributes;
-			delete oldRes;
+			aRes = (FontRes*)mFontMap[aRes->mId];
+			aRes->mPath = aNewRes->mPath;
+			aRes->mXMLAttributes = aNewRes->mXMLAttributes;
 		}
 		else
-		{
-			delete aRes;
 			return false;
-		}
 	}
+	else
+		aNewRes.release();
 
 
 	XMLParamMap::iterator anItr;
@@ -587,15 +582,14 @@ bool ResourceManager::DoParseResources()
 	if (mXMLParser->HasFailed())
 		Fail(mXMLParser->GetErrorText());
 
-	delete mXMLParser;
-	mXMLParser = nullptr;
+	mXMLParser.reset();
 
 	return !mHasFailed;
 }
 
 bool ResourceManager::DoParseResourcesFile(const std::string& theFilename)
 {
-	mXMLParser = new XMLParser();
+	mXMLParser = std::make_unique<XMLParser>();
 	if (!mXMLParser->OpenFile(theFilename))
 		Fail("Resource file not found: " + theFilename);
 
@@ -698,7 +692,7 @@ bool ResourceManager::LoadAlphaGridImage(ImageRes *theRes, GLImage *theImage)
 	if (anAlphaImage->mWidth!=aCelWidth || anAlphaImage->mHeight!=aCelHeight)
 		return Fail(StrFormat("GridAlphaImage size mismatch between %s and %s",theRes->mPath.c_str(),theRes->mAlphaGridImage.c_str()));
 
-	uint32_t *aMasterRowPtr = theImage->mBits;
+	uint32_t *aMasterRowPtr = theImage->mBits.get();
 	for (int i=0; i < aNumRows; i++)
 	{
 		uint32_t *aMasterColPtr = aMasterRowPtr;
@@ -741,7 +735,7 @@ bool ResourceManager::LoadAlphaImage(ImageRes *theRes, GLImage *theImage)
 	if (anAlphaImage->mWidth!=theImage->mWidth || anAlphaImage->mHeight!=theImage->mHeight)
 		return Fail(StrFormat("AlphaImage size mismatch between %s and %s",theRes->mPath.c_str(),theRes->mAlphaImage.c_str()));
 
-	uint32_t* aBits1 = theImage->mBits;
+	uint32_t* aBits1 = theImage->mBits.get();
 	uint32_t* aBits2 = anAlphaImage->mBits;
 	int aSize = theImage->mWidth*theImage->mHeight;
 
@@ -881,7 +875,7 @@ bool ResourceManager::DoLoadSound(SoundRes* theRes)
 
 bool ResourceManager::DoLoadFont(FontRes* theRes)
 {
-	_Font *aFont = nullptr;
+	std::unique_ptr<_Font> aFont;
 
 	SEXY_PERF_BEGIN("ResourceManager:DoLoadFont");
 
@@ -898,10 +892,10 @@ bool ResourceManager::DoLoadFont(FontRes* theRes)
 			if (aRefFont==nullptr)
 				return Fail("Ref font not found: " + aRefName);
 
-			aFont = aRefFont->Duplicate();
+			aFont.reset(aRefFont->Duplicate());
 		}
 		else
-			aFont = new ImageFont(mApp, theRes->mPath);
+			aFont = std::make_unique<ImageFont>(mApp, theRes->mPath);
 	}
 	else
 	{
@@ -909,18 +903,15 @@ bool ResourceManager::DoLoadFont(FontRes* theRes)
 		if (anImage==nullptr)
 			return Fail(StrFormat("Failed to load image: %s",theRes->mImagePath.c_str()));
 
-		theRes->mImage = anImage;
-		aFont = new ImageFont(anImage, theRes->mPath);
+		theRes->mImage.reset(anImage);
+		aFont = std::make_unique<ImageFont>(anImage, theRes->mPath);
 	}
 
-	ImageFont *anImageFont = dynamic_cast<ImageFont*>(aFont);
+	ImageFont *anImageFont = dynamic_cast<ImageFont*>(aFont.get());
 	if (anImageFont!=nullptr)
 	{
 		if (anImageFont->mFontData==nullptr || !anImageFont->mFontData->mInitialized)
-		{
-			delete aFont;
 			return Fail(StrFormat("Failed to load font: %s",theRes->mPath.c_str()));
-		}
 
 		if (!theRes->mTags.empty())
 		{
@@ -936,7 +927,7 @@ bool ResourceManager::DoLoadFont(FontRes* theRes)
 		}
 	}
 
-	theRes->mFont = aFont;
+	theRes->mFont = std::move(aFont);
 
 	SEXY_PERF_END("ResourceManager:DoLoadFont");
 
@@ -952,7 +943,7 @@ _Font* ResourceManager::LoadFont(const std::string &theName)
 
 	FontRes *aRes = (FontRes*)anItr->second;
 	if (aRes->mFont != nullptr)
-		return aRes->mFont;
+		return aRes->mFont.get();
 
 	if (aRes->mFromProgram)
 		return nullptr;
@@ -960,7 +951,7 @@ _Font* ResourceManager::LoadFont(const std::string &theName)
 	if (!DoLoadFont(aRes))
 		return nullptr;
 
-	return aRes->mFont;
+	return aRes->mFont.get();
 }
 
 void ResourceManager::DeleteFont(const std::string &theName)
@@ -1033,7 +1024,7 @@ void ResourceManager::DumpCurResGroup(std::string& theDestStr)
 {
 	const ResList* rl = &mResGroupMap.find(mCurResGroup)->second;
 	ResList::const_iterator it = rl->begin();
-	theDestStr = StrFormat("About to dump %d elements from current res group name %s\r\n", rl->size(), mCurResGroup.c_str());
+	theDestStr = StrFormat("About to dump %zu elements from current res group name %s\r\n", rl->size(), mCurResGroup.c_str());
 
 	ResList::const_iterator rl_end = rl->end();
 	while (it != rl_end)
@@ -1152,7 +1143,7 @@ _Font* ResourceManager::GetFont(const std::string &theId)
 {
 	ResMap::iterator anItr = mFontMap.find(theId);
 	if (anItr != mFontMap.end())
-		return ((FontRes*)anItr->second)->mFont;
+		return ((FontRes*)anItr->second)->mFont.get();
 	else
 		return nullptr;
 }
@@ -1214,7 +1205,7 @@ _Font* ResourceManager::GetFontThrow(const std::string &theId)
 	{
 		FontRes *aRes = (FontRes*)anItr->second;
 		if (aRes->mFont!=nullptr)
-			return aRes->mFont;
+			return aRes->mFont.get();
 
 		if (mAllowMissingProgramResources && aRes->mFromProgram)
 			return nullptr;
@@ -1262,7 +1253,7 @@ bool ResourceManager::ReplaceFont(const std::string &theId, _Font *theFont)
 	if (anItr != mFontMap.end())
 	{
 		anItr->second->DeleteResource();
-		((FontRes*)anItr->second)->mFont = theFont;
+		((FontRes*)anItr->second)->mFont.reset(theFont);
 		return true;
 	}
 	else

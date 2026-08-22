@@ -94,10 +94,10 @@ Board::Board(LawnApp* theApp)
 	}
 	mCoinBankFadeCount = 0;
 	mLevel = 0;
-	mCursorObject = new CursorObject();
-	mCursorPreview = new CursorPreview();
-	mSeedBank = new SeedBank();
-	mCutScene = new CutScene();
+	mCursorObject = std::make_unique<CursorObject>();
+	mCursorPreview = std::make_unique<CursorPreview>();
+	mSeedBank = std::make_unique<SeedBank>();
+	mCutScene = std::make_unique<CutScene>();
 	mSpecialGraveStoneX = -1;
 	mSpecialGraveStoneY = -1;
 	for (int i = 0; i < MAX_GRID_SIZE_X; i++)
@@ -186,18 +186,18 @@ Board::Board(LawnApp* theApp)
 	mDaisyMode = mApp->mDaisyMode;
 	mSukhbirMode = mApp->mSukhbirMode;
 	mShowShovel = false;
-	mToolTip = new ToolTipWidget();
-	mAdvice = new MessageWidget(mApp);
+	mToolTip = std::make_unique<ToolTipWidget>();
+	mAdvice = std::make_unique<MessageWidget>(mApp);
 	mBackground = BackgroundType::BACKGROUND_1_DAY;
 	mMainCounter = 0;
 	mBoardUpdateCounter = 0;
 	mTutorialState = TutorialState::TUTORIAL_OFF;
 	mTutorialTimer = -1;
 	mTutorialParticleID = ParticleSystemID::PARTICLESYSTEMID_NULL;
-	mChallenge = new Challenge();
+	mChallenge = std::make_unique<Challenge>();
 	mClip = false;
 	mDebugTextMode = DebugTextMode::DEBUG_TEXT_NONE;
-	mMenuButton = new GameButton(0);
+	mMenuButton = std::make_unique<GameButton>(0);
 	mMenuButton->mDrawStoneButton = true;
 	int aButtonOffsetX = BOARD_ADDITIONAL_WIDTH * 2;
 	mRoofPoleOffset = ROOF_POLE_START;
@@ -210,7 +210,7 @@ Board::Board(LawnApp* theApp)
 		mMenuButton->SetLabel("[MAIN_MENU_BUTTON]");
 		mMenuButton->Resize(628 + aButtonOffsetX, -10, 163, 46);
 
-		mStoreButton = new GameButton(1);
+		mStoreButton = std::make_unique<GameButton>(1);
 		mStoreButton->mButtonImage = IMAGE_ZENSHOPBUTTON;
 		mStoreButton->mOverImage = IMAGE_ZENSHOPBUTTON_HIGHLIGHT;
 		mStoreButton->mDownImage = IMAGE_ZENSHOPBUTTON_HIGHLIGHT;
@@ -225,7 +225,7 @@ Board::Board(LawnApp* theApp)
 
 	if (mApp->mGameMode == GameMode::GAMEMODE_CHALLENGE_LAST_STAND)
 	{
-		mStoreButton = new GameButton(1);
+		mStoreButton = std::make_unique<GameButton>(1);
 		mStoreButton->mDrawStoneButton = true;
 		mStoreButton->mBtnNoDraw = true;
 		mStoreButton->mDisabled = true;
@@ -236,34 +236,14 @@ Board::Board(LawnApp* theApp)
 		mMenuButton->SetLabel("[MAIN_MENU_BUTTON]");
 		mMenuButton->Resize(628 + aButtonOffsetX, -10, 163, 46);
 
-		mStoreButton = new GameButton(1);
+		mStoreButton = std::make_unique<GameButton>(1);
 		mStoreButton->mDrawStoneButton = true;
 		mStoreButton->mBtnNoDraw = true;
 		mStoreButton->SetLabel("[GET_FULL_VERSION_BUTTON]");
 	}
 }
 
-Board::~Board()
-{
-	delete mAdvice;
-	delete mCursorObject;
-	delete mCursorPreview;
-	delete mSeedBank;
-	if (mMenuButton)
-	{
-		delete mMenuButton;
-	}
-	if (mStoreButton)
-	{
-		delete mStoreButton;
-	}
-	if (mToolTip)
-	{
-		delete mToolTip;
-	}
-	delete mCutScene;
-	delete mChallenge;
-}
+Board::~Board() = default;
 
 void BoardInitForPlayer()
 {
@@ -6372,7 +6352,7 @@ void Board::DrawGameObjects(Graphics* g)
 	{
 		AddUIRenderItem(aRenderList, aRenderItemCount, RenderObjectType::RENDER_ITEM_STORM, MakeRenderOrder(RenderLayer::RENDER_LAYER_FOG, 0, 3));
 	}
-	AddGameObjectRenderItemCursorPreview(aRenderList, aRenderItemCount, RenderObjectType::RENDER_ITEM_CURSOR_PREVIEW, mCursorPreview);
+	AddGameObjectRenderItemCursorPreview(aRenderList, aRenderItemCount, RenderObjectType::RENDER_ITEM_CURSOR_PREVIEW, mCursorPreview.get());
 
 	PvzpHesitationTrace("start sort");
 	std::sort(aRenderList, aRenderList + aRenderItemCount, RenderItemSortFunc);
@@ -6740,29 +6720,29 @@ void Board::DrawProgressMeter(Graphics* g)
 	Color aColor(224, 187, 98);
 	if (mApp->mGameMode == GameMode::GAMEMODE_CHALLENGE_BEGHOULED || mApp->mGameMode == GameMode::GAMEMODE_CHALLENGE_BEGHOULED_TWIST)
 	{
-		std::string aMatchStr = StrFormat("%d/%d %s", mChallenge->mChallengeScore, 75, PvzpStringTranslate("[MATCHES]").c_str());
+		std::string aMatchStr = StrFormat("%d/%d %s", mChallenge->mChallengeScore, 75, std::string(PvzpStringTranslate("[MATCHES]")).c_str());
 		PvzpDrawString(g, aMatchStr, aPosX, aImagePosY + 14, Sexy::FONT_DWARVENTODCRAFT12, aColor, DrawStringJustification::DS_ALIGN_CENTER);
 	}
 	else if (mApp->IsSquirrelLevel())
 	{
-		std::string aMatchStr = StrFormat("%d/%d %s", mChallenge->mChallengeScore, 7, PvzpStringTranslate("[SQUIRRELS]").c_str());
+		std::string aMatchStr = StrFormat("%d/%d %s", mChallenge->mChallengeScore, 7, std::string(PvzpStringTranslate("[SQUIRRELS]")).c_str());
 		PvzpDrawString(g, aMatchStr, aPosX, aImagePosY + 14, Sexy::FONT_DWARVENTODCRAFT12, aColor, DrawStringJustification::DS_ALIGN_CENTER);
 	}
 	else if (mApp->mGameMode == GameMode::GAMEMODE_CHALLENGE_SLOT_MACHINE)
 	{
 		int aSunMoney = std::clamp(mSunMoney, 0, 2000);
-		std::string aMatchStr = StrFormat("%d/%d %s", aSunMoney, 2000, PvzpStringTranslate("[SUN]").c_str());
+		std::string aMatchStr = StrFormat("%d/%d %s", aSunMoney, 2000, std::string(PvzpStringTranslate("[SUN]")).c_str());
 		PvzpDrawString(g, aMatchStr, aPosX, aImagePosY + 14, Sexy::FONT_DWARVENTODCRAFT12, aColor, DrawStringJustification::DS_ALIGN_CENTER);
 	}
 	else if (mApp->mGameMode == GameMode::GAMEMODE_CHALLENGE_ZOMBIQUARIUM)
 	{
 		int aSunMoney = std::clamp(mSunMoney, 0, 1000);
-		std::string aMatchStr = StrFormat("%d/%d %s", aSunMoney, 1000, PvzpStringTranslate("[SUN]").c_str());
+		std::string aMatchStr = StrFormat("%d/%d %s", aSunMoney, 1000, std::string(PvzpStringTranslate("[SUN]")).c_str());
 		PvzpDrawString(g, aMatchStr, aPosX, aImagePosY + 14, Sexy::FONT_DWARVENTODCRAFT12, aColor, DrawStringJustification::DS_ALIGN_CENTER);
 	}
 	else if (mApp->IsIZombieLevel())
 	{
-		std::string aMatchStr = StrFormat("%d/%d %s", mChallenge->mChallengeScore, 5, PvzpStringTranslate("[BRAINS]").c_str());
+		std::string aMatchStr = StrFormat("%d/%d %s", mChallenge->mChallengeScore, 5, std::string(PvzpStringTranslate("[BRAINS]")).c_str());
 		PvzpDrawString(g, aMatchStr, aPosX, aImagePosY + 14, Sexy::FONT_DWARVENTODCRAFT12, aColor, DrawStringJustification::DS_ALIGN_CENTER);
 	}
 	else if (ProgressMeterHasFlags())
@@ -6832,7 +6812,7 @@ void Board::DrawLevel(Graphics* g)
 	std::string aLevelStr;
 	if (mApp->IsAdventureMode())
 	{
-		aLevelStr = PvzpStringTranslate("[LEVEL]") + " " + mApp->GetStageString(mLevel);
+		aLevelStr = std::string(PvzpStringTranslate("[LEVEL]")) + " " + mApp->GetStageString(mLevel);
 	}
 	else
 	{
@@ -6844,7 +6824,7 @@ void Board::DrawLevel(Graphics* g)
 			{
 				std::string aFlagStr = mApp->Pluralize(aFlags, "[ONE_FLAG]", "[COUNT_FLAGS]");
 				std::string aCompletedStr = PvzpReplaceString("[FLAGS_COMPLETED]", "{FLAGS}", aFlagStr);
-				aLevelStr = StrFormat("%s - %s", PvzpStringTranslate(aLevelStr).c_str(), aCompletedStr.c_str());
+				aLevelStr = StrFormat("%s - %s", std::string(PvzpStringTranslate(aLevelStr)).c_str(), aCompletedStr.c_str());
 			}
 		}
 		else if (mApp->IsEndlessIZombie(mApp->mGameMode) || mApp->IsEndlessScaryPotter(mApp->mGameMode))
@@ -6857,7 +6837,7 @@ void Board::DrawLevel(Graphics* g)
 			if (aStreak > 0)
 			{
 				std::string aStreakStr = PvzpReplaceNumberString("[ENDLESS_STREAK]", "{STREAK}", aStreak);
-				aLevelStr = StrFormat("%s - %s", PvzpStringTranslate(aLevelStr).c_str(), aStreakStr.c_str());
+				aLevelStr = StrFormat("%s - %s", std::string(PvzpStringTranslate(aLevelStr)).c_str(), aStreakStr.c_str());
 			}
 		}
 	}

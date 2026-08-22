@@ -74,7 +74,7 @@ GameSelector::GameSelector(LawnApp* theApp)
 	mLevel = 1;
 	mLoading = false;
 	mHasTrophy = false;
-	mToolTip = new ToolTipWidget();
+	mToolTip = std::make_unique<ToolTipWidget>();
 
 	mAdventureButton = MakeNewButton(
 		GameSelector::GameSelector_Adventure,
@@ -84,7 +84,7 @@ GameSelector::GameSelector(LawnApp* theApp)
 		Sexy::IMAGE_REANIM_SELECTORSCREEN_ADVENTURE_BUTTON,
 		Sexy::IMAGE_REANIM_SELECTORSCREEN_ADVENTURE_HIGHLIGHT,
 		Sexy::IMAGE_REANIM_SELECTORSCREEN_ADVENTURE_HIGHLIGHT
-	);
+	).release();
 
 	mAdventureButton->Resize(0, 0, Sexy::IMAGE_REANIM_SELECTORSCREEN_ADVENTURE_BUTTON->mWidth, 125);
 	mAdventureButton->mClip = false;
@@ -103,7 +103,7 @@ GameSelector::GameSelector(LawnApp* theApp)
 		Sexy::IMAGE_REANIM_SELECTORSCREEN_SURVIVAL_BUTTON,
 		Sexy::IMAGE_REANIM_SELECTORSCREEN_SURVIVAL_HIGHLIGHT,
 		Sexy::IMAGE_REANIM_SELECTORSCREEN_SURVIVAL_HIGHLIGHT
-	);
+	).release();
 	mMinigameButton->Resize(0, 0, Sexy::IMAGE_REANIM_SELECTORSCREEN_SURVIVAL_BUTTON->mWidth, 130);
 	mMinigameButton->mClip = false;
 	mMinigameButton->mBtnNoDraw = true;
@@ -122,7 +122,7 @@ GameSelector::GameSelector(LawnApp* theApp)
 		Sexy::IMAGE_REANIM_SELECTORSCREEN_CHALLENGES_BUTTON,
 		Sexy::IMAGE_REANIM_SELECTORSCREEN_CHALLENGES_HIGHLIGHT,
 		Sexy::IMAGE_REANIM_SELECTORSCREEN_CHALLENGES_HIGHLIGHT
-	);
+	).release();
 	mPuzzleButton->Resize(0, 0, Sexy::IMAGE_REANIM_SELECTORSCREEN_CHALLENGES_BUTTON->mWidth, 121);
 	mPuzzleButton->mClip = false;
 	mPuzzleButton->mBtnNoDraw = true;
@@ -141,7 +141,7 @@ GameSelector::GameSelector(LawnApp* theApp)
 		Sexy::IMAGE_REANIM_SELECTORSCREEN_VASEBREAKER_BUTTON,
 		Sexy::IMAGE_REANIM_SELECTORSCREEN_VASEBREAKER_HIGHLIGHT,
 		Sexy::IMAGE_REANIM_SELECTORSCREEN_VASEBREAKER_HIGHLIGHT
-	);
+	).release();
 	mSurvivalButton->Resize(0, 0, Sexy::IMAGE_REANIM_SELECTORSCREEN_VASEBREAKER_BUTTON->mWidth, 124);
 	mSurvivalButton->mClip = false;
 	mSurvivalButton->mBtnNoDraw = true;
@@ -160,7 +160,7 @@ GameSelector::GameSelector(LawnApp* theApp)
 		Sexy::IMAGE_BLANK,
 		Sexy::IMAGE_BLANK,
 		Sexy::IMAGE_BLANK
-	);
+	).release();
 	mZombatarButton->Resize(0, 0, Sexy::IMAGE_REANIM_SELECTORSCREEN_WOODSIGN3_PRESS->mWidth, Sexy::IMAGE_REANIM_SELECTORSCREEN_WOODSIGN3_PRESS->mHeight);
 	mZombatarButton->mClip = false;
 	mZombatarButton->mBtnNoDraw = true;
@@ -174,7 +174,7 @@ GameSelector::GameSelector(LawnApp* theApp)
 		Sexy::IMAGE_SELECTORSCREEN_ACHIEVEMENTS_PEDESTAL,
 		Sexy::IMAGE_SELECTORSCREEN_ACHIEVEMENTS_PEDESTAL_PRESS,
 		Sexy::IMAGE_SELECTORSCREEN_ACHIEVEMENTS_PEDESTAL_PRESS
-	);
+	).release();
 	mAchievementsButton->Resize(20, mApp->mHeight - Sexy::IMAGE_SELECTORSCREEN_ACHIEVEMENTS_PEDESTAL->mHeight - 35, Sexy::IMAGE_SELECTORSCREEN_ACHIEVEMENTS_PEDESTAL->mWidth, Sexy::IMAGE_SELECTORSCREEN_ACHIEVEMENTS_PEDESTAL->mHeight);
 	mAchievementsButton->mClip = false;
 	mAchievementsButton->mBtnNoDraw = mHasTrophy;
@@ -203,7 +203,7 @@ GameSelector::GameSelector(LawnApp* theApp)
 		Sexy::IMAGE_SELECTORSCREEN_ZENGARDEN,
 		Sexy::IMAGE_SELECTORSCREEN_ZENGARDENHIGHLIGHT,
 		Sexy::IMAGE_SELECTORSCREEN_ZENGARDENHIGHLIGHT
-	);
+	).release();
 	mZenGardenButton->Resize(0, 0, 130, 130);
 	mZenGardenButton->mMouseVisible = false;
 	mZenGardenButton->mClip = false;
@@ -216,7 +216,7 @@ GameSelector::GameSelector(LawnApp* theApp)
 		Sexy::IMAGE_SELECTORSCREEN_OPTIONS1,
 		Sexy::IMAGE_SELECTORSCREEN_OPTIONS2,
 		Sexy::IMAGE_SELECTORSCREEN_OPTIONS2
-	);
+	).release();
 	mOptionsButton->Resize(0, 0, Sexy::IMAGE_SELECTORSCREEN_OPTIONS1->mWidth, Sexy::IMAGE_SELECTORSCREEN_OPTIONS1->mHeight + 23);
 	mOptionsButton->mClip = false; // fixes drawing issues
 	mOptionsButton->mBtnNoDraw = true;
@@ -231,7 +231,7 @@ GameSelector::GameSelector(LawnApp* theApp)
 		Sexy::IMAGE_SELECTORSCREEN_HELP1,
 		Sexy::IMAGE_SELECTORSCREEN_HELP2,
 		Sexy::IMAGE_SELECTORSCREEN_HELP2
-	);
+	).release();
 	mHelpButton->Resize(0, 0, Sexy::IMAGE_SELECTORSCREEN_HELP1->mWidth, Sexy::IMAGE_SELECTORSCREEN_HELP1->mHeight + 33);
 	mHelpButton->mClip = false; // fixes drawing issues
 	mHelpButton->mBtnNoDraw = true;
@@ -246,7 +246,7 @@ GameSelector::GameSelector(LawnApp* theApp)
 		Sexy::IMAGE_SELECTORSCREEN_QUIT1,
 		Sexy::IMAGE_SELECTORSCREEN_QUIT2,
 		Sexy::IMAGE_SELECTORSCREEN_QUIT2
-	);
+	).release();
 	mQuitButton->Resize(0, 0, Sexy::IMAGE_SELECTORSCREEN_QUIT1->mWidth + 10, Sexy::IMAGE_SELECTORSCREEN_QUIT1->mHeight + 10);
 	mQuitButton->mClip = false; // fixes drawing issues
 	mQuitButton->mBtnNoDraw = true;
@@ -262,7 +262,7 @@ GameSelector::GameSelector(LawnApp* theApp)
 		Sexy::IMAGE_BLANK,
 		Sexy::IMAGE_BLANK,
 		Sexy::IMAGE_BLANK
-	);
+	).release();
 	mChangeUserButton->Resize(0, 0, 250, 30);
 	mChangeUserButton->mBtnNoDraw = true;
 	mChangeUserButton->mMouseVisible = false;
@@ -278,7 +278,7 @@ GameSelector::GameSelector(LawnApp* theApp)
 		Sexy::IMAGE_SELECTORSCREEN_STORE,
 		Sexy::IMAGE_SELECTORSCREEN_STOREHIGHLIGHT,
 		Sexy::IMAGE_SELECTORSCREEN_STOREHIGHLIGHT
-	);
+	).release();
 	mStoreButton->Resize(405, 484, Sexy::IMAGE_SELECTORSCREEN_STORE->mWidth, Sexy::IMAGE_SELECTORSCREEN_STORE->mHeight);
 	mStoreButton->mClip = false; // fixes drawing issues
 	mStoreButton->mMouseVisible = false;
@@ -291,7 +291,7 @@ GameSelector::GameSelector(LawnApp* theApp)
 		Sexy::IMAGE_SELECTORSCREEN_ALMANAC,
 		Sexy::IMAGE_SELECTORSCREEN_ALMANACHIGHLIGHT,
 		Sexy::IMAGE_SELECTORSCREEN_ALMANACHIGHLIGHT
-	);
+	).release();
 	mAlmanacButton->Resize(327, 428, Sexy::IMAGE_SELECTORSCREEN_ALMANAC->mWidth, Sexy::IMAGE_SELECTORSCREEN_ALMANAC->mHeight);
 	mAlmanacButton->mClip = false; // fixes drawing issues
 	mAlmanacButton->mMouseVisible = false;
@@ -360,9 +360,9 @@ GameSelector::GameSelector(LawnApp* theApp)
 	mStartY = 0;
 	mDestX = 0;
 	mDestY = 0;
-	mZombatarWidget = new ZombatarWidget(this);
+	mZombatarWidget = std::make_unique<ZombatarWidget>(this);
 	mZombatarWidget->Move(BOARD_WIDTH, 0);
-	mAchievementsWidget = new AchievementsWidget(this->mApp);
+	mAchievementsWidget = std::make_unique<AchievementsWidget>(this->mApp);
 	mAchievementsWidget->Move(0, mApp->mHeight);
 	mQuickPlayWidget = new QuickPlayWidget(this);
 	mQuickPlayWidget->Move(BOARD_WIDTH, 0);
@@ -390,15 +390,9 @@ GameSelector::GameSelector(LawnApp* theApp)
 GameSelector::~GameSelector()
 {
 	RemoveAllWidgets(true);
-
-	if (mZombatarWidget)
-		delete mZombatarWidget; // top-level widget, not covered by RemoveAllWidgets
-	if (mAchievementsWidget)
-		delete mAchievementsWidget; // top-level widget, not covered by RemoveAllWidgets
 	if (mQuickPlayWidget)
 		delete mQuickPlayWidget; // top-level widget, not covered by RemoveAllWidgets
 
-	delete mToolTip;
 }
 
 void GameSelector::SyncButtons()
@@ -988,8 +982,8 @@ void GameSelector::AddedToManager(WidgetManager* theWidgetManager)
 {
 	Widget::AddedToManager(theWidgetManager);
 
-	theWidgetManager->AddWidget(mZombatarWidget);
-	theWidgetManager->AddWidget(mAchievementsWidget);
+	theWidgetManager->AddWidget(mZombatarWidget.get());
+	theWidgetManager->AddWidget(mAchievementsWidget.get());
 	theWidgetManager->AddWidget(mQuickPlayWidget);
 }
 
@@ -997,15 +991,15 @@ void GameSelector::RemovedFromManager(WidgetManager* theWidgetManager)
 {
 	Widget::RemovedFromManager(theWidgetManager);
 
-	theWidgetManager->RemoveWidget(mZombatarWidget);
-	theWidgetManager->RemoveWidget(mAchievementsWidget);
+	theWidgetManager->RemoveWidget(mZombatarWidget.get());
+	theWidgetManager->RemoveWidget(mAchievementsWidget.get());
 	theWidgetManager->RemoveWidget(mQuickPlayWidget);
 }
 
 void GameSelector::OrderInManagerChanged()
 {
-	mWidgetManager->PutInfront(mAchievementsWidget, this);
-	mWidgetManager->BringToFront(mZombatarWidget);
+	mWidgetManager->PutInfront(mAchievementsWidget.get(), this);
+	mWidgetManager->BringToFront(mZombatarWidget.get());
 	mWidgetManager->BringToFront(mQuickPlayWidget);
 }
 
@@ -1432,7 +1426,7 @@ void GameSelector::ShowZombatarScreen()
 void GameSelector::ShowAchievementsScreen()
 {
 	SlideTo(0, -mApp->mHeight);
-	mWidgetManager->SetFocus(mAchievementsWidget);
+	mWidgetManager->SetFocus(mAchievementsWidget.get());
 }
 
 void GameSelector::ShowQuickPlayScreen()

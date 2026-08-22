@@ -336,44 +336,35 @@ ZombatarWidget::ZombatarWidget(GameSelector* theGameSelector)
 ZombatarWidget::~ZombatarWidget()
 {
 	DestroyPreviewZombie();
-	delete mBackButton;
-	delete mViewButton;
-	delete mFinishedButton;
-	delete mNewButton;
-	delete mConfirmBackButton;
-	delete mPrevPortraitButton;
-	delete mNextPortraitButton;
-	delete mPrevPageButton;
-	delete mNextPageButton;
 }
 
 void ZombatarWidget::AddedToManager(WidgetManager* theWidgetManager)
 {
 	Widget::AddedToManager(theWidgetManager);
-	AddWidget(mBackButton);
-	AddWidget(mViewButton);
-	AddWidget(mFinishedButton);
-	AddWidget(mNewButton);
-	AddWidget(mConfirmBackButton);
-	AddWidget(mPrevPortraitButton);
-	AddWidget(mNextPortraitButton);
-	AddWidget(mPrevPageButton);
-	AddWidget(mNextPageButton);
+	AddWidget(mBackButton.get());
+	AddWidget(mViewButton.get());
+	AddWidget(mFinishedButton.get());
+	AddWidget(mNewButton.get());
+	AddWidget(mConfirmBackButton.get());
+	AddWidget(mPrevPortraitButton.get());
+	AddWidget(mNextPortraitButton.get());
+	AddWidget(mPrevPageButton.get());
+	AddWidget(mNextPageButton.get());
 }
 
 void ZombatarWidget::RemovedFromManager(WidgetManager* theWidgetManager)
 {
 	Widget::RemovedFromManager(theWidgetManager);
 	DestroyPreviewZombie();
-	RemoveWidget(mBackButton);
-	RemoveWidget(mViewButton);
-	RemoveWidget(mFinishedButton);
-	RemoveWidget(mNewButton);
-	RemoveWidget(mConfirmBackButton);
-	RemoveWidget(mPrevPortraitButton);
-	RemoveWidget(mNextPortraitButton);
-	RemoveWidget(mPrevPageButton);
-	RemoveWidget(mNextPageButton);
+	RemoveWidget(mBackButton.get());
+	RemoveWidget(mViewButton.get());
+	RemoveWidget(mFinishedButton.get());
+	RemoveWidget(mNewButton.get());
+	RemoveWidget(mConfirmBackButton.get());
+	RemoveWidget(mPrevPortraitButton.get());
+	RemoveWidget(mNextPortraitButton.get());
+	RemoveWidget(mPrevPageButton.get());
+	RemoveWidget(mNextPageButton.get());
 }
 
 void ZombatarWidget::Update()
@@ -918,7 +909,7 @@ void ZombatarWidget::CreatePreviewZombie()
 	if (mPreviewZombie)
 		return;
 
-	mPreviewZombie = new Zombie();
+	mPreviewZombie = std::make_unique<Zombie>();
 	mPreviewZombie->mApp = mApp;
 	mPreviewZombie->mBoard = nullptr;
 	mPreviewZombie->ZombieInitialize(0, ZombieType::ZOMBIE_FLAG, false, nullptr, Zombie::ZOMBIE_WAVE_UI);
@@ -934,8 +925,7 @@ void ZombatarWidget::DestroyPreviewZombie()
 		return;
 
 	mPreviewZombie->DieNoLoot();
-	delete mPreviewZombie;
-	mPreviewZombie = nullptr;
+	mPreviewZombie.reset();
 }
 
 void ZombatarWidget::DrawAvatarBox(Graphics* g)
@@ -1215,7 +1205,7 @@ void ZombatarWidget::DrawConfirm(Graphics* g)
 
 	g->SetFont(FONT_HOUSEOFTERROR28);
 	g->SetColor(Color(254, 227, 0));
-	std::string aHeader = PvzpStringTranslate("[ZOMBATAR_FINISHED_WARNING_HEADER]");
+	std::string aHeader(PvzpStringTranslate("[ZOMBATAR_FINISHED_WARNING_HEADER]"));
 	g->DrawString(aHeader, ZOMBATAR_CONFIRM_HEADER_X - FONT_HOUSEOFTERROR28->StringWidth(aHeader) / 2, ZOMBATAR_CONFIRM_HEADER_Y);
 
 	PvzpDrawStringWrapped(g, "[ZOMBATAR_FINISHED_WARNING_TEXT]",
@@ -1224,9 +1214,9 @@ void ZombatarWidget::DrawConfirm(Graphics* g)
 
 	g->SetFont(FONT_BRIANNETOD12);
 	g->SetColor(Color(255, 255, 255));
-	std::string aAccept = PvzpStringTranslate("[ZOMBATAR_FINISHED_BUTTON_TEXT]");
+	std::string aAccept(PvzpStringTranslate("[ZOMBATAR_FINISHED_BUTTON_TEXT]"));
 	g->DrawString(aAccept, ZOMBATAR_CONFIRM_ACCEPT_LABEL_X - FONT_BRIANNETOD12->StringWidth(aAccept) / 2, ZOMBATAR_CONFIRM_LABEL_Y);
-	std::string aBack = PvzpStringTranslate("[ZOMBATAR_BACK_BUTTON_TEXT]");
+	std::string aBack(PvzpStringTranslate("[ZOMBATAR_BACK_BUTTON_TEXT]"));
 	g->DrawString(aBack, ZOMBATAR_CONFIRM_BACK_LABEL_X - FONT_BRIANNETOD12->StringWidth(aBack) / 2, ZOMBATAR_CONFIRM_LABEL_Y);
 }
 

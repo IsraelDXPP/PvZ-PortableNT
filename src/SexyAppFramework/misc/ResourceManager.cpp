@@ -388,6 +388,15 @@ bool ResourceManager::ParseImageResource(XMLElement &theElement)
 		aRes->mAnimInfo.Compute(aNumCels,aBeginDelay,anEndDelay);
 	}
 
+	if (aRes->mInResourcePack)
+	{
+		GLImage* aImage = mApp->GetImage(aRes->mPath);
+		if (aImage)
+		{
+			DoLoadImage(aRes);
+			delete aImage;
+		}
+	}
 
 	return true;
 }

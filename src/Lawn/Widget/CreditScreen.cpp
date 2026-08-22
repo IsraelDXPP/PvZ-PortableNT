@@ -361,7 +361,7 @@ CreditScreen::CreditScreen(LawnApp* theApp)
 	mReplayButton->mTextOffsetX = 33;
 	mReplayButton->mTextOffsetY = -5;
 
-	mOverlayWidget = new CreditsOverlay(this);
+	mOverlayWidget = std::make_unique<CreditsOverlay>(this);
 	mOverlayWidget->Resize(0, 0, BOARD_WIDTH, BOARD_HEIGHT);
 
 	mOriginalMusicVolume = mApp->mMusicVolume;
@@ -374,25 +374,22 @@ CreditScreen::CreditScreen(LawnApp* theApp)
 CreditScreen::~CreditScreen()
 {
 	mApp->SetMusicVolume(mOriginalMusicVolume);
-	delete mReplayButton;
-	delete mMainMenuButton;
-	delete mOverlayWidget;
 }
 
 void CreditScreen::AddedToManager(WidgetManager* theWidgetManager)
 {
 	Widget::AddedToManager(theWidgetManager);
-	AddWidget(mMainMenuButton);
-	AddWidget(mReplayButton);
-	AddWidget(mOverlayWidget);
+	AddWidget(mMainMenuButton.get());
+	AddWidget(mReplayButton.get());
+	AddWidget(mOverlayWidget.get());
 }
 
 void CreditScreen::RemovedFromManager(WidgetManager* theWidgetManager)
 {
 	Widget::RemovedFromManager(theWidgetManager);
-	RemoveWidget(mMainMenuButton);
-	RemoveWidget(mReplayButton);
-	RemoveWidget(mOverlayWidget);
+	RemoveWidget(mMainMenuButton.get());
+	RemoveWidget(mReplayButton.get());
+	RemoveWidget(mOverlayWidget.get());
 }
 
 void CreditScreen::PreLoadCredits()

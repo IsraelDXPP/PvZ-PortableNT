@@ -68,7 +68,7 @@ ZombatarTOS::ZombatarTOS(LawnApp* theApp) : LawnDialog(theApp, Dialogs::DIALOG_Z
 	mArrowAlpha = 0;
 	mArrowFadeDir = 3;
 
-	mTOSSlider = new Slider(IMAGE_ZOMBATAR_TOS_SLIDER, IMAGE_ZOMBATAR_TOS_SLIDER_THUMB, ZombatarTOS::ZombatarTOS_Slider, this);
+	mTOSSlider = std::make_unique<Slider>(IMAGE_ZOMBATAR_TOS_SLIDER, IMAGE_ZOMBATAR_TOS_SLIDER_THUMB, ZombatarTOS::ZombatarTOS_Slider, this);
 	mTOSSlider->mHorizontal = false;
 	mTOSSlider->SetValue(0);
 
@@ -83,30 +83,24 @@ ZombatarTOS::ZombatarTOS(LawnApp* theApp) : LawnDialog(theApp, Dialogs::DIALOG_Z
 	Resize(0, 0, TOS_DIALOG_WIDTH, TOS_DIALOG_HEIGHT);
 }
 
-ZombatarTOS::~ZombatarTOS()
-{
-	delete mTOSSlider;
-	delete mBackButton;
-	delete mAcceptButton;
-	delete mTOSCheckbox;
-}
+ZombatarTOS::~ZombatarTOS() = default;
 
 void ZombatarTOS::AddedToManager(WidgetManager* theWidgetManager)
 {
 	Dialog::AddedToManager(theWidgetManager);
-	AddWidget(mTOSSlider);
-	AddWidget(mBackButton);
-	AddWidget(mAcceptButton);
-	AddWidget(mTOSCheckbox);
+	AddWidget(mTOSSlider.get());
+	AddWidget(mBackButton.get());
+	AddWidget(mAcceptButton.get());
+	AddWidget(mTOSCheckbox.get());
 }
 
 void ZombatarTOS::RemovedFromManager(WidgetManager* theWidgetManager)
 {
 	Dialog::RemovedFromManager(theWidgetManager);
-	RemoveWidget(mTOSSlider);
-	RemoveWidget(mBackButton);
-	RemoveWidget(mAcceptButton);
-	RemoveWidget(mTOSCheckbox);
+	RemoveWidget(mTOSSlider.get());
+	RemoveWidget(mBackButton.get());
+	RemoveWidget(mAcceptButton.get());
+	RemoveWidget(mTOSCheckbox.get());
 }
 
 void ZombatarTOS::Resize(int theX, int theY, int theWidth, int theHeight)

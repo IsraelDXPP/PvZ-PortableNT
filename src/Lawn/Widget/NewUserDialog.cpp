@@ -43,22 +43,19 @@ NewUserDialog::NewUserDialog(LawnApp* theApp, bool isRename) : LawnDialog(
 	CalcSize(110, 40);
 }
 
-NewUserDialog::~NewUserDialog()
-{
-	delete mNameEditWidget;
-}
+NewUserDialog::~NewUserDialog() = default;
 
 void NewUserDialog::AddedToManager(WidgetManager* theWidgetManager)
 {
 	LawnDialog::AddedToManager(theWidgetManager);
-	AddWidget(mNameEditWidget);
-	theWidgetManager->SetFocus(mNameEditWidget);
+	AddWidget(mNameEditWidget.get());
+	theWidgetManager->SetFocus(mNameEditWidget.get());
 }
 
 void NewUserDialog::RemovedFromManager(WidgetManager* theWidgetManager)
 {
 	LawnDialog::RemovedFromManager(theWidgetManager);
-	RemoveWidget(mNameEditWidget);
+	RemoveWidget(mNameEditWidget.get());
 }
 
 int NewUserDialog::GetPreferredHeight(int theWidth)
@@ -75,7 +72,7 @@ void NewUserDialog::Resize(int theX, int theY, int theWidth, int theHeight)
 void NewUserDialog::Draw(Graphics* g)
 {
 	LawnDialog::Draw(g);
-	DrawEditBox(g, mNameEditWidget);
+	DrawEditBox(g, mNameEditWidget.get());
 }
 
 void NewUserDialog::EditWidgetText(int theId, const std::string& theString)

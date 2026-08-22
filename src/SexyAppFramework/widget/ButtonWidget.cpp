@@ -42,7 +42,6 @@ static int gButtonWidgetColors[][3] = {
 ButtonWidget::ButtonWidget(int theId, ButtonListener* theButtonListener)
 {
 	mId = theId;
-	mFont = nullptr;
 	mLabelJustify = BUTTON_LABEL_CENTER;
 	mButtonImage = nullptr;
 	mOverImage = nullptr;
@@ -61,15 +60,11 @@ ButtonWidget::ButtonWidget(int theId, ButtonListener* theButtonListener)
 	SetColors(gButtonWidgetColors, NUM_COLORS);
 }
 
-ButtonWidget::~ButtonWidget()
-{
-	delete mFont;
-}
+ButtonWidget::~ButtonWidget() = default;
 
 void ButtonWidget::SetFont(_Font* theFont)
 {
-	delete mFont;
-	mFont = theFont->Duplicate();
+	mFont.reset(theFont->Duplicate());
 }
 
 bool ButtonWidget::IsButtonDown()
@@ -97,7 +92,7 @@ void ButtonWidget::Draw(Graphics* g)
 
 	_Font* aDefaultFont = mWidgetManager->mApp->mDefaultFont.load();
 	if ((mFont == nullptr) && (mLabel.length() > 0) && (aDefaultFont != nullptr))
-		mFont = aDefaultFont->Duplicate();
+		mFont.reset(aDefaultFont->Duplicate());
 
 	bool isDown = mIsDown && mIsOver && !mDisabled;
 	isDown ^= mInverted;
@@ -117,7 +112,7 @@ void ButtonWidget::Draw(Graphics* g)
 		//aFontY = (mHeight - mFont->GetHeight())/2 + mFont->GetAscent() - 1;
 	}
 
-	g->SetFont(mFont);
+	g->SetFont(mFont.get());
 
 	if ((mButtonImage == nullptr) && (mDownImage == nullptr))
 	{

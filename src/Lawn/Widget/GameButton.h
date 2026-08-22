@@ -24,6 +24,7 @@
 
 #include "misc/SexyVector.h"
 #include "widget/DialogButton.h"
+#include <memory>
 
 //using namespace std;
 using namespace Sexy;
@@ -63,7 +64,7 @@ public:
 	int						mId;
 	std::string				mLabel;
 	int						mLabelJustify;
-	_Font*					mFont;
+	std::unique_ptr<_Font>		mFont;
 	Image*					mButtonImage;
 	Image*					mOverImage;
 	Image*					mDownImage;
@@ -130,8 +131,8 @@ public:
 	void					SetLabel(std::string_view theLabel);
 };
 
-LawnStoneButton*			MakeButton(int theId, ButtonListener* theListener, std::string_view theText);
-NewLawnButton*				MakeNewButton(int theId, ButtonListener* theListener, std::string_view theText, _Font* theFont, Image* theImageNormal, Image* theImageOver, Image* theImageDown);
+std::unique_ptr<LawnStoneButton>	MakeButton(int theId, ButtonListener* theListener, std::string_view theText);
+std::unique_ptr<NewLawnButton>	MakeNewButton(int theId, ButtonListener* theListener, std::string_view theText, _Font* theFont, Image* theImageNormal, Image* theImageOver, Image* theImageDown);
 void						DrawStoneButton(Graphics* g, int x, int y, int theWidth, int theHeight, bool isDown, bool isHighLighted, const std::string& theLabel);
 
 #endif

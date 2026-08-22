@@ -1105,8 +1105,8 @@ int	ResourceManager::GetNumResources(const std::string &theGroup)
 
 SharedImageRef ResourceManager::GetImage(const std::string &theId)
 {
-	ResMap aImageMap = mApp->mResourcePackIndex == -1 ? mImageMap : mResourcePackImageMaps[mApp->mResourcePack];
-	ResMap::iterator anItr = aImageMap.find(theId);
+	const ResMap& aImageMap = mApp->mResourcePackIndex == -1 ? mImageMap : mResourcePackImageMaps[mApp->mResourcePack];
+	ResMap::const_iterator anItr = aImageMap.find(theId);
 	ImageRes* aRes;
 	MemoryImage* aImage = NULL;
 	if (anItr != aImageMap.end())
@@ -1150,8 +1150,8 @@ _Font* ResourceManager::GetFont(const std::string &theId)
 
 SharedImageRef ResourceManager::GetImageThrow(const std::string &theId)
 {
-	ResMap aImageMap = mApp->mResourcePackIndex == -1 ? mImageMap : mResourcePackImageMaps[mApp->mResourcePack];
-	ResMap::iterator anItr = aImageMap.find(theId);
+	const ResMap& aImageMap = mApp->mResourcePackIndex == -1 ? mImageMap : mResourcePackImageMaps[mApp->mResourcePack];
+	ResMap::const_iterator anItr = aImageMap.find(theId);
 	ImageRes* aRes;
 	MemoryImage* aImage = NULL;
 	if (anItr != aImageMap.end())

@@ -66,12 +66,12 @@ NewOptionsDialog::NewOptionsDialog(LawnApp* theApp, bool theFromGameSelector) :
 	mBackToGameButton->SetColor(ButtonWidget::COLOR_LABEL_HILITE, Color::White);
 	mBackToGameButton->mHiliteFont = FONT_DWARVENTODCRAFT36BRIGHTGREENINSET;
 
-	mMusicVolumeSlider = new Slider(IMAGE_OPTIONS_SLIDERSLOT, IMAGE_OPTIONS_SLIDERKNOB2, NewOptionsDialog::NewOptionsDialog_MusicVolume, this);
+	mMusicVolumeSlider = std::make_unique<Slider>(IMAGE_OPTIONS_SLIDERSLOT, IMAGE_OPTIONS_SLIDERKNOB2, NewOptionsDialog::NewOptionsDialog_MusicVolume, this);
 	double aMusicVolume = theApp->GetMusicVolume();
 	aMusicVolume = std::max(0.0, std::min(1.0, aMusicVolume));
 	mMusicVolumeSlider->SetValue(aMusicVolume);
 
-	mSfxVolumeSlider = new Slider(IMAGE_OPTIONS_SLIDERSLOT, IMAGE_OPTIONS_SLIDERKNOB2, NewOptionsDialog::NewOptionsDialog_SoundVolume, this);
+	mSfxVolumeSlider = std::make_unique<Slider>(IMAGE_OPTIONS_SLIDERSLOT, IMAGE_OPTIONS_SLIDERKNOB2, NewOptionsDialog::NewOptionsDialog_SoundVolume, this);
 	mSfxVolumeSlider->SetValue(theApp->GetSfxVolume() / 0.65);
 
 	mFullscreenCheckbox = MakeNewCheckbox(NewOptionsDialog::NewOptionsDialog_Fullscreen, this, !theApp->mIsWindowed);
@@ -111,17 +111,7 @@ NewOptionsDialog::NewOptionsDialog(LawnApp* theApp, bool theFromGameSelector) :
 	}
 }
 
-NewOptionsDialog::~NewOptionsDialog()
-{
-	delete mMusicVolumeSlider;
-	delete mSfxVolumeSlider;
-	delete mFullscreenCheckbox;
-	delete mHardwareAccelerationCheckbox;
-	delete mAlmanacButton;
-	delete mRestartButton;
-	delete mBackToMainButton;
-	delete mBackToGameButton;
-}
+NewOptionsDialog::~NewOptionsDialog() = default;
 
 int NewOptionsDialog::GetPreferredHeight(int theWidth)
 {
@@ -132,27 +122,27 @@ int NewOptionsDialog::GetPreferredHeight(int theWidth)
 void NewOptionsDialog::AddedToManager(Sexy::WidgetManager* theWidgetManager)
 {
 	Dialog::AddedToManager(theWidgetManager);
-	AddWidget(mAlmanacButton);
-	AddWidget(mRestartButton);
-	AddWidget(mBackToMainButton);
-	AddWidget(mMusicVolumeSlider);
-	AddWidget(mSfxVolumeSlider);
-	AddWidget(mHardwareAccelerationCheckbox);
-	AddWidget(mFullscreenCheckbox);
-	AddWidget(mBackToGameButton);
+	AddWidget(mAlmanacButton.get());
+	AddWidget(mRestartButton.get());
+	AddWidget(mBackToMainButton.get());
+	AddWidget(mMusicVolumeSlider.get());
+	AddWidget(mSfxVolumeSlider.get());
+	AddWidget(mHardwareAccelerationCheckbox.get());
+	AddWidget(mFullscreenCheckbox.get());
+	AddWidget(mBackToGameButton.get());
 }
 
 void NewOptionsDialog::RemovedFromManager(Sexy::WidgetManager* theWidgetManager)
 {
 	Dialog::RemovedFromManager(theWidgetManager);
-	RemoveWidget(mAlmanacButton);
-	RemoveWidget(mMusicVolumeSlider);
-	RemoveWidget(mSfxVolumeSlider);
-	RemoveWidget(mFullscreenCheckbox);
-	RemoveWidget(mHardwareAccelerationCheckbox);
-	RemoveWidget(mBackToMainButton);
-	RemoveWidget(mBackToGameButton);
-	RemoveWidget(mRestartButton);
+	RemoveWidget(mAlmanacButton.get());
+	RemoveWidget(mMusicVolumeSlider.get());
+	RemoveWidget(mSfxVolumeSlider.get());
+	RemoveWidget(mFullscreenCheckbox.get());
+	RemoveWidget(mHardwareAccelerationCheckbox.get());
+	RemoveWidget(mBackToMainButton.get());
+	RemoveWidget(mBackToGameButton.get());
+	RemoveWidget(mRestartButton.get());
 }
 
 void NewOptionsDialog::Resize(int theX, int theY, int theWidth, int theHeight)

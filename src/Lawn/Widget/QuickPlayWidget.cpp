@@ -49,17 +49,17 @@ QuickPlayWidget::QuickPlayWidget(GameSelector* theGameSelector)
 	mSeedType = SeedType::SEED_PEASHOOTER;
 
 	mBackButton = MakeNewButton(QUICKPLAY_BTN_BACK, this, "", nullptr,
-		Sexy::IMAGE_BLANK, Sexy::IMAGE_ZOMBATAR_MAINMENUBACK_HIGHLIGHT, Sexy::IMAGE_ZOMBATAR_MAINMENUBACK_HIGHLIGHT);
+		Sexy::IMAGE_BLANK, Sexy::IMAGE_ZOMBATAR_MAINMENUBACK_HIGHLIGHT, Sexy::IMAGE_ZOMBATAR_MAINMENUBACK_HIGHLIGHT).release();
 
 	mLeftButton = MakeNewButton(QUICKPLAY_BTN_LEFT, this, "", nullptr, Sexy::IMAGE_ZOMBATAR_PREV_BUTTON,
-		Sexy::IMAGE_ZOMBATAR_PREV_BUTTON_HIGHLIGHT, Sexy::IMAGE_ZOMBATAR_PREV_BUTTON_HIGHLIGHT);
+		Sexy::IMAGE_ZOMBATAR_PREV_BUTTON_HIGHLIGHT, Sexy::IMAGE_ZOMBATAR_PREV_BUTTON_HIGHLIGHT).release();
 
 	mRightButton = MakeNewButton(QUICKPLAY_BTN_RIGHT, this, "", nullptr, Sexy::IMAGE_ZOMBATAR_NEXT_BUTTON,
-		Sexy::IMAGE_ZOMBATAR_NEXT_BUTTON_HIGHLIGHT, Sexy::IMAGE_ZOMBATAR_NEXT_BUTTON_HIGHLIGHT);
+		Sexy::IMAGE_ZOMBATAR_NEXT_BUTTON_HIGHLIGHT, Sexy::IMAGE_ZOMBATAR_NEXT_BUTTON_HIGHLIGHT).release();
 
-	mPlayButton = MakeButton(QUICKPLAY_BTN_PLAY, this, "[PLAY_BUTTON]");
+	mPlayButton = MakeButton(QUICKPLAY_BTN_PLAY, this, "[PLAY_BUTTON]").release();
 
-	mCrazySeedsCheck = MakeNewCheckbox(QUICKPLAY_BTN_CRAZY_SEEDS, this, mApp->mCrazySeeds);
+	mCrazySeedsCheck = MakeNewCheckbox(QUICKPLAY_BTN_CRAZY_SEEDS, this, mApp->mCrazySeeds).release();
 	mCrazySeedsCheck->mVisible = true;
 
 	Resize(BOARD_WIDTH, 0, BOARD_WIDTH, BOARD_HEIGHT);

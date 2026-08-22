@@ -93,11 +93,11 @@ NewOptionsDialog::NewOptionsDialog(LawnApp* theApp, bool theFromGameSelector, bo
 	mHardwareAccelerationCheckbox = MakeNewCheckbox(NewOptionsDialog::NewOptionsDialog_HardwareAcceleration, this, theApp->Is3DAccelerated());
 
 	// Advanced page 1: Debug Mode
-	mDebugModeCheckbox = MakeNewCheckbox(-1, this, theApp->mCheatKeys);
+	mDebugModeCheckbox = MakeNewCheckbox(-1, this, theApp->mCheatKeys).release();
 	mDebugModeCheckbox->SetVisible(false);
 
 	// Advanced page 1: Speed Modifier edit widget
-	mSpeedEditWidget = CreateEditWidget(-1, this, this);
+	mSpeedEditWidget = CreateEditWidget(-1, this, this).release();
 	mSpeedEditWidget->mMaxChars = 1;
 	mSpeedEditWidget->SetFont(FONT_DWARVENTODCRAFT18GREENINSET);
 	mSpeedEditWidget->AddWidthCheckFont(FONT_DWARVENTODCRAFT18GREENINSET, IMAGE_OPTIONS_CHECKBOX0->mWidth);
@@ -107,13 +107,13 @@ NewOptionsDialog::NewOptionsDialog(LawnApp* theApp, bool theFromGameSelector, bo
 	mSpeedEditPrevText = mSpeedEditWidget->mString;
 
 	// Advanced page 1: Gameplay toggles
-	mAutoCollectSunsCheckbox = MakeNewCheckbox(-1, this, theApp->mAutoCollectSuns);
+	mAutoCollectSunsCheckbox = MakeNewCheckbox(-1, this, theApp->mAutoCollectSuns).release();
 	mAutoCollectSunsCheckbox->SetVisible(false);
-	mAutoCollectCoinsCheckbox = MakeNewCheckbox(-1, this, theApp->mAutoCollectCoins);
+	mAutoCollectCoinsCheckbox = MakeNewCheckbox(-1, this, theApp->mAutoCollectCoins).release();
 	mAutoCollectCoinsCheckbox->SetVisible(false);
-	mZombieHealthbarsCheckbox = MakeNewCheckbox(-1, this, theApp->mZombieHealthbars);
+	mZombieHealthbarsCheckbox = MakeNewCheckbox(-1, this, theApp->mZombieHealthbars).release();
 	mZombieHealthbarsCheckbox->SetVisible(false);
-	mPlantHealthbarsCheckbox = MakeNewCheckbox(-1, this, theApp->mPlantHealthbars);
+	mPlantHealthbarsCheckbox = MakeNewCheckbox(-1, this, theApp->mPlantHealthbars).release();
 	mPlantHealthbarsCheckbox->SetVisible(false);
 
 	// Advanced page 2: Resource Packs
@@ -204,9 +204,9 @@ NewOptionsDialog::NewOptionsDialog(LawnApp* theApp, bool theFromGameSelector, bo
 	{
 		LawnStoneButton* button;
 		if (!mRestartButton->mVisible)
-			button = mRestartButton;
+			button = mRestartButton.get();
 		else
-			button = mAlmanacButton;
+			button = mAlmanacButton.get();
 		mAdvancedButton->Resize(button->mX, button->mY, button->mWidth, button->mHeight);
 	}
 }
@@ -305,9 +305,9 @@ void NewOptionsDialog::Resize(int theX, int theY, int theWidth, int theHeight)
 	{
 		LawnStoneButton* button;
 		if (!mRestartButton->mVisible)
-			button = mRestartButton;
+			button = mRestartButton.get();
 		else
-			button = mAlmanacButton;
+			button = mAlmanacButton.get();
 		mAdvancedButton->Resize(button->mX, button->mY, button->mWidth, button->mHeight);
 	}
 
@@ -495,7 +495,7 @@ void NewOptionsDialog::Update()
 
 	if (mAdvancedMode)
 	{
-		if (mSpeedEditWidget->mHasFocus && mSpeedEditWidget->mFont != FONT_DWARVENTODCRAFT18BRIGHTGREENINSET)
+		if (mSpeedEditWidget->mHasFocus && mSpeedEditWidget->mFont.get() != FONT_DWARVENTODCRAFT18BRIGHTGREENINSET)
 			mSpeedEditWidget->SetFont(FONT_DWARVENTODCRAFT18BRIGHTGREENINSET);
 		if (mSpeedEditPrevText != mSpeedEditWidget->mString)
 		{

@@ -188,7 +188,7 @@ GameSelector::GameSelector(LawnApp* theApp)
 		Sexy::IMAGE_QUICKPLAY_BUTTON,
 		Sexy::IMAGE_QUICKPLAY_BUTTON_HIGHLIGHT,
 		Sexy::IMAGE_QUICKPLAY_BUTTON_HIGHLIGHT
-	);
+	).release();
 	mQuickPlayButton->Resize(300, mApp->mHeight - Sexy::IMAGE_QUICKPLAY_BUTTON->mHeight - 100, Sexy::IMAGE_QUICKPLAY_BUTTON->mWidth, Sexy::IMAGE_QUICKPLAY_BUTTON->mHeight);
 	mQuickPlayButton->mClip = false;
 	mQuickPlayButton->mMouseVisible = false;

@@ -4460,7 +4460,7 @@ void SexyAppBase::LoadCurrentResourcePack()
 		const std::string& aGroup = *aIt;
 		if (aGroup == "LoadingImages" || aGroup == "LoadingFonts" || aGroup == "LoadingSounds" || aGroup == "LoaderBar")
 			continue;
-		ExtractResourcesByName(mResourceManager, aGroup.c_str());
+		ExtractResourcesByName(mResourceManager.get(), aGroup.c_str());
 	}
 	if (!mLoaded)
 		return;

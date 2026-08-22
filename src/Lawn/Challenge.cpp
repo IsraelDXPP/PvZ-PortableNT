@@ -2878,7 +2878,7 @@ void Challenge::WhackAZombieSpawning()
 				aMaxSpeed = 2;
 			}
 
-			Zombie* aZombie = mBoard->AddZombie(aZombieType, mBoard->mCurrentWave);
+			Zombie* aZombie = mBoard->AddZombie(aZombieType, mBoard->mCurrentWave, true);
 			if (aZombie == nullptr)
 				break;
 
@@ -3175,7 +3175,7 @@ void Challenge::UpdatePortal(GridItem* thePortal)
 			{
 				int aDiffX = aZombieX - aZombie->mX;
 				if (aZombie->IsWalkingBackwards()) aDiffX -= 60;
-				aZombie->mX = anOtherPortal->mGridX * 80 - aDiffX;
+				aZombie->mX = anOtherPortal->mGridX * 80 - aDiffX + BOARD_ADDITIONAL_WIDTH;
 				aZombie->mPosX = aZombie->mX;
 
 				aZombie->SetRow(anOtherPortal->mGridY);
@@ -3195,11 +3195,11 @@ void Challenge::UpdatePortal(GridItem* thePortal)
 		{
 			Rect aProjectileRect = aProjectile->GetProjectileRect();
 			int aProjectileX = aProjectileRect.mX + aProjectileRect.mWidth / 2;
-			int aPortalX = thePortal->mGridX * 80 + 55;
+			int aPortalX = thePortal->mGridX * 80 + 55 + BOARD_ADDITIONAL_WIDTH;
 			if (abs(aProjectileX - aPortalX) <= 40)
 			{
 				int aDeltaY = (anOtherPortal->mGridY - thePortal->mGridY) * 100;
-				aProjectile->mX += anOtherPortal->mGridX * 80 - aProjectileX + 60;
+				aProjectile->mX += anOtherPortal->mGridX * 80 - aProjectileX + 60 + BOARD_ADDITIONAL_WIDTH;
 				aProjectile->mPosX = aProjectile->mX;
 
 				aProjectile->mRow = anOtherPortal->mGridY;

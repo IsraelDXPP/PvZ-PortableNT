@@ -127,9 +127,6 @@ ChallengeScreen::ChallengeScreen(LawnApp* theApp, ChallengePage thePage)
 	mApp = theApp;
 	mClip = false;
 	mCheatEnableChallenges = false;
-	mLimboPageUnlocked = false;
-	mClickCount = 0;
-	mLastClickUpdateCnt = 0;
 	mUnlockState = UNLOCK_OFF;
 	mUnlockChallengeIndex = -1;
 	mUnlockStateCounter = 0;
@@ -139,44 +136,34 @@ ChallengeScreen::ChallengeScreen(LawnApp* theApp, ChallengePage thePage)
 		PvzpLoadResources(resource.c_str());
 
 	mBackButton = MakeNewButton(ChallengeScreen::ChallengeScreen_Back, this, "[BACK_TO_MENU]", nullptr, Sexy::IMAGE_SEEDCHOOSER_BUTTON2,
-		Sexy::IMAGE_SEEDCHOOSER_BUTTON2_GLOW, Sexy::IMAGE_SEEDCHOOSER_BUTTON2_GLOW);
+		Sexy::IMAGE_SEEDCHOOSER_BUTTON2_GLOW, Sexy::IMAGE_SEEDCHOOSER_BUTTON2_GLOW).release();
 	mBackButton->mTextDownOffsetX = 1;
 	mBackButton->mTextDownOffsetY = 1;
 	mBackButton->mColors[ButtonWidget::COLOR_LABEL] = Color(42, 42, 90);
 	mBackButton->mColors[ButtonWidget::COLOR_LABEL_HILITE] = Color(42, 42, 90);
 	mBackButton->Resize(18 + BOARD_OFFSET_X + 35, 568 + BOARD_OFFSET_Y, 111, 26);
 
-	for (int aPageIdx = 0; aPageIdx < MAX_CHALLANGE_PAGES; aPageIdx++)
-	{
-		mPageButton[aPageIdx] = std::make_unique<ButtonWidget>(ChallengeScreen::ChallengeScreen_Page + aPageIdx, this);
-		ButtonWidget* aPageButton = mPageButton[aPageIdx].get();
-		aPageButton->mDoFinger = true;
-		if (aPageIdx == CHALLENGE_PAGE_LIMBO)
-			aPageButton->mLabel = mApp->GetString("LIMBO_PAGE_BUTTON", "Limbo Page");
-		else
-			aPageButton->mLabel = PvzpReplaceNumberString("[PAGE_X]", "{PAGE}", aPageIdx);
-		aPageButton->mButtonImage = Sexy::IMAGE_BLANK;
-		aPageButton->mOverImage = Sexy::IMAGE_BLANK;
-		aPageButton->mDownImage = Sexy::IMAGE_BLANK;
-		aPageButton->SetFont(Sexy::FONT_BRIANNETOD12);
-		aPageButton->mColors[ButtonWidget::COLOR_LABEL] = Color(255, 240, 0);
-		aPageButton->mColors[ButtonWidget::COLOR_LABEL_HILITE] = Color(220, 220, 0);
-		aPageButton->Resize(200 + 100 * aPageIdx, 540, 100, 75);
-		if (!ShowPageButtons() || aPageIdx == CHALLENGE_PAGE_SURVIVAL || aPageIdx == CHALLENGE_PAGE_PUZZLE)
-			aPageButton->mVisible = false;
-	}
+	mChallengesButton = MakeNewButton(ChallengeScreen::ChallengeScreen_Selector, this, "[PAGE_SELECTION_BUTTON]", nullptr, Sexy::IMAGE_SEEDCHOOSER_BUTTON2,
+		Sexy::IMAGE_SEEDCHOOSER_BUTTON2_GLOW, Sexy::IMAGE_SEEDCHOOSER_BUTTON2_GLOW).release();
+	mChallengesButton->mTextDownOffsetX = 1;
+	mChallengesButton->mTextDownOffsetY = 1;
+	mChallengesButton->mColors[ButtonWidget::COLOR_LABEL] = Color(42, 42, 90);
+	mChallengesButton->mColors[ButtonWidget::COLOR_LABEL_HILITE] = Color(42, 42, 90);
+	int aWidth = 111;
+	mChallengesButton->Resize(618 + BOARD_OFFSET_X + (aWidth / 2), 568 + BOARD_OFFSET_Y, aWidth, 26);
 
 	for (int aChallengeMode = 0; aChallengeMode < NUM_CHALLENGE_MODES; aChallengeMode++)
 	{
 		const ChallengeDefinition& aChlDef = GetChallengeDefinition(aChallengeMode);
-		mChallengeButtons[aChallengeMode] = std::make_unique<ButtonWidget>(ChallengeScreen::ChallengeScreen_Mode + aChallengeMode, this);
-		ButtonWidget* aChallengeButton = mChallengeButtons[aChallengeMode].get();
-		aChallengeButton->mDoFinger = true;
+		ButtonWidget* aChallengeButton = new ButtonWidget(ChallengeScreen::ChallengeScreen_Mode + aChallengeMode, this);
+		mChallengeButtons[aChallengeMode] = aChallengeButton;
+		aChallengeButton->mDoFinger = !MoreTrophiesNeeded(aChallengeMode);
+		aChallengeButton->mDisabled = MoreTrophiesNeeded(aChallengeMode);
 		aChallengeButton->mFrameNoDraw = true;
 		aChallengeButton->Resize(0, 0, 104, cButtonHeight);
 	}
 
-	mToolTip = std::make_unique<ToolTipWidget>();
+	mToolTip = new ToolTipWidget();
 	mToolTip->mCenter = true;
 	mToolTip->mVisible = false;
 	UpdateButtons();
@@ -227,6 +214,10 @@ void ChallengeScreen::SliderVal(int theId, double theVal)
 
 ChallengeScreen::~ChallengeScreen()
 {
+	delete mBackButton;
+	delete mChallengesButton;
+	for (ButtonWidget* aChallengeButton : mChallengeButtons) delete aChallengeButton;
+	delete mToolTip;
 	delete mSlider;
 }
 
@@ -382,24 +373,6 @@ void ChallengeScreen::UpdateButtons()
 {
 	for (int aChallengeMode = 0; aChallengeMode < NUM_CHALLENGE_MODES; aChallengeMode++)
 		mChallengeButtons[aChallengeMode]->mVisible = GetChallengeDefinition(aChallengeMode).mPage == mPageIndex;
-	for (int aPage = 0; aPage < MAX_CHALLANGE_PAGES; aPage++)
-	{
-		ButtonWidget* aPageButton = mPageButton[aPage].get();
-
-		if (mLimboPageUnlocked && aPage == CHALLENGE_PAGE_LIMBO)
-			aPageButton->mVisible = true;
-
-		if (aPage == mPageIndex)
-		{
-			aPageButton->mColors[ButtonWidget::COLOR_LABEL] = Color(64, 64, 64);
-			aPageButton->mDisabled = true;
-		}
-		else
-		{
-			aPageButton->mColors[ButtonWidget::COLOR_LABEL] = Color(255, 240, 0);
-			aPageButton->mDisabled = false;
-		}
-	}
 }
 
 int ChallengeScreen::AccomplishmentsNeeded(int theChallengeIndex)
@@ -413,7 +386,7 @@ int ChallengeScreen::AccomplishmentsNeeded(int theChallengeIndex)
 
 void ChallengeScreen::DrawButton(Graphics* g, int theChallengeIndex)
 {
-	ButtonWidget* aChallengeButton = mChallengeButtons[theChallengeIndex].get();
+	ButtonWidget* aChallengeButton = mChallengeButtons[theChallengeIndex];
 	if (aChallengeButton->mVisible)
 	{
 		aChallengeButton->mMouseVisible = cChallengeRect.Contains(mApp->mWidgetManager->mLastMouseX, mApp->mWidgetManager->mLastMouseY);
@@ -627,18 +600,20 @@ bool ChallengeScreen::IsPageUnlocked(ChallengePage thePage)
 void ChallengeScreen::AddedToManager(WidgetManager* theWidgetManager)
 {
 	Widget::AddedToManager(theWidgetManager);
-	AddWidget(mBackButton.get());
-	for (const std::unique_ptr<ButtonWidget>& aButton : mPageButton) AddWidget(aButton.get());
-	for (const std::unique_ptr<ButtonWidget>& aButton : mChallengeButtons) AddWidget(aButton.get());
+	AddWidget(mBackButton);
+	if (HAS_PAGE_SELECTOR)
+		AddWidget(mChallengesButton);
+	for (ButtonWidget* aButton : mChallengeButtons) AddWidget(aButton);
 	AddWidget(mSlider);
 }
 
 void ChallengeScreen::RemovedFromManager(WidgetManager* theWidgetManager)
 {
 	Widget::RemovedFromManager(theWidgetManager);
-	RemoveWidget(mBackButton.get());
-	for (const std::unique_ptr<ButtonWidget>& aButton : mPageButton) RemoveWidget(aButton.get());
-	for (const std::unique_ptr<ButtonWidget>& aButton : mChallengeButtons) RemoveWidget(aButton.get());
+	RemoveWidget(mBackButton);
+	if (HAS_PAGE_SELECTOR)
+		RemoveWidget(mChallengesButton);
+	for (ButtonWidget* aButton : mChallengeButtons) RemoveWidget(aButton);
 	RemoveWidget(mSlider);
 }
 
@@ -666,43 +641,6 @@ void ChallengeScreen::ButtonDepress(int theId)
 		mApp->KillChallengeScreen();
 		mApp->PreNewGame((GameMode)(aChallengeMode + 1), true);
 	}
-
-	int aPageIndex = theId - ChallengeScreen::ChallengeScreen_Page;
-	if (aPageIndex >= 0 && aPageIndex < MAX_CHALLANGE_PAGES)
-	{
-		mPageIndex = (ChallengePage)aPageIndex;
-		UpdateButtons();
-	}
-}
-
-void ChallengeScreen::KeyDown(KeyCode theKey)
-{
-	if (theKey == KeyCode::KEYCODE_ESCAPE)
-	{
-		ButtonDepress(ChallengeScreen::ChallengeScreen_Back);
-	}
-}
-
-void ChallengeScreen::MouseDown(int x, int y, int theClickCount)
-{
-	Widget::MouseDown(x, y, theClickCount);
-
-	if (mLimboPageUnlocked)
-		return;
-
-	constexpr uint MAX_GAP_TICKS = 20;
-	constexpr int CLICKS_NEEDED = 5;
-
-	uint aNow = mApp->mUpdateCount;
-	if (aNow - mLastClickUpdateCnt > MAX_GAP_TICKS)
-		mClickCount = 0;
-	mLastClickUpdateCnt = aNow;
-	mClickCount++;
-	if (mClickCount >= CLICKS_NEEDED)
-	{
-		mLimboPageUnlocked = true;
-		UpdateButtons();
-	}
 }
 
 void ChallengeScreen::UpdateToolTip()
@@ -716,7 +654,7 @@ void ChallengeScreen::UpdateToolTip()
 	for (int aChallengeMode = 0; aChallengeMode < NUM_CHALLENGE_MODES; aChallengeMode++)
 	{
 		const ChallengeDefinition& aDef = GetChallengeDefinition(aChallengeMode);
-		ButtonWidget* aChallengeButton = mChallengeButtons[aChallengeMode].get();
+		ButtonWidget* aChallengeButton = mChallengeButtons[aChallengeMode];
 		if (aChallengeButton->mVisible && aChallengeButton->mDisabled &&
 			aChallengeButton->Contains(mApp->mWidgetManager->mLastMouseX, mApp->mWidgetManager->mLastMouseY) &&
 			AccomplishmentsNeeded(aChallengeMode) <= 1)

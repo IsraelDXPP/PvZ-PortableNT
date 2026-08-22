@@ -2163,7 +2163,7 @@ void Zombie::UpdateZombieGargantuar()
 			ReanimShowTrack("Zombie_gargantuar_whiterope", RENDER_GROUP_HIDDEN);
 			mApp->PlayFoley(FoleyType::FOLEY_SWING);
 
-			Zombie* aZombieImp = mBoard->AddZombie(ZombieType::ZOMBIE_IMP, mFromWave);
+			Zombie* aZombieImp = mBoard->AddZombie(ZombieType::ZOMBIE_IMP, mFromWave, true);
 			if (aZombieImp == nullptr)
 				return;
 
@@ -4550,24 +4550,25 @@ void Zombie::CheckForBoardEdge()
 	int aEdgeX = BOARD_EDGE;
 	if (mZombieType == ZombieType::ZOMBIE_GARGANTUAR || mZombieType == ZombieType::ZOMBIE_REDEYE_GARGANTUAR || mZombieType == ZombieType::ZOMBIE_POLEVAULTER)
 	{
-		aEdgeX = -150;
+		aEdgeX -= 50;
 	}
 	else if (mZombieType == ZombieType::ZOMBIE_CATAPULT || mZombieType == ZombieType::ZOMBIE_FOOTBALL || mZombieType == ZombieType::ZOMBIE_ZAMBONI)
 	{
-		aEdgeX = -175;
+		aEdgeX -= 75;
 	}
 	else if (mZombieType == ZombieType::ZOMBIE_BACKUP_DANCER || mZombieType == ZombieType::ZOMBIE_DANCER || mZombieType == ZombieType::ZOMBIE_SNORKEL)
 	{
-		aEdgeX = -130;
+		aEdgeX -= 30;
 	}
 
 	if (mX <= aEdgeX && mHasHead)
 	{
 		if (mApp->IsIZombieLevel())
 		{
-			DieNoLoot();
+			if (mZombieFade == -1)
+				mZombieFade = 200;
 		}
-		else
+		else if (mApp->mGameMode != GameMode::GAMEMODE_CHALLENGE_ZOMBIQUARIUM)
 		{
 			mBoard->ZombiesWon(this);
 		}

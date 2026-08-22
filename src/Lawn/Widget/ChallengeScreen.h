@@ -26,8 +26,6 @@
 #include "widget/Dialog.h"
 #include "widget/Slider.h"
 #include "widget/SliderListener.h"
-#include <array>
-#include <memory>
 using namespace Sexy;
 
 #define NUM_CHALLENGE_MODES (static_cast<int>(GameMode::NUM_GAME_MODES) - 1)
@@ -42,21 +40,17 @@ private:
 	{
 		ChallengeScreen_Back = 100,
 		ChallengeScreen_Selector = 101,
-		ChallengeScreen_Mode = 200,
-		ChallengeScreen_Page = 300
+		ChallengeScreen_Mode = 200
 	};
 
 public:
-	std::unique_ptr<NewLawnButton>                                 mBackButton;
-	std::array<std::unique_ptr<ButtonWidget>, MAX_CHALLANGE_PAGES> mPageButton;
-	std::array<std::unique_ptr<ButtonWidget>, NUM_CHALLENGE_MODES> mChallengeButtons;
+	NewLawnButton*              mBackButton;
+	NewLawnButton*              mChallengesButton;
+	ButtonWidget*               mChallengeButtons[NUM_CHALLENGE_MODES];
 	LawnApp*                    mApp;
-	std::unique_ptr<ToolTipWidget>                                 mToolTip;
+	ToolTipWidget*              mToolTip;
 	ChallengePage               mPageIndex;
 	bool                        mCheatEnableChallenges;
-	bool                        mLimboPageUnlocked;
-	int                         mClickCount;
-	uint                        mLastClickUpdateCnt;
 	UnlockingState              mUnlockState;
 	int                         mUnlockStateCounter;
 	int                         mUnlockChallengeIndex;
@@ -90,11 +84,9 @@ public:
 	void                        ButtonMouseLeave(int) override {}
 	void                        ButtonMouseMove(int, int, int) override {}
 	void                        ButtonDepress(int theId) override;
-	void                        KeyDown(KeyCode theKey) override;
 	void                        UpdateToolTip();
-	void                        SliderVal(int theId, double theVal) override;
+	void                        SliderVal(int theId, double theVal);
 	void                        MouseWheel(int theDelta) override;
-	void                        MouseDown(int x, int y, int theClickCount) override;
 
 	bool                        IsScaryPotterLevel(GameMode theGameMode);
 	bool                        IsIZombieLevel(GameMode theGameMode);

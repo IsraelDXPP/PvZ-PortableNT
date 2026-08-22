@@ -146,7 +146,7 @@ ChallengeScreen::ChallengeScreen(LawnApp* theApp, ChallengePage thePage)
 	mBackButton->mColors[ButtonWidget::COLOR_LABEL_HILITE] = Color(42, 42, 90);
 	mBackButton->Resize(18 + BOARD_OFFSET_X + 35, 568 + BOARD_OFFSET_Y, 111, 26);
 
-	for (int aPageIdx = CHALLENGE_PAGE_SURVIVAL; aPageIdx < MAX_CHALLANGE_PAGES; aPageIdx++)
+	for (int aPageIdx = 0; aPageIdx < MAX_CHALLANGE_PAGES; aPageIdx++)
 	{
 		mPageButton[aPageIdx] = std::make_unique<ButtonWidget>(ChallengeScreen::ChallengeScreen_Page + aPageIdx, this);
 		ButtonWidget* aPageButton = mPageButton[aPageIdx].get();

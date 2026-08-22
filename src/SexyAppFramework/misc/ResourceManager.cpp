@@ -343,6 +343,12 @@ bool ResourceManager::ParseImageResource(XMLElement &theElement)
 	else
 		aRes->mCols = 1;
 
+	anItr = theElement.mAttributes.find("total");
+	if (anItr != theElement.mAttributes.end())
+		aRes->mTotal = atoi(anItr->second.c_str());
+	else
+		aRes->mTotal = aRes->mRows * aRes->mCols;
+
 	anItr = theElement.mAttributes.find("anim");
 	AnimType anAnimType = AnimType_None;
 	if (anItr != theElement.mAttributes.end())
@@ -362,7 +368,7 @@ bool ResourceManager::ParseImageResource(XMLElement &theElement)
 	aRes->mAnimInfo.mAnimType = anAnimType;
 	if (anAnimType != AnimType_None)
 	{
-		int aNumCels = std::max(aRes->mRows,aRes->mCols);
+		int aNumCels = aRes->mTotal;
 		int aBeginDelay = 0, anEndDelay = 0;
 
 		anItr = theElement.mAttributes.find("framedelay");

@@ -87,6 +87,7 @@ public: // TODO: revert to protected
 		bool mMinimizeSubdivisions;
 		int mRows;
 		int mCols;
+		int mTotal;
 		uint32_t mAlphaColor;
 		AnimInfo mAnimInfo;
 		bool mInResourcePack;

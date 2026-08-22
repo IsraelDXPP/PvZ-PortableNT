@@ -4456,12 +4456,7 @@ void SexyAppBase::ReloadResourcePacks()
 void SexyAppBase::LoadCurrentResourcePack()
 {
 	for (auto aIt = mResourceManager->mLoadedGroups.begin(); aIt != mResourceManager->mLoadedGroups.end(); ++aIt)
-	{
-		const std::string& aGroup = *aIt;
-		if (aGroup == "LoadingImages" || aGroup == "LoadingFonts" || aGroup == "LoadingSounds" || aGroup == "LoaderBar")
-			continue;
-		ExtractResourcesByName(mResourceManager.get(), aGroup.c_str());
-	}
+		ExtractResourcesByName(mResourceManager.get(), aIt->c_str());
 	if (!mLoaded)
 		return;
 	ReloadReanimationAtlases();

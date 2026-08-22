@@ -42,7 +42,8 @@ private:
 	{
 		ChallengeScreen_Back = 100,
 		ChallengeScreen_Selector = 101,
-		ChallengeScreen_Mode = 200
+		ChallengeScreen_Mode = 200,
+		ChallengeScreen_Page = 300
 	};
 
 public:
@@ -53,6 +54,7 @@ public:
 	std::unique_ptr<ToolTipWidget>                                 mToolTip;
 	ChallengePage               mPageIndex;
 	bool                        mCheatEnableChallenges;
+	bool                        mLimboPageUnlocked;
 	UnlockingState              mUnlockState;
 	int                         mUnlockStateCounter;
 	int                         mUnlockChallengeIndex;
@@ -87,7 +89,7 @@ public:
 	void                        ButtonMouseMove(int, int, int) override {}
 	void                        ButtonDepress(int theId) override;
 	void                        UpdateToolTip();
-	void                        SliderVal(int theId, double theVal);
+	void                        SliderVal(int theId, double theVal) override;
 	void                        MouseWheel(int theDelta) override;
 
 	bool                        IsScaryPotterLevel(GameMode theGameMode);

@@ -51,7 +51,7 @@ ChallengePagesDialog::ChallengePagesDialog(LawnApp* theApp) : LawnDialog(theApp,
 
 	for (int aPage = 0; aPage < MAX_CHALLANGE_PAGES; aPage++)
 	{
-		LawnStoneButton* aPageButton = MakeButton(aPage, this, mApp->mChallengeScreen->GetPageTitle((ChallengePage)aPage));
+		LawnStoneButton* aPageButton = MakeButton(aPage, this, mApp->mChallengeScreen->GetPageTitle((ChallengePage)aPage)).release();
 		mPageButtons[aPage] = aPageButton;
 		aPageButton->mBtnNoDraw = true;
 	}
@@ -97,8 +97,8 @@ void ChallengePagesDialog::Draw(Graphics* g)
 		aPageButton->Resize(aPageButtonRect);
 		if (aPageButton->mVisible)
 		{
-			DrawStoneButton(g, aPageButtonRect.mX, aPageButtonRect.mY, aPageButtonRect.mWidth, aPageButtonRect.mHeight,
-				(aPageButton->mIsDown && aPageButton->mIsOver && !aPageButton->mDisabled) ^ aPageButton->mInverted, aPageButton->mIsOver, PvzpStringTranslate(aPageButton->mLabel), isSelected ? 175 : 255);
+				DrawStoneButton(g, aPageButtonRect.mX, aPageButtonRect.mY, aPageButtonRect.mWidth, aPageButtonRect.mHeight,
+				(aPageButton->mIsDown && aPageButton->mIsOver && !aPageButton->mDisabled) ^ aPageButton->mInverted, aPageButton->mIsOver, std::string(PvzpStringTranslate(aPageButton->mLabel)), isSelected ? 175 : 255);
 			maxScroll += aHeight + aOffset;
 		}
 		else

@@ -586,7 +586,7 @@ void ChallengeScreen::MouseWheel(int theDelta)
 
 std::string ChallengeScreen::GetPageTitle(ChallengePage thePage)
 {
-	std::string aTitle = PvzpStringTranslate("[UNKNOWN_PAGE]");
+	std::string aTitle(PvzpStringTranslate("[UNKNOWN_PAGE]"));
 	switch (thePage)
 	{
 		case ChallengePage::CHALLENGE_PAGE_CHALLENGE:

@@ -421,7 +421,7 @@ void AlmanacDialog::DrawPlants(Graphics* g)
 	std::string aName = Plant::GetNameString(mSelectedSeed, SEED_NONE);
 	std::string aDescriptionName = StrFormat("[%s_DESCRIPTION]", aPlantDef.mPlantName);
 	PvzpDrawString(g, aName, 617 + BOARD_ADDITIONAL_WIDTH, 288 + BOARD_OFFSET_Y, Sexy::FONT_DWARVENTODCRAFT18YELLOW, Color::White, DS_ALIGN_CENTER);
-	std::string aDescription = PvzpStringTranslate(aDescriptionName);
+	std::string aDescription(PvzpStringTranslate(aDescriptionName));
 	_Font* aDescriptionFont = Sexy::FONT_BRIANNETOD12;
 	Color aDescriptionColor = Color(40, 50, 90);
 	mDescriptionRect = Rect(485 + BOARD_ADDITIONAL_WIDTH, 309 + BOARD_OFFSET_Y, 258, 210);
@@ -613,7 +613,7 @@ void AlmanacDialog::DrawZombies(Graphics* g)
 	if (ZombieHasDescription(mSelectedZombie))
 	{
 		DrawStringJustification aDescriptionJustification = DS_ALIGN_LEFT;
-		std::string aDescription = PvzpStringTranslate(StrFormat("[%s_DESCRIPTION]", aZombieDef.mZombieName));
+		std::string aDescription(PvzpStringTranslate(StrFormat("[%s_DESCRIPTION]", aZombieDef.mZombieName)));
 		int aTextSpacing = PvzpDrawStringWrappedHelper(g, aDescription, mDescriptionRect, aDescriptionFont, aDescriptionColor, aDescriptionJustification, false);
 		int aRectHeight;
 		if (mDescriptionRect.mHeight < aTextSpacing)

@@ -127,6 +127,9 @@ ChallengeScreen::ChallengeScreen(LawnApp* theApp, ChallengePage thePage)
 	mApp = theApp;
 	mClip = false;
 	mCheatEnableChallenges = false;
+	mLimboPageUnlocked = false;
+	mClickCount = 0;
+	mLastClickUpdateCnt = 0;
 	mUnlockState = UNLOCK_OFF;
 	mUnlockChallengeIndex = -1;
 	mUnlockStateCounter = 0;
@@ -662,6 +665,43 @@ void ChallengeScreen::ButtonDepress(int theId)
 	{
 		mApp->KillChallengeScreen();
 		mApp->PreNewGame((GameMode)(aChallengeMode + 1), true);
+	}
+
+	int aPageIndex = theId - ChallengeScreen::ChallengeScreen_Page;
+	if (aPageIndex >= 0 && aPageIndex < MAX_CHALLANGE_PAGES)
+	{
+		mPageIndex = (ChallengePage)aPageIndex;
+		UpdateButtons();
+	}
+}
+
+void ChallengeScreen::KeyDown(KeyCode theKey)
+{
+	if (theKey == KeyCode::KEYCODE_ESCAPE)
+	{
+		ButtonDepress(ChallengeScreen::ChallengeScreen_Back);
+	}
+}
+
+void ChallengeScreen::MouseDown(int x, int y, int theClickCount)
+{
+	Widget::MouseDown(x, y, theClickCount);
+
+	if (mLimboPageUnlocked)
+		return;
+
+	constexpr uint MAX_GAP_TICKS = 20;
+	constexpr int CLICKS_NEEDED = 5;
+
+	uint aNow = mApp->mUpdateCount;
+	if (aNow - mLastClickUpdateCnt > MAX_GAP_TICKS)
+		mClickCount = 0;
+	mLastClickUpdateCnt = aNow;
+	mClickCount++;
+	if (mClickCount >= CLICKS_NEEDED)
+	{
+		mLimboPageUnlocked = true;
+		UpdateButtons();
 	}
 }
 

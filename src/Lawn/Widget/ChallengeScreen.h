@@ -55,6 +55,8 @@ public:
 	ChallengePage               mPageIndex;
 	bool                        mCheatEnableChallenges;
 	bool                        mLimboPageUnlocked;
+	int                         mClickCount;
+	uint                        mLastClickUpdateCnt;
 	UnlockingState              mUnlockState;
 	int                         mUnlockStateCounter;
 	int                         mUnlockChallengeIndex;
@@ -88,9 +90,11 @@ public:
 	void                        ButtonMouseLeave(int) override {}
 	void                        ButtonMouseMove(int, int, int) override {}
 	void                        ButtonDepress(int theId) override;
+	void                        KeyDown(KeyCode theKey) override;
 	void                        UpdateToolTip();
 	void                        SliderVal(int theId, double theVal) override;
 	void                        MouseWheel(int theDelta) override;
+	void                        MouseDown(int x, int y, int theClickCount) override;
 
 	bool                        IsScaryPotterLevel(GameMode theGameMode);
 	bool                        IsIZombieLevel(GameMode theGameMode);

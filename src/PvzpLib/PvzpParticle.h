@@ -35,8 +35,8 @@ namespace Sexy
 //using namespace std;
 using namespace Sexy;
 
-#define MAX_PARTICLES_SIZE 900
-#define MAX_PARTICLE_FIELDS 4
+constexpr const int MAX_PARTICLES_SIZE = 900;
+constexpr const int MAX_PARTICLE_FIELDS = 4;
 
 // Particle system definitions
 

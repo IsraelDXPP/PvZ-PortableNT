@@ -42,9 +42,9 @@ namespace Sexy
 //using namespace std;
 using namespace Sexy;
 
-#define RENDERIMAGEFLAG_SANDING 0x1000
-#define DEG_TO_RAD(deg) ((deg) * 0.017453292f)
-#define RAD_TO_DEG(rad) ((rad) * 57.29578f)
+constexpr const int RENDERIMAGEFLAG_SANDING = 0x1000;
+template <typename T> constexpr float DEG_TO_RAD(T deg) { return deg * 0.017453292f; }
+template <typename T> constexpr float RAD_TO_DEG(T rad) { return rad * 57.29578f; }
 
 struct PvzpWeightedArray
 {

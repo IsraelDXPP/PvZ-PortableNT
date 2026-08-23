@@ -26,10 +26,10 @@
 #include "GameObject.h"
 #include "../GameConstants.h"
 
-#define MAX_ZOMBIE_FOLLOWERS 4
-#define NUM_BOBSLED_FOLLOWERS 3
-#define NUM_BACKUP_DANCERS 4
-#define NUM_BOSS_BUNGEES 3
+constexpr const int MAX_ZOMBIE_FOLLOWERS = 4;
+constexpr const int NUM_BOBSLED_FOLLOWERS = 3;
+constexpr const int NUM_BACKUP_DANCERS = 4;
+constexpr const int NUM_BOSS_BUNGEES = 3;
 
 enum ZombieAttackType : int32_t
 {

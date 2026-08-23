@@ -29,7 +29,7 @@
 
 using namespace Sexy;
 
-#define MAX_KEYNAME_LEN 12
+constexpr const int MAX_KEYNAME_LEN = 12;
 
 typedef struct
 {

@@ -27,11 +27,12 @@
 #include "../GameConstants.h"
 #include "../PvzpLib/FilterEffect.h"
 #include "graphics/Graphics.h"
+#include "Board.h"
 
-#define BEGHOULED_MAX_GRIDSIZEX 8
-#define BEGHOULED_MAX_GRIDSIZEY 5
-#define ART_CHALLEGE_SIZE_X MAX_GRID_SIZE_X
-#define MAX_PICK_GRID_SIZE 50
+constexpr const int BEGHOULED_MAX_GRIDSIZEX = 8;
+constexpr const int BEGHOULED_MAX_GRIDSIZEY = 5;
+constexpr const int ART_CHALLEGE_SIZE_X = MAX_GRID_SIZE_X;
+constexpr const int MAX_PICK_GRID_SIZE = 50;
 
 using namespace Sexy;
 

@@ -485,8 +485,8 @@ Image* GetGIFImage(const std::string& theFileName)
 
 		global_colormap.reset();
 
-#define MaxStackSize  4096
-#define NullCode  (-1)
+constexpr const int MaxStackSize = 4096;
+constexpr const int NullCode = -1;
 
 		int
 			available,
@@ -983,7 +983,7 @@ typedef struct {
 
 typedef pak_source_mgr * pak_src_ptr;
 
-#define INPUT_BUF_SIZE 4096
+constexpr const int INPUT_BUF_SIZE = 4096;
 
 METHODDEF(void) init_source (j_decompress_ptr cinfo)
 {

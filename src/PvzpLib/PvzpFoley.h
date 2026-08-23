@@ -27,8 +27,8 @@
 #include "sound/SDLSoundInstance.h"
 using namespace Sexy;
 
-#define MAX_FOLEY_TYPES 110
-#define MAX_FOLEY_INSTANCES 8
+constexpr const int MAX_FOLEY_TYPES = 110;
+constexpr const int MAX_FOLEY_INSTANCES = 8;
 
 // Foley sound definitions
 

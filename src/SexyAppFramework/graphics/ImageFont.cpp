@@ -80,6 +80,9 @@ ListDataElement::ListDataElement(const ListDataElement& theListDataElement)
 
 ListDataElement& ListDataElement::operator=(const ListDataElement& theListDataElement)
 {
+	if (this == &theListDataElement)
+		return *this;
+
 	uint32_t i;
 
 	for (i = 0; i < mElementVector.size(); i++)

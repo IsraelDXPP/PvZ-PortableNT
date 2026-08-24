@@ -270,29 +270,7 @@ void ReanimAtlas::ReloadMemoryImage(int theWidth, int theHeight)
 	{
 		ReanimAtlasImage* aImage = &mImageArray[aImageIndex];
 		Image* anImage = aImage->mOriginalImage;
-		if (gSexyAppBase->mResourcePackIndex != -1)
-		{
-			std::string aPath;
-			auto aIt = gImagePathCache.find(anImage);
-			if (aIt != gImagePathCache.end())
-				aPath = aIt->second;
-			else
-			{
-				PvzpFindImagePath(anImage, &aPath);
-				gImagePathCache[anImage] = aPath;
-			}
-			if (!aPath.empty())
-			{
-				auto aItr = gImageCache.find(aPath);
-				if (aItr != gImageCache.end())
-					anImage = aItr->second;
-				else
-				{
-					anImage = gSexyAppBase->mResourceManager->GetImage(aPath);
-					gImageCache[aPath] = anImage;
-				}
-			}
-		}
+		anImage = PvzpResolveResourcePackImage(anImage, gImagePathCache, gImageCache);
 		aMemoryGraphis.DrawImage(anImage, aImage->mX, aImage->mY);
 	}
 	FixPixelsOnAlphaEdgeForBlending(mMemoryImage);

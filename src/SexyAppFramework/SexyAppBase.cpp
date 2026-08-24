@@ -84,6 +84,9 @@
 #include "../PvzpLib/FilterEffect.h"
 #include "../PvzpLib/Reanimator.h"
 #include "../PvzpLib/Definition.h"
+#include "../PvzpLib/PvzpParticle.h"
+#include "../PvzpLib/Trail.h"
+#include "../PvzpLib/PvzpStringFile.h"
 #include "../Resources.h"
 #include "../Lawn/System/ReanimationLawn.h"
 
@@ -4459,16 +4462,35 @@ void SexyAppBase::LoadCurrentResourcePack()
 		ExtractResourcesByName(mResourceManager.get(), aIt->c_str());
 	if (!mLoaded)
 		return;
+	ReanimatorReloadDefinitions();
+	PvzpParticleReloadDefinitions();
+	TrailReloadDefinitions();
 	ReloadReanimationAtlases();
 	ClearReanimAtlasCache();
+	ClearReanimationCache();
+	ClearParticleCache();
+	ClearTrailCache();
 	gLawnApp->mReanimatorCache->ReanimatorCacheDispose();
 	gLawnApp->mReanimatorCache->ReanimatorCacheInitialize();
 	FilterEffectDisposeForApp();
+	if (mWidgetManager != nullptr)
+		mWidgetManager->MarkAllDirty();
 }
 
 std::string SexyAppBase::GetResourcePackString()
 {
+	if (mResourcePackIndex == -1 || mResourcePack.empty())
+	{
+		if (PvzpStringListExists("[NO_RESOURCE_PACK]"))
+			return std::string(PvzpStringTranslate("[NO_RESOURCE_PACK]"));
+		return "None";
+	}
+
 	std::string aResourcePack = mResourcePack;
 	std::replace(aResourcePack.begin(), aResourcePack.end(), ' ', '_');
-	return mResourcePackIndex == -1 ? "[NO_RESOURCE_PACK]" : "[RESOURCE_PACK_" + Upper(aResourcePack) + "]";
+	std::string aKey = "[RESOURCE_PACK_" + Upper(aResourcePack) + "]";
+	if (PvzpStringListExists(aKey))
+		return std::string(PvzpStringTranslate(aKey));
+
+	return mResourcePack;
 }

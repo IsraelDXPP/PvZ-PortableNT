@@ -22,6 +22,7 @@
 #pragma once
 #include <cstdint>
 #include <cstdarg>
+#include <map>
 #include <stdlib.h>
 #include <cmath>
 #include <cfloat>
@@ -99,6 +100,7 @@ bool			PvzpLoadNextResource();
 void					PvzpAddImageToMap(SharedImageRef* theImage, const std::string& thePath, const std::string& theResourcePack = "");
 bool					PvzpFindImagePath(Image* theImage, std::string* thePath);
 bool					PvzpFindFontPath(_Font* theFont, std::string* thePath);
+Image*					PvzpResolveResourcePackImage(Image* theImage, std::map<Image*, std::string>& thePathCache, std::map<std::string, Image*>& theImageCache);
 
 float		PvzpCurveQuad(float theTime);
 float		PvzpCurveInvQuad(float theTime);

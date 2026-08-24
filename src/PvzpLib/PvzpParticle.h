@@ -195,6 +195,7 @@ extern const ParticleParams* gParticleParamArray;
 bool                            PvzpParticleLoadADef(PvzpParticleDefinition* theParticleDef, const char* theParticleFileName);
 void                            PvzpParticleLoadDefinitions(const ParticleParams* theParticleParamArray, int theParticleParamArraySize);
 void                            PvzpParticleFreeDefinitions();
+void                            PvzpParticleReloadDefinitions();
 
 extern const ParticleParams gLawnParticleArray[static_cast<int>(ParticleEffect::NUM_PARTICLES)];  // 0x6A0FF0
 
@@ -348,6 +349,7 @@ public:
 };
 float                    CrossFadeLerp(float theFrom, float theTo, bool theFromIsSet, bool theToIsSet, float theFraction);
 void								RenderParticle(Graphics* g, PvzpParticle* theParticle, const Color& theColor, ParticleRenderParams* theParams, PvzpTriangleGroup* theTriangleGroup);
+void								ClearParticleCache();
 
 class PvzpParticleSystem
 {

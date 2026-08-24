@@ -81,6 +81,7 @@ public:
 bool						TrailLoadADef(TrailDefinition* theTrailDef, const char* theTrailFileName);
 void						TrailLoadDefinitions(TrailParams* theTrailParamArray, int theTrailParamArraySize);
 void						TrailFreeDefinitions();
+void						TrailReloadDefinitions();
 
 extern int gTrailDefCount;
 extern std::unique_ptr<TrailDefinition[]> gTrailDefArray;
@@ -120,6 +121,8 @@ public:
 	void					AddPoint(float x, float y);
 	bool					GetNormalAtPoint(int nIndex, SexyVector2& theNormal);
 };
+
+void						ClearTrailCache();
 
 class TrailHolder
 {

@@ -19,6 +19,8 @@
  * along with PvZ-Portable. If not, see <https://www.gnu.org/licenses/>.
  */
 
+#include <algorithm>
+#include <map>
 #include "PvzpDebug.h"
 #include "PvzpCommon.h"
 #include "Definition.h"
@@ -32,9 +34,11 @@
 #include "graphics/Font.h"
 #include "misc/PerfTimer.h"
 #include "graphics/MemoryImage.h"
-#include <algorithm>
 
 constexpr const int NO_BASE_POSE = -2;
+
+static std::map<Image*, std::string> gImagePathCache;
+static std::map<std::string, Image*> gImageCache;
 
 unsigned int gReanimatorDefCount;
 std::unique_ptr<ReanimatorDefinition[]> gReanimatorDefArray;
@@ -327,6 +331,7 @@ Reanimation::Reanimation()
 	mRenderOrder = 0;
 	mReanimationHolder = nullptr;
 	mTrackInstances = nullptr;
+	mAllocatedTrackCount = 0;
 	mFilterEffect = FilterEffect::FILTER_EFFECT_NONE;
 	mReanimationType = ReanimationType::REANIM_NONE;
 }
@@ -340,11 +345,12 @@ Reanimation::~Reanimation()
 void Reanimation::ReanimationDelete()
 {
 	PVZP_ASSERT(mDead);
-	if (mTrackInstances != nullptr)
+	if (mTrackInstances != nullptr && mAllocatedTrackCount > 0)
 	{
-		int aItemSize = mDefinition->mTracks.count * sizeof(ReanimatorTrackInstance);
+		int aItemSize = mAllocatedTrackCount * sizeof(ReanimatorTrackInstance);
 		FindGlobalAllocator(aItemSize)->Free(mTrackInstances, aItemSize);
 		mTrackInstances = nullptr;
+		mAllocatedTrackCount = 0;
 	}
 }
 
@@ -402,6 +408,7 @@ void Reanimation::ReanimationInitialize(float theX, float theY, ReanimatorDefini
 		mFrameCount = mDefinition->mTracks.tracks[0].mTransforms.count;
 		int aItemSize = theDefinition->mTracks.count * sizeof(ReanimatorTrackInstance);
 		mTrackInstances = (ReanimatorTrackInstance*)FindGlobalAllocator(aItemSize)->Calloc(aItemSize);
+		mAllocatedTrackCount = theDefinition->mTracks.count;
 		for (int aTrackIndex = 0; aTrackIndex < mDefinition->mTracks.count; aTrackIndex++)
 		{
 			ReanimatorTrackInstance* aTrack = &mTrackInstances[aTrackIndex];
@@ -515,6 +522,12 @@ void Reanimation::Update()
 	}
 }
 
+void ClearReanimationCache()
+{
+	gImagePathCache.clear();
+	gImageCache.clear();
+}
+
 void BlendTransform(ReanimatorTransform* theResult, const ReanimatorTransform& theTransform1, const ReanimatorTransform& theTransform2, float theBlendFactor)
 {
 	theResult->mTransX = FloatLerp(theTransform1.mTransX, theTransform2.mTransX, theBlendFactor);
@@ -559,11 +572,18 @@ void Reanimation::GetCurrentTransform(int theTrackIndex, ReanimatorTransform* th
 
 void Reanimation::GetTransformAtTime(int theTrackIndex, ReanimatorTransform* theTransform, ReanimatorFrameTime* theFrameTime)
 {
-	PVZP_ASSERT(theTrackIndex >= 0 && theTrackIndex < mDefinition->mTracks.count);
+	if (mDefinition == nullptr || theTrackIndex < 0 || theTrackIndex >= mDefinition->mTracks.count)
+		return;
 	ReanimatorTrack* aTrack = &mDefinition->mTracks.tracks[theTrackIndex];
-	PVZP_ASSERT(aTrack->mTransforms.count == mDefinition->mTracks.tracks[0].mTransforms.count);
-	ReanimatorTransform& aTransBefore = aTrack->mTransforms.mTransforms[theFrameTime->mAnimFrameBeforeInt];  // previous frame's transform definition
-	ReanimatorTransform& aTransAfter = aTrack->mTransforms.mTransforms[theFrameTime->mAnimFrameAfterInt];  // next frame's transform definition
+	int aTotalTransforms = aTrack->mTransforms.count;
+	if (aTotalTransforms == 0)
+		return;
+
+	int aFrameBefore = std::clamp(theFrameTime->mAnimFrameBeforeInt, 0, aTotalTransforms - 1);
+	int aFrameAfter = std::clamp(theFrameTime->mAnimFrameAfterInt, 0, aTotalTransforms - 1);
+
+	ReanimatorTransform& aTransBefore = aTrack->mTransforms.mTransforms[aFrameBefore];
+	ReanimatorTransform& aTransAfter = aTrack->mTransforms.mTransforms[aFrameAfter];
 
 	theTransform->mTransX = FloatLerp(aTransBefore.mTransX, aTransAfter.mTransX, theFrameTime->mFraction);
 	theTransform->mTransY = FloatLerp(aTransBefore.mTransY, aTransAfter.mTransY, theFrameTime->mFraction);
@@ -576,7 +596,8 @@ void Reanimation::GetTransformAtTime(int theTrackIndex, ReanimatorTransform* the
 	theTransform->mFont = aTransBefore.mFont;
 	theTransform->mText = aTransBefore.mText;
 
-	if (aTransBefore.mFrame != -1.0f && aTransAfter.mFrame == -1.0f && theFrameTime->mFraction > 0.0f && mTrackInstances[theTrackIndex].mTruncateDisappearingFrames)
+	if (aTransBefore.mFrame != -1.0f && aTransAfter.mFrame == -1.0f && theFrameTime->mFraction > 0.0f &&
+		mTrackInstances != nullptr && mTrackInstances[theTrackIndex].mTruncateDisappearingFrames)
 		theTransform->mFrame = -1.0f;  // cut the transition to a blank frame when the track truncates disappearing frames
 	else
 		theTransform->mFrame = aTransBefore.mFrame;
@@ -678,6 +699,7 @@ bool Reanimation::DrawTrack(Graphics* g, int theTrackIndex, int theRenderGroup, 
 	}
 
 	Image* aImage = aTransform.mImage;
+	aImage = PvzpResolveResourcePackImage(aImage, gImagePathCache, gImageCache);
 	ReanimAtlasImage* aAtlasImage = nullptr;
 	// Extract pivot info from the original track image before any override / cleanup logic.
 	Image* aPivotImage = aImage;
@@ -893,25 +915,40 @@ void Reanimation::GetTrackMatrix(int theTrackIndex, SexyTransform2D& theMatrix)
 
 void Reanimation::GetFrameTime(ReanimatorFrameTime* theFrameTime)
 {
-	PVZP_ASSERT(mFrameStart + mFrameCount <= mDefinition->mTracks.tracks[0].mTransforms.count);
+	if (mDefinition == nullptr || mDefinition->mTracks.count == 0 || mDefinition->mTracks.tracks[0].mTransforms.count == 0)
+	{
+		theFrameTime->mFraction = 0.0f;
+		theFrameTime->mAnimFrameBeforeInt = 0;
+		theFrameTime->mAnimFrameAfterInt = 0;
+		return;
+	}
+
+	int aTotalTransforms = mDefinition->mTracks.tracks[0].mTransforms.count;
+	if (mFrameStart >= aTotalTransforms)
+		mFrameStart = 0;
+	if (mFrameStart + mFrameCount > aTotalTransforms)
+		mFrameCount = aTotalTransforms - mFrameStart;
+	if (mFrameCount <= 0)
+		mFrameCount = aTotalTransforms;
+
 	int aFrameCount;
 	if (mLoopType == ReanimLoopType::REANIM_PLAY_ONCE_FULL_LAST_FRAME || mLoopType == ReanimLoopType::REANIM_LOOP_FULL_LAST_FRAME ||
 		mLoopType == ReanimLoopType::REANIM_PLAY_ONCE_FULL_LAST_FRAME_AND_HOLD)
 		aFrameCount = mFrameCount;
 	else
-		aFrameCount = mFrameCount - 1;
+		aFrameCount = std::max(1, mFrameCount - 1);
+
 	float aAnimPosition = mFrameStart + mAnimTime * aFrameCount;
 	float aAnimFrameBefore = floor(aAnimPosition);
 	theFrameTime->mFraction = aAnimPosition - aAnimFrameBefore;
-	theFrameTime->mAnimFrameBeforeInt = FloatRoundToInt(aAnimFrameBefore);
+	theFrameTime->mAnimFrameBeforeInt = std::clamp(FloatRoundToInt(aAnimFrameBefore), 0, aTotalTransforms - 1);
 	if (theFrameTime->mAnimFrameBeforeInt >= mFrameStart + mFrameCount - 1)  // on the last frame
 	{
-		theFrameTime->mAnimFrameBeforeInt = mFrameStart + mFrameCount - 1;
+		theFrameTime->mAnimFrameBeforeInt = std::clamp(mFrameStart + mFrameCount - 1, 0, aTotalTransforms - 1);
 		theFrameTime->mAnimFrameAfterInt = theFrameTime->mAnimFrameBeforeInt;
 	}
 	else
-		theFrameTime->mAnimFrameAfterInt = theFrameTime->mAnimFrameBeforeInt + 1;
-	PVZP_ASSERT(theFrameTime->mAnimFrameBeforeInt >= 0 && theFrameTime->mAnimFrameAfterInt < mDefinition->mTracks.tracks[0].mTransforms.count);
+		theFrameTime->mAnimFrameAfterInt = std::clamp(theFrameTime->mAnimFrameBeforeInt + 1, 0, aTotalTransforms - 1);
 }
 
 void Reanimation::DrawRenderGroup(Graphics* g, int theRenderGroup)
@@ -1223,6 +1260,65 @@ void ReanimatorFreeDefinitions()
 	gReanimatorDefCount = 0;
 	gReanimationParamArray = nullptr;
 	gReanimationParamArraySize = 0;
+}
+
+void ReanimatorReloadDefinitions()
+{
+	if (!gReanimatorDefArray || !gReanimationParamArray)
+		return;
+
+	for (unsigned int i = 0; i < gReanimatorDefCount; i++)
+	{
+		ReanimatorDefinition* aReanimDef = &gReanimatorDefArray[i];
+		if (aReanimDef->mTracks.tracks != nullptr)
+		{
+			ReanimationFreeDefinition(aReanimDef);
+			memset(aReanimDef, 0, sizeof(ReanimatorDefinition));
+			const ReanimationParams* aReanimParams = &gReanimationParamArray[i];
+			ReanimationLoadDefinition(aReanimParams->mReanimFileName, aReanimDef);
+		}
+	}
+
+	if (gLawnApp != nullptr && gLawnApp->mEffectSystem != nullptr && gLawnApp->mEffectSystem->mReanimationHolder != nullptr)
+	{
+		ReanimationHolder* aHolder = gLawnApp->mEffectSystem->mReanimationHolder.get();
+		for (Reanimation* aReanim : aHolder->mReanimations)
+		{
+			if (aReanim == nullptr || aReanim->mDead)
+				continue;
+			int aType = static_cast<int>(aReanim->mReanimationType);
+			if (aType < 0 || aType >= static_cast<int>(gReanimatorDefCount))
+				continue;
+
+			ReanimatorDefinition* aNewDef = &gReanimatorDefArray[aType];
+			aReanim->mDefinition = aNewDef;
+
+			if (aNewDef->mTracks.count == 0 || aNewDef->mTracks.tracks == nullptr)
+				continue;
+
+			// If track count changed, the track instances array can't be safely reused —
+			// skip the frame clamping; GetFrameTime/GetTransformAtTime will clamp safely.
+			if (aNewDef->mTracks.count != aReanim->mAllocatedTrackCount)
+				continue;
+
+			int aNewTotalFrames = aNewDef->mTracks.tracks[0].mTransforms.count;
+
+			// Clamp playback position to the new definition's frame range
+			if (aReanim->mFrameStart >= aNewTotalFrames)
+				aReanim->mFrameStart = 0;
+			if (aReanim->mFrameStart + aReanim->mFrameCount > aNewTotalFrames)
+				aReanim->mFrameCount = aNewTotalFrames - aReanim->mFrameStart;
+			if (aReanim->mFrameCount <= 0)
+			{
+				aReanim->mFrameStart = 0;
+				aReanim->mFrameCount = aNewTotalFrames;
+			}
+			if (aReanim->mFrameBasePose >= aNewTotalFrames)
+				aReanim->mFrameBasePose = -1;
+
+			aReanim->mAnimRate = aNewDef->mFPS;
+		}
+	}
 }
 
 float Reanimation::GetTrackVelocity(const char* theTrackName)

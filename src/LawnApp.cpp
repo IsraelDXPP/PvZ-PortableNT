@@ -1773,6 +1773,8 @@ void LawnApp::LoadGroup(const char* theGroupName, int theGroupAveMsToLoad)
 		ShowResourceError();
 		mLoadingFailed = true;
 	}
+	else
+		mResourceManager->mLoadedGroups.insert(theGroupName);
 }
 
 void LawnApp::LoadingThreadProc()
@@ -1877,8 +1879,6 @@ void LawnApp::LoadingCompleted()
 	mWidgetManager->RemoveWidget(mTitleScreen);
 	SafeDeleteWidget(mTitleScreen);
 	mTitleScreen = nullptr;
-
-	mResourceManager->DeleteImage("IMAGE_TITLESCREEN");
 
 	ShowGameSelector();
 }

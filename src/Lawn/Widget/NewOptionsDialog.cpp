@@ -664,15 +664,31 @@ void NewOptionsDialog::ButtonDepress(int theId)
 		break;
 
 	case NewOptionsDialog::NewOptionsDialog_ReloadResourcePacks:
-		mApp->ReloadResourcePacks();
-		mResourcePackButton->mLabel = mApp->GetResourcePackString();
-		ResizeResourcePackButton();
+		// Cannot reload resource packs while a game is active - causes memory corruption
+		if (mApp->mBoard == nullptr)
+		{
+			mApp->ReloadResourcePacks();
+			mResourcePackButton->mLabel = mApp->GetResourcePackString();
+			ResizeResourcePackButton();
+		}
+		else
+		{
+			mApp->PlaySample(Sexy::SOUND_BUZZER);
+		}
 		break;
 
 	case NewOptionsDialog::NewOptionsDialog_ResourcePack:
-		mApp->SwitchResourcePack();
-		mResourcePackButton->mLabel = mApp->GetResourcePackString();
-		ResizeResourcePackButton();
+		// Cannot switch resource pack while a game is active - causes memory corruption
+		if (mApp->mBoard == nullptr)
+		{
+			mApp->SwitchResourcePack();
+			mResourcePackButton->mLabel = mApp->GetResourcePackString();
+			ResizeResourcePackButton();
+		}
+		else
+		{
+			mApp->PlaySample(Sexy::SOUND_BUZZER);
+		}
 		break;
 
 	case NewOptionsDialog::NewOptionsDialog_LeftPage:

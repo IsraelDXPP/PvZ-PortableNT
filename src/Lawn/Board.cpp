@@ -9787,7 +9787,8 @@ void Board::DrawHealthbar(Graphics* g, Rect rect, Color maxColor, int maxNumber,
 	int barY = rect.mY - barHeight - barOffsetY;
 	int basePercentage = baseNumber * 100 / maxNumber;
 	int baseBarWidth = barWidth * basePercentage / 100;
-	std::string text = StrFormat("%d / %d", baseNumber, maxNumber);
+	char text[32];
+	snprintf(text, sizeof(text), "%d / %d", baseNumber, maxNumber);
 	PvzpDrawString(g, text, barX + (barWidth / 2) + textOutlineOffset, barY - textOffsetY + textOutlineOffset, textFont, textOutlineColor, DrawStringJustification::DS_ALIGN_CENTER);
 	PvzpDrawString(g, text, barX + (barWidth / 2), barY - textOffsetY, textFont, textColor, DrawStringJustification::DS_ALIGN_CENTER);
 	Color lastColor = g->mColor;

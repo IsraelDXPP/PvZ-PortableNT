@@ -21,9 +21,17 @@
 
 #include "Trail.h"
 #include "Definition.h"
+#include "PvzpCommon.h"
+#include "SexyAppBase.h"
+#include "../LawnApp.h"
+#include "EffectSystem.h"
 #include <algorithm>
+#include <map>
 #include "graphics/Graphics.h"
 #include "graphics/TriVertex.h"
+
+static std::map<Image*, std::string> gImagePathCache;
+static std::map<std::string, Image*> gImageCache;
 
 int gTrailDefCount;
 std::unique_ptr<TrailDefinition[]> gTrailDefArray;
@@ -84,6 +92,38 @@ void TrailFreeDefinitions()
 	gTrailDefCount = 0;
 	gTrailParamArray = nullptr;
 	gTrailParamArraySize = 0;
+}
+
+void TrailReloadDefinitions()
+{
+	if (!gTrailDefArray || !gTrailParamArray)
+		return;
+
+	for (int i = 0; i < gTrailDefCount; i++)
+	{
+		DefinitionFreeMap(&gTrailDefMap, &gTrailDefArray[i]);
+		memset(&gTrailDefArray[i], 0, sizeof(TrailDefinition));
+		TrailParams* aTrailParams = &gTrailParamArray[i];
+		TrailLoadADef(&gTrailDefArray[i], aTrailParams->mTrailFileName);
+	}
+
+	if (gLawnApp != nullptr && gLawnApp->mEffectSystem != nullptr && gLawnApp->mEffectSystem->mTrailHolder != nullptr)
+	{
+		TrailHolder* aHolder = gLawnApp->mEffectSystem->mTrailHolder.get();
+		for (Trail* aTrail : aHolder->mTrails)
+		{
+			if (aTrail != nullptr && !aTrail->mDead && gTrailDefCount > 0)
+			{
+				aTrail->mDefinition = &gTrailDefArray[0];
+			}
+		}
+	}
+}
+
+void ClearTrailCache()
+{
+	gImagePathCache.clear();
+	gImageCache.clear();
 }
 
 Trail::Trail()
@@ -268,7 +308,8 @@ void Trail::Draw(Graphics* g)
 		aVertArray[aVertNext][2].color = aColorNext.ToInt();
 	}
 
-	g->DrawTrianglesTex(mDefinition->mImage, aVertArray, aTriangleCount);
+	Image* aImage = PvzpResolveResourcePackImage(mDefinition->mImage, gImagePathCache, gImageCache);
+	g->DrawTrianglesTex(aImage, aVertArray, aTriangleCount);
 }
 
 void TrailHolder::InitializeHolder()

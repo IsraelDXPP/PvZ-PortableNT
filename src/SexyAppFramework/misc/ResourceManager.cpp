@@ -75,6 +75,9 @@ ResourceManager::~ResourceManager()
 	DeleteMap(mImageMap);
 	DeleteMap(mSoundMap);
 	DeleteMap(mFontMap);
+	for (auto aIt = mResourcePackImageMaps.begin(); aIt != mResourcePackImageMaps.end(); ++aIt)
+		DeleteMap(aIt->second);
+	mResourcePackImageMaps.clear();
 }
 
 bool ResourceManager::IsGroupLoaded(const std::string &theGroup)
@@ -343,6 +346,12 @@ bool ResourceManager::ParseImageResource(XMLElement &theElement)
 	else
 		aRes->mCols = 1;
 
+	anItr = theElement.mAttributes.find("total");
+	if (anItr != theElement.mAttributes.end())
+		aRes->mTotal = atoi(anItr->second.c_str());
+	else
+		aRes->mTotal = aRes->mRows * aRes->mCols;
+
 	anItr = theElement.mAttributes.find("anim");
 	AnimType anAnimType = AnimType_None;
 	if (anItr != theElement.mAttributes.end())
@@ -362,7 +371,7 @@ bool ResourceManager::ParseImageResource(XMLElement &theElement)
 	aRes->mAnimInfo.mAnimType = anAnimType;
 	if (anAnimType != AnimType_None)
 	{
-		int aNumCels = std::max(aRes->mRows,aRes->mCols);
+		int aNumCels = aRes->mTotal;
 		int aBeginDelay = 0, anEndDelay = 0;
 
 		anItr = theElement.mAttributes.find("framedelay");
@@ -388,6 +397,15 @@ bool ResourceManager::ParseImageResource(XMLElement &theElement)
 		aRes->mAnimInfo.Compute(aNumCels,aBeginDelay,anEndDelay);
 	}
 
+	if (aRes->mInResourcePack)
+	{
+		GLImage* aImage = mApp->GetImage(aRes->mPath);
+		if (aImage)
+		{
+			DoLoadImage(aRes);
+			delete aImage;
+		}
+	}
 
 	return true;
 }
@@ -615,6 +633,8 @@ bool ResourceManager::DoParseResourcesFile(const std::string& theFilename)
 
 bool ResourceManager::ParseResourcesFile(const std::string& theFilename, bool theOnlyResourcePacks)
 {
+	mError = "";
+	mHasFailed = false;
 	mCurResourcePack = "";
 	if (!theOnlyResourcePacks ? DoParseResourcesFile(theFilename) : theOnlyResourcePacks)
 	{
@@ -761,7 +781,7 @@ bool ResourceManager::DoLoadImage(ImageRes *theRes)
 
 	bool isNew;
 	ImageLib::gAlphaComposeColor = theRes->mAlphaColor;
-	SharedImageRef aSharedImageRef = gSexyAppBase->GetSharedImage(theRes->mPath, theRes->mVariant, &isNew);
+	SharedImageRef aSharedImageRef = gSexyAppBase->GetSharedImage(theRes->mPath, theRes->mVariant, &isNew, theRes->mInResourcePack);
 	ImageLib::gAlphaComposeColor = 0xFFFFFF;
 
 	GLImage* aGLImage = (GLImage*) aSharedImageRef;
@@ -831,21 +851,43 @@ void ResourceManager::DeleteImage(const std::string &theName)
 
 SharedImageRef ResourceManager::LoadImage(const std::string &theName)
 {
+	ImageRes* aRes = nullptr;
+	if (mApp->mResourcePackIndex != -1)
+	{
+		auto aPackIt = mResourcePackImageMaps.find(mApp->mResourcePack);
+		if (aPackIt != mResourcePackImageMaps.end())
+		{
+			ResMap::const_iterator anItr = aPackIt->second.find(theName);
+			if (anItr != aPackIt->second.end())
+			{
+				aRes = (ImageRes*)anItr->second;
+				if ((GLImage*) aRes->mImage != nullptr)
+					return aRes->mImage;
+
+				if (!aRes->mFromProgram)
+				{
+					if (DoLoadImage(aRes))
+						return aRes->mImage;
+				}
+			}
+		}
+	}
+
 	ResMap::iterator anItr = mImageMap.find(theName);
-	if (anItr == mImageMap.end())
-		return nullptr;
+	if (anItr != mImageMap.end())
+	{
+		aRes = (ImageRes*)anItr->second;
+		if ((GLImage*) aRes->mImage != nullptr)
+			return aRes->mImage;
 
-	ImageRes *aRes = (ImageRes*)anItr->second;
-	if ((GLImage*) aRes->mImage != nullptr)
-		return aRes->mImage;
+		if (!aRes->mFromProgram)
+		{
+			if (DoLoadImage(aRes))
+				return aRes->mImage;
+		}
+	}
 
-	if (aRes->mFromProgram)
-		return nullptr;
-
-	if (!DoLoadImage(aRes))
-		return nullptr;
-
-	return aRes->mImage;
+	return nullptr;
 }
 
 bool ResourceManager::DoLoadSound(SoundRes* theRes)
@@ -978,7 +1020,7 @@ bool ResourceManager::LoadNextResource()
 			case ResType_Image:
 			{
 				ImageRes *anImageRes = (ImageRes*)aRes;
-				if ((GLImage*)anImageRes->mImage!=nullptr)
+				if (anImageRes->mInResourcePack || (GLImage*)anImageRes->mImage!=nullptr)
 					continue;
 
 				return DoLoadImage(anImageRes);
@@ -1105,27 +1147,35 @@ int	ResourceManager::GetNumResources(const std::string &theGroup)
 
 SharedImageRef ResourceManager::GetImage(const std::string &theId)
 {
-	ResMap aImageMap = mApp->mResourcePackIndex == -1 ? mImageMap : mResourcePackImageMaps[mApp->mResourcePack];
-	ResMap::iterator anItr = aImageMap.find(theId);
-	ImageRes* aRes;
+	ImageRes* aRes = nullptr;
 	MemoryImage* aImage = NULL;
-	if (anItr != aImageMap.end())
+	if (mApp->mResourcePackIndex != -1)
+	{
+		auto aPackIt = mResourcePackImageMaps.find(mApp->mResourcePack);
+		if (aPackIt != mResourcePackImageMaps.end())
+		{
+			ResMap::const_iterator anItr = aPackIt->second.find(theId);
+			if (anItr != aPackIt->second.end())
+			{
+				aRes = (ImageRes*)anItr->second;
+				if ((MemoryImage*)aRes->mImage == nullptr)
+					DoLoadImage(aRes);
+				aImage = aRes->mImage;
+				if (aImage != NULL)
+					return aRes->mImage;
+			}
+		}
+	}
+
+	ResMap::const_iterator anItr = mImageMap.find(theId);
+	if (anItr != mImageMap.end())
 	{
 		aRes = (ImageRes*)anItr->second;
+		if ((MemoryImage*)aRes->mImage == nullptr)
+			DoLoadImage(aRes);
 		aImage = aRes->mImage;
 		if (aImage != NULL)
 			return aRes->mImage;
-	}
-	if (mApp->mResourcePackIndex != -1 && aImage == NULL)
-	{
-		anItr = mImageMap.find(theId);
-		if (anItr != mImageMap.end())
-		{
-			aRes = (ImageRes*)anItr->second;
-			aImage = aRes->mImage;
-			if (aImage != NULL)
-				return aRes->mImage;
-		}
 	}
 	return NULL;
 }
@@ -1150,30 +1200,38 @@ _Font* ResourceManager::GetFont(const std::string &theId)
 
 SharedImageRef ResourceManager::GetImageThrow(const std::string &theId)
 {
-	ResMap aImageMap = mApp->mResourcePackIndex == -1 ? mImageMap : mResourcePackImageMaps[mApp->mResourcePack];
-	ResMap::iterator anItr = aImageMap.find(theId);
-	ImageRes* aRes;
+	ImageRes* aRes = nullptr;
 	MemoryImage* aImage = NULL;
-	if (anItr != aImageMap.end())
+	if (mApp->mResourcePackIndex != -1)
+	{
+		auto aPackIt = mResourcePackImageMaps.find(mApp->mResourcePack);
+		if (aPackIt != mResourcePackImageMaps.end())
+		{
+			ResMap::const_iterator anItr = aPackIt->second.find(theId);
+			if (anItr != aPackIt->second.end())
+			{
+				aRes = (ImageRes*)anItr->second;
+				if ((MemoryImage*)aRes->mImage == nullptr)
+					DoLoadImage(aRes);
+				aImage = aRes->mImage;
+				if (aImage != NULL)
+					return aRes->mImage;
+			}
+		}
+	}
+
+	ResMap::const_iterator anItr = mImageMap.find(theId);
+	if (anItr != mImageMap.end())
 	{
 		aRes = (ImageRes*)anItr->second;
+		if ((MemoryImage*)aRes->mImage == nullptr)
+			DoLoadImage(aRes);
 		aImage = aRes->mImage;
 		if (aImage != NULL)
 			return aRes->mImage;
 	}
-	if (mApp->mResourcePackIndex != -1 && aImage == NULL)
-	{
-		anItr = mImageMap.find(theId);
-		if (anItr != mImageMap.end())
-		{
-			aRes = (ImageRes*)anItr->second;
-			aImage = aRes->mImage;
-			if (aImage != NULL)
-				return aRes->mImage;
-		}
-	}
 
-	if (mAllowMissingProgramResources && aRes->mFromProgram)
+	if (mAllowMissingProgramResources && aRes != nullptr && aRes->mFromProgram)
 		return NULL;
 
 	Fail(StrFormat("Image resource not found: %s",theId.c_str()));

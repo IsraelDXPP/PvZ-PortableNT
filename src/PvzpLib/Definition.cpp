@@ -345,12 +345,32 @@ bool DefinitionLoadImage(Image** theImage, const std::string& theName)
 		return true;
 	}
 
+	bool aInPack = (gSexyAppBase != nullptr && gSexyAppBase->mResourcePackIndex != -1 && !gSexyAppBase->mResourcePack.empty());
+	std::string aPackPrefix = aInPack ? (gSexyAppBase->mResourcePackPath + "/" + gSexyAppBase->mResourcePack + "/") : "";
+
 	for (const DefLoadResPath& aLoadResPath : gDefLoadResPaths)
 	{
 		size_t aPrefixLen = strlen(aLoadResPath.mPrefix);
 		if (aPrefixLen < theName.size())
 		{
-			std::string aPathToTry = aLoadResPath.mDirectory + theName.substr(aPrefixLen);
+			std::string aSubName = theName.substr(aPrefixLen);
+			std::string aPathToTry = aLoadResPath.mDirectory + aSubName;
+
+			if (aInPack)
+			{
+				std::string aPackPathToTry = aPackPrefix + aPathToTry;
+				SharedImageRef aPackImageRef = gSexyAppBase->GetSharedImage(aPackPathToTry, "", nullptr, true);
+				if ((Image*)aPackImageRef != nullptr)
+				{
+					PvzpHesitationTrace("Load Pack Image '%s'", theName.c_str());
+					PvzpAddImageToMap(&aPackImageRef, theName, gSexyAppBase->mResourcePack);
+					PvzpMarkImageForSanding((Image*)aPackImageRef);
+					*theImage = (Image*)aPackImageRef;
+					gResNamePaths[theName] = aPathToTry;
+					return true;
+				}
+			}
+
 			SharedImageRef aImageRef = gSexyAppBase->GetSharedImage(aPathToTry);
 			if ((Image*)aImageRef != nullptr)
 			{
@@ -363,6 +383,31 @@ bool DefinitionLoadImage(Image** theImage, const std::string& theName)
 			}
 		}
 	}
+
+	if (aInPack)
+	{
+		std::string aPackPath = aPackPrefix + theName;
+		SharedImageRef aPackImageRef = gSexyAppBase->GetSharedImage(aPackPath, "", nullptr, true);
+		if ((Image*)aPackImageRef != nullptr)
+		{
+			PvzpAddImageToMap(&aPackImageRef, theName, gSexyAppBase->mResourcePack);
+			PvzpMarkImageForSanding((Image*)aPackImageRef);
+			*theImage = (Image*)aPackImageRef;
+			gResNamePaths[theName] = theName;
+			return true;
+		}
+	}
+
+	SharedImageRef aDirectImageRef = gSexyAppBase->GetSharedImage(theName);
+	if ((Image*)aDirectImageRef != nullptr)
+	{
+		PvzpAddImageToMap(&aDirectImageRef, theName);
+		PvzpMarkImageForSanding((Image*)aDirectImageRef);
+		*theImage = (Image*)aDirectImageRef;
+		gResNamePaths[theName] = theName;
+		return true;
+	}
+
 	return false;
 }
 
@@ -1332,11 +1377,66 @@ bool DefinitionCompileFile(const std::string& theXMLFilePath, const std::string&
 	else if (!DefinitionLoadMap(&aXMLParser, theDefMap, theDefinition))
 		return false;
 
-	return DefinitionWriteCompiledFile(theCompiledFilePath, theDefMap, theDefinition);
+	DefinitionWriteCompiledFile(theCompiledFilePath, theDefMap, theDefinition);
+	return true;
 }
 
 bool DefinitionCompileAndLoad(const std::string& theXMLFilePath, const DefMap* theDefMap, void* theDefinition)
 {
+	if (gSexyAppBase != nullptr && gSexyAppBase->mResourcePackIndex != -1 && !gSexyAppBase->mResourcePack.empty())
+	{
+		std::string aPackBase = gSexyAppBase->mResourcePackPath + "/" + gSexyAppBase->mResourcePack + "/";
+		std::string aFileNameOnly = Sexy::GetFileName(theXMLFilePath, false);
+		std::string aPackCompiledOptions[] = {
+			aPackBase + "compiled/" + theXMLFilePath + ".compiled",
+			aPackBase + theXMLFilePath + ".compiled",
+			aPackBase + "compiled/" + theXMLFilePath,
+			aPackBase + "compiled/" + aFileNameOnly + ".compiled",
+			aPackBase + aFileNameOnly + ".compiled"
+		};
+
+		for (const std::string& aPackCompiled : aPackCompiledOptions)
+		{
+			std::error_code ec;
+			if (Sexy::filesystem::exists(aPackCompiled, ec))
+			{
+				if (DefinitionReadCompiledFile(aPackCompiled, theDefMap, theDefinition))
+				{
+					PvzpHesitationTrace("loaded pack compiled %s", aPackCompiled.c_str());
+					return true;
+				}
+			}
+		}
+
+		std::string aPackXMLOptions[] = {
+			aPackBase + theXMLFilePath,
+			aPackBase + aFileNameOnly
+		};
+
+		for (const std::string& aPackXMLPath : aPackXMLOptions)
+		{
+			std::error_code anErrorCode;
+			if (Sexy::filesystem::exists(aPackXMLPath, anErrorCode))
+			{
+				std::string aCompiledFilePath = DefinitionGetCompiledFilePathFromXMLFilePath(aPackXMLPath);
+				if (DefinitionIsCompiled(aPackXMLPath) && DefinitionReadCompiledFile(aCompiledFilePath, theDefMap, theDefinition))
+				{
+					PvzpHesitationTrace("loaded %s", aCompiledFilePath.c_str());
+					return true;
+				}
+
+				PerfTimer aTimer;
+				aTimer.Start();
+				if (DefinitionCompileFile(aPackXMLPath, aCompiledFilePath, theDefMap, theDefinition))
+				{
+					PvzpTrace("compile %d ms:'%s'", (int)aTimer.GetDuration(), aCompiledFilePath.c_str());
+					PvzpHesitationTrace("compiled %s", aCompiledFilePath.c_str());
+					return true;
+				}
+			}
+		}
+	}
+
 #ifdef PVZ_DEBUG
 	const bool aRequireCompiledUpToDate = true;
 #else

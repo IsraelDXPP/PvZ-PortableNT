@@ -1072,22 +1072,30 @@ void PvzpAddImageToMap(SharedImageRef* theImage, const std::string& thePath, con
 
 void PvzpResourceManager::AddImageToMap(SharedImageRef* theImage, const std::string& thePath, const std::string& theResourcePack)
 {
-	if (theResourcePack.empty())
-	{
-		PVZP_ASSERT(mImageMap.find(thePath) == mImageMap.end());
-	}
-	else
-	{
-		PVZP_ASSERT(mResourcePackImageMaps[theResourcePack].find(thePath) == mResourcePackImageMaps[theResourcePack].end());
-	}
-
 	ImageRes* aImageRes = new ImageRes();
 	aImageRes->mImage = *theImage;
 	aImageRes->mPath = thePath;
 	if (theResourcePack.empty())
+	{
+		auto aIt = mImageMap.find(thePath);
+		if (aIt != mImageMap.end())
+		{
+			delete aIt->second;
+			mImageMap.erase(aIt);
+		}
 		mImageMap.insert(ResMap::value_type(thePath, aImageRes));
+	}
 	else
-		mResourcePackImageMaps[theResourcePack].insert(ResMap::value_type(thePath, aImageRes));
+	{
+		ResMap& aPackMap = mResourcePackImageMaps[theResourcePack];
+		auto aIt = aPackMap.find(thePath);
+		if (aIt != aPackMap.end())
+		{
+			delete aIt->second;
+			aPackMap.erase(aIt);
+		}
+		aPackMap.insert(ResMap::value_type(thePath, aImageRes));
+	}
 }
 
 bool PvzpLoadNextResource()
@@ -1113,7 +1121,7 @@ bool PvzpResourceManager::PvzpLoadNextResource()
 		case ResType_Image:
 		{
 			ImageRes* anImageRes = (ImageRes*)aRes;
-			if ((GLImage*)anImageRes->mImage != nullptr)
+			if (anImageRes->mInResourcePack || (GLImage*)anImageRes->mImage != nullptr)
 			{
 				mCurResGroupListItr++;
 				continue;
@@ -1205,6 +1213,32 @@ bool PvzpResourceManager::FindImagePath(Image* theImage, std::string* thePath)
 		}
 	}
 	return false;
+}
+
+Image* PvzpResolveResourcePackImage(Image* theImage, std::map<Image*, std::string>& thePathCache, std::map<std::string, Image*>& theImageCache)
+{
+	if (theImage == nullptr || gSexyAppBase->mResourcePackIndex == -1)
+		return theImage;
+
+	std::string aPath;
+	auto aIt = thePathCache.find(theImage);
+	if (aIt != thePathCache.end())
+		aPath = aIt->second;
+	else
+	{
+		PvzpFindImagePath(theImage, &aPath);
+		thePathCache[theImage] = aPath;
+	}
+	if (aPath.empty())
+		return theImage;
+
+	auto aItr = theImageCache.find(aPath);
+	if (aItr != theImageCache.end())
+		return aItr->second;
+
+	Image* aResolved = gSexyAppBase->mResourceManager->GetImage(aPath);
+	theImageCache[aPath] = aResolved;
+	return aResolved;
 }
 
 PvzpAllocator gGlobalAllocators[MAX_GLOBAL_ALLOCATORS];

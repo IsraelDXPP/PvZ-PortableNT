@@ -199,6 +199,7 @@ public:
 	SexyTransform2D                 mOverlayMatrix;
 	Color                           mColorOverride;
 	ReanimatorTrackInstance*        mTrackInstances;
+	int32_t                         mAllocatedTrackCount;   // track count at the time mTrackInstances was allocated
 	int32_t                         mLoopCount;
 	ReanimationHolder*              mReanimationHolder;
 	bool                            mIsAttachment;
@@ -266,5 +267,7 @@ public:
 void                                ReanimationCreateAtlas(ReanimatorDefinition* theDefinition, ReanimationType theReanimationType);
 void                                ReanimationPreload(ReanimationType theReanimationType);
 void                                BlendTransform(ReanimatorTransform* theResult, const ReanimatorTransform& theTransform1, const ReanimatorTransform& theTransform2, float theBlendFactor);
+void                                ClearReanimationCache();
+void                                ReanimatorReloadDefinitions();
 
 #endif

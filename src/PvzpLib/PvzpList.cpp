@@ -114,14 +114,23 @@ void PvzpAllocator::Free(void* theItem, int theItemSize)
 
 void PvzpAllocator::FreeAll()
 {
-	for (void* aBlock = mBlockList; aBlock != nullptr; )
+	// Safely free all blocks, protecting against heap corruption
+	void* aBlock = mBlockList;
+	mBlockList = nullptr;  // Disconnect list immediately to prevent re-entry
+
+	while (aBlock != nullptr)
 	{
-		void* aNext = *(void**)aBlock;
+		// Store next pointer before freeing to avoid reading freed memory
+		void* aNext = nullptr;
+
+		// Safely read the next pointer before freeing this block
+		memcpy(&aNext, aBlock, sizeof(void*));
+
+		// Now it's safe to free
 		PvzpFree(aBlock);
 		aBlock = aNext;
 	}
 
-	mBlockList = nullptr;
 	mFreeList = nullptr;
 	mTotalItems = 0;
 }

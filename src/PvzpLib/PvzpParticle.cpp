@@ -20,13 +20,20 @@
  */
 
 #include "PvzpDebug.h"
+#include "PvzpCommon.h"
 #include "Definition.h"
 #include "PvzpParticle.h"
 #include "EffectSystem.h"
 #include "../GameConstants.h"
 #include "graphics/Graphics.h"
 #include "graphics/GLInterface.h"
+#include "SexyAppBase.h"
+#include "../LawnApp.h"
 #include <algorithm>
+#include <map>
+
+static std::map<Image*, std::string> gImagePathCache;
+static std::map<std::string, Image*> gImageCache;
 
 int gParticleDefCount;
 std::unique_ptr<PvzpParticleDefinition[]> gParticleDefArray;
@@ -232,6 +239,46 @@ void PvzpParticleFreeDefinitions()
 	gParticleDefCount = 0;
 	gParticleParamArray = nullptr;
 	gParticleParamArraySize = 0;
+}
+
+void PvzpParticleReloadDefinitions()
+{
+	if (!gParticleDefArray || !gParticleParamArray)
+		return;
+
+	for (int i = 0; i < gParticleDefCount; i++)
+	{
+		DefinitionFreeMap(&gParticleDefMap, &gParticleDefArray[i]);
+		memset(&gParticleDefArray[i], 0, sizeof(PvzpParticleDefinition));
+		const ParticleParams& aParticleParams = gParticleParamArray[i];
+		PvzpParticleLoadADef(&gParticleDefArray[i], aParticleParams.mParticleFileName);
+	}
+
+	if (gLawnApp != nullptr && gLawnApp->mEffectSystem != nullptr && gLawnApp->mEffectSystem->mParticleHolder != nullptr)
+	{
+		PvzpParticleHolder* aHolder = gLawnApp->mEffectSystem->mParticleHolder.get();
+		for (PvzpParticleSystem* aSystem : aHolder->mParticleSystems)
+		{
+			if (aSystem != nullptr && !aSystem->mDead && static_cast<int>(aSystem->mEffectType) >= 0 && static_cast<int>(aSystem->mEffectType) < gParticleDefCount)
+			{
+				PvzpParticleDefinition* aNewDef = &gParticleDefArray[static_cast<int>(aSystem->mEffectType)];
+				aSystem->mParticleDef = aNewDef;
+				int aEmitterIdx = 0;
+				for (PvzpListNode<ParticleEmitterID>* aNode = aSystem->mEmitterList.mHead; aNode != nullptr; aNode = aNode->mNext, aEmitterIdx++)
+				{
+					PvzpParticleEmitter* aEmitter = aHolder->mEmitters.DataArrayGet(static_cast<unsigned int>(aNode->mValue));
+					if (aEmitterIdx < aNewDef->mEmitterDefCount)
+					{
+						aEmitter->mEmitterDef = &aNewDef->mEmitterDefs[aEmitterIdx];
+					}
+					else
+					{
+						aEmitter->mDead = true;
+					}
+				}
+			}
+		}
+	}
 }
 
 PvzpParticleSystem::PvzpParticleSystem()
@@ -944,6 +991,7 @@ void RenderParticle(Graphics* g, PvzpParticle* theParticle, const Color& theColo
 	PvzpParticleEmitter* aEmitter = theParticle->mParticleEmitter;
 	PvzpEmitterDefinition* aEmitterDef = aEmitter->mEmitterDef;
 	Image* aImage = aEmitter->mImageOverride != nullptr ? aEmitter->mImageOverride : aEmitterDef->mImage;
+	aImage = PvzpResolveResourcePackImage(aImage, gImagePathCache, gImageCache);
 	if (aImage == nullptr)
 		return;
 
@@ -1275,4 +1323,10 @@ PvzpParticleSystem* PvzpParticleHolder::AllocParticleSystem(float theX, float th
 {
 	PVZP_ASSERT(static_cast<int>(theParticleEffect) >= 0 && static_cast<int>(theParticleEffect) < gParticleDefCount);
 	return AllocParticleSystemFromDef(theX, theY, theRenderOrder, &gParticleDefArray[theParticleEffect], theParticleEffect);
+}
+
+void ClearParticleCache()
+{
+	gImagePathCache.clear();
+	gImageCache.clear();
 }

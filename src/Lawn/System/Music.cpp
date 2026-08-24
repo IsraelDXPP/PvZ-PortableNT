@@ -182,7 +182,7 @@ void Music::LoadSong(MusicFile theMusicFile, std::string_view theFileName)
 
 void Music::MusicTitleScreenInit()
 {
-	LoadSong(MusicFile::MUSIC_FILE_MAIN_MUSIC, "sounds/mainmusic.mo3");
+	LoadMusicFromResourcePack(MusicFile::MUSIC_FILE_MAIN_MUSIC, "sounds/mainmusic.mo3");
 	MakeSureMusicIsPlaying(MusicTune::MUSIC_TUNE_TITLE_CRAZY_DAVE_MAIN_THEME);
 }
 
@@ -190,7 +190,7 @@ void Music::MusicInit()
 {
 	for (const auto& aMusic : MUSIC_LOADING_FILES)
 	{
-		LoadSong(aMusic.mMusicFile, aMusic.mFileName);
+		LoadMusicFromResourcePack(aMusic.mMusicFile, aMusic.mFileName);
 		mApp->mCompletedLoadingThreadTasks += MUSIC_LOADING_TASK_WEIGHT;
 	}
 }
@@ -199,7 +199,116 @@ void Music::MusicCreditScreenInit()
 {
 	SDLMusicInterface* anSDL = (SDLMusicInterface*)mApp->mMusicInterface.get();
 	if (anSDL->mMusicMap.find((int)MusicFile::MUSIC_FILE_CREDITS_ZOMBIES_ON_YOUR_LAWN) == anSDL->mMusicMap.end())
-		LoadSong(MusicFile::MUSIC_FILE_CREDITS_ZOMBIES_ON_YOUR_LAWN, "sounds/ZombiesOnYourLawn.ogg");
+		LoadMusicFromResourcePack(MusicFile::MUSIC_FILE_CREDITS_ZOMBIES_ON_YOUR_LAWN, "sounds/ZombiesOnYourLawn.ogg");
+}
+
+std::string Music::FindMusicInResourcePack(const char* theBaseName)
+{
+	if (!mApp || mApp->mResourcePack.empty())
+		return "";
+
+	std::string aMusicPath = mApp->mResourcePackPath + "/" + mApp->mResourcePack + "/Music/";
+
+	static const char* aAudioFormats[] = { ".ogg", ".mp3", ".wav", ".mo3" };
+	static const int aNumFormats = 4;
+
+	for (int i = 0; i < aNumFormats; ++i)
+	{
+		std::string aFullPath = aMusicPath + theBaseName + aAudioFormats[i];
+		if (mApp->FileExists(aFullPath))
+		{
+			PvzpTrace("Found custom music: %s", aFullPath.c_str());
+			return aFullPath;
+		}
+	}
+
+	return "";
+}
+
+void Music::LoadMusicFromResourcePack(MusicFile theMusicFile, std::string_view theDefaultPath)
+{
+	if (!mApp || !mApp->mResourceManager)
+	{
+		LoadSong(theMusicFile, theDefaultPath);
+		return;
+	}
+
+	const char* aBaseName = nullptr;
+	if (theMusicFile == MusicFile::MUSIC_FILE_MAIN_MUSIC || theMusicFile == MusicFile::MUSIC_FILE_DRUMS)
+		aBaseName = "mainmusic";
+	else if (theMusicFile == MusicFile::MUSIC_FILE_HIHATS)
+		aBaseName = "mainmusic_hihats";
+	else if (theMusicFile == MusicFile::MUSIC_FILE_CREDITS_ZOMBIES_ON_YOUR_LAWN)
+		aBaseName = "ZombiesOnYourLawn";
+
+	if (aBaseName == nullptr)
+	{
+		LoadSong(theMusicFile, theDefaultPath);
+		return;
+	}
+
+	std::string aCustomPath = FindMusicInResourcePack(aBaseName);
+
+	if (!aCustomPath.empty())
+	{
+		PvzpTrace("Loading custom music from resource pack: %s", aCustomPath.c_str());
+		LoadSong(theMusicFile, aCustomPath);
+	}
+	else
+	{
+		LoadSong(theMusicFile, theDefaultPath);
+	}
+}
+
+void Music::UnloadResourcePackMusic()
+{
+	MusicTune aCurTune = mCurMusicTune;
+	int aPauseOffset = mPauseOffset;
+	int aPauseOffsetDrums = mPauseOffsetDrums;
+	UnloadAllMusic();
+	RescanMusicFiles();
+	if (aCurTune != MusicTune::MUSIC_TUNE_NONE)
+		PlayMusic(aCurTune, aPauseOffset, aPauseOffsetDrums);
+}
+
+void Music::UnloadAllMusic()
+{
+	StopAllMusic();
+
+	SDLMusicInterface* anSDL = (SDLMusicInterface*)mApp->mMusicInterface.get();
+	if (!anSDL)
+		return;
+
+	for (auto& pair : anSDL->mMusicMap)
+	{
+		SDLMusicInfo& aMusicInfo = pair.second;
+		if (aMusicInfo.mHMusic != nullptr)
+		{
+			Mix_FreeMusic(aMusicInfo.mHMusic);
+			aMusicInfo.mHMusic = nullptr;
+		}
+	}
+	anSDL->mMusicMap.clear();
+
+	for (int i = 0; i < (int)MusicFile::NUM_MUSIC_FILES; i++)
+	{
+		if (gMusicFileData[i].mFileData != nullptr)
+		{
+			delete[] gMusicFileData[i].mFileData;
+			gMusicFileData[i].mFileData = nullptr;
+		}
+	}
+
+	mMusicDisabled = false;
+	PvzpTrace("Unloaded all music");
+}
+
+void Music::RescanMusicFiles()
+{
+	LoadMusicFromResourcePack(MusicFile::MUSIC_FILE_MAIN_MUSIC, "sounds/mainmusic.mo3");
+	LoadMusicFromResourcePack(MusicFile::MUSIC_FILE_DRUMS, "sounds/mainmusic.mo3");
+	LoadMusicFromResourcePack(MusicFile::MUSIC_FILE_HIHATS, "sounds/mainmusic_hihats.mo3");
+	LoadMusicFromResourcePack(MusicFile::MUSIC_FILE_CREDITS_ZOMBIES_ON_YOUR_LAWN, "sounds/ZombiesOnYourLawn.ogg");
 }
 
 void Music::StopAllMusic()

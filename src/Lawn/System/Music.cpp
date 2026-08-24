@@ -135,7 +135,7 @@ bool Music::PvzpLoadMusic(MusicFile theMusicFile, std::string_view theFileName)
 	p_fclose(pFile);
 
 	aHMusic = Mix_LoadMUS_RW(SDL_RWFromMem(aData, aSize), 1);
-	if (theMusicFile == MusicFile::MUSIC_FILE_CREDITS_ZOMBIES_ON_YOUR_LAWN)
+	if (aHMusic != 0)
 	{
 		gMusicFileData[theMusicFile].mFileData = (unsigned int*)aData;
 	}

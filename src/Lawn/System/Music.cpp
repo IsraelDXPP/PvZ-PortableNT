@@ -344,7 +344,7 @@ void Music::LoadMusicFromResourcePack(MusicFile theMusicFile, std::string_view t
 		return;
 	}
 
-	if (mApp->FileExists(theDefaultPath))
+	if (mApp->FileExists(std::string(theDefaultPath)))
 	{
 		LoadSong(theMusicFile, theDefaultPath);
 	}

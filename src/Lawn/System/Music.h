@@ -134,6 +134,10 @@ public:
 	void						SetupVolumeForTune(MusicTune theMusicTune, float theDrumsVolume, float theHihatsVolume);
 	unsigned long				GetMusicOrder(MusicFile theMusicFile);
 	void						MusicCreditScreenInit();
+	std::string					FindMusicInResourcePack(const char* theBaseName);
+	void						LoadMusicFromResourcePack(MusicFile theMusicFile, std::string_view theDefaultPath);
+	void						UnloadResourcePackMusic();
+	void						RescanMusicFiles();
 };
 
 #endif

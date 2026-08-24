@@ -89,6 +89,7 @@
 #include "../PvzpLib/PvzpStringFile.h"
 #include "../Resources.h"
 #include "../Lawn/System/ReanimationLawn.h"
+#include "../Lawn/System/Music.h"
 
 using namespace Sexy;
 
@@ -4473,6 +4474,8 @@ void SexyAppBase::LoadCurrentResourcePack()
 	gLawnApp->mReanimatorCache->ReanimatorCacheDispose();
 	gLawnApp->mReanimatorCache->ReanimatorCacheInitialize();
 	FilterEffectDisposeForApp();
+	if (gLawnApp->mMusic != nullptr)
+		gLawnApp->mMusic->UnloadResourcePackMusic();
 	if (mWidgetManager != nullptr)
 		mWidgetManager->MarkAllDirty();
 }

@@ -149,6 +149,7 @@ public:
 	std::string					FindMusicInResourcePack(const char* theBaseName);
 	void						LoadMusicFromResourcePack(MusicFile theMusicFile, std::string_view theDefaultPath);
 	void						UnloadResourcePackMusic();
+	void						UnloadAllMusic();
 	void						RescanMusicFiles();
 };
 

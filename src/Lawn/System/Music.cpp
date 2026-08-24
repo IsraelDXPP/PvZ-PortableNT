@@ -60,11 +60,55 @@ struct MusicLoadEntry
 	std::string_view			mFileName;
 };
 
+struct MusicFileMapping
+{
+	MusicFile		mFile;
+	const char*		mBaseName;
+	const char*		mDefaultPath;
+};
+
 static constexpr int MUSIC_LOADING_TASK_WEIGHT = 3500;
 static constexpr MusicLoadEntry MUSIC_LOADING_FILES[] = {
 	{MusicFile::MUSIC_FILE_DRUMS, "sounds/mainmusic.mo3"},
 	{MusicFile::MUSIC_FILE_CREDITS_ZOMBIES_ON_YOUR_LAWN, "sounds/ZombiesOnYourLawn.ogg"}
 };
+
+static const MusicFileMapping gMusicFileMappings[] = {
+	{MusicFile::MUSIC_FILE_MAIN_MUSIC, "mainmusic", "sounds/mainmusic.mo3"},
+	{MusicFile::MUSIC_FILE_DRUMS, "mainmusic", "sounds/mainmusic.mo3"},
+	{MusicFile::MUSIC_FILE_HIHATS, "mainmusic_hihats", "sounds/mainmusic_hihats.mo3"},
+	{MusicFile::MUSIC_FILE_DAY_GRASSWALK, "Grasswalk", "Music/Grasswalk.ogg"},
+	{MusicFile::MUSIC_FILE_ROOF_GRAZETHEROOF, "GrazeTheRoof", "Music/GrazeTheRoof.ogg"},
+	{MusicFile::MUSIC_FILE_NIGHT_MOONGRAINS, "MoonGrains", "Music/MoonGrains.ogg"},
+	{MusicFile::MUSIC_FILE_POOL_WATERYGRAVES, "WateryGraves", "Music/WateryGraves.ogg"},
+	{MusicFile::MUSIC_FILE_FOG_RIGORMORMIST, "RigorMormist", "Music/RigorMormist.ogg"},
+	{MusicFile::MUSIC_FILE_CHOOSE_YOUR_SEEDS, "ChooseYourSeeds", "Music/ChooseYourSeeds.ogg"},
+	{MusicFile::MUSIC_FILE_ZEN_GARDEN, "ZenGarden", "Music/ZenGarden.ogg"},
+	{MusicFile::MUSIC_FILE_PUZZLE_CEREBRAWL, "Cerebrawl", "Music/Cerebrawl.ogg"},
+	{MusicFile::MUSIC_FILE_MINIGAME_LOONBOON, "LoonBoon", "Music/LoonBoon.ogg"},
+	{MusicFile::MUSIC_FILE_CONVEYER, "UltimateBattle", "Music/UltimateBattle.ogg"},
+	{MusicFile::MUSIC_FILE_FINAL_BOSS_BRAINIAC_MANIAC, "BrainiacManiac", "Music/BrainiacManiac.ogg"},
+	{MusicFile::MUSIC_FILE_MAIN_MENU, "MainMenu", "Music/MainMenu.ogg"},
+	{MusicFile::MUSIC_FILE_CREDITS_ZOMBIES_ON_YOUR_LAWN, "ZombiesOnYourLawn", "sounds/ZombiesOnYourLawn.ogg"},
+};
+
+static const int gNumMusicMappings = sizeof(gMusicFileMappings) / sizeof(gMusicFileMappings[0]);
+
+static const MusicFileMapping* FindMusicMapping(MusicFile theFile)
+{
+	for (int i = 0; i < gNumMusicMappings; ++i)
+	{
+		if (gMusicFileMappings[i].mFile == theFile)
+			return &gMusicFileMappings[i];
+	}
+	return nullptr;
+}
+
+static bool IsPerTuneFileLoaded(MusicFile theFile)
+{
+	SDLMusicInterface* anSDL = (SDLMusicInterface*)gSexyAppBase->mMusicInterface.get();
+	return anSDL->mMusicMap.find((int)theFile) != anSDL->mMusicMap.end();
+}
 
 const int Music::MUSIC_LOADING_TASKS = MUSIC_LOADING_TASK_WEIGHT * static_cast<int>(sizeof(MUSIC_LOADING_FILES) / sizeof(MUSIC_LOADING_FILES[0]));
 
@@ -183,6 +227,7 @@ void Music::LoadSong(MusicFile theMusicFile, std::string_view theFileName)
 void Music::MusicTitleScreenInit()
 {
 	LoadMusicFromResourcePack(MusicFile::MUSIC_FILE_MAIN_MUSIC, "sounds/mainmusic.mo3");
+	LoadMusicFromResourcePack(MusicFile::MUSIC_FILE_MAIN_MENU, "Music/MainMenu.ogg");
 	MakeSureMusicIsPlaying(MusicTune::MUSIC_TUNE_TITLE_CRAZY_DAVE_MAIN_THEME);
 }
 
@@ -193,6 +238,34 @@ void Music::MusicInit()
 		LoadMusicFromResourcePack(aMusic.mMusicFile, aMusic.mFileName);
 		mApp->mCompletedLoadingThreadTasks += MUSIC_LOADING_TASK_WEIGHT;
 	}
+	LoadMusicFromResourcePack(MusicFile::MUSIC_FILE_MAIN_MUSIC, "sounds/mainmusic.mo3");
+	mApp->mCompletedLoadingThreadTasks += MUSIC_LOADING_TASK_WEIGHT;
+	LoadMusicFromResourcePack(MusicFile::MUSIC_FILE_HIHATS, "sounds/mainmusic_hihats.mo3");
+	mApp->mCompletedLoadingThreadTasks += MUSIC_LOADING_TASK_WEIGHT;
+	LoadMusicFromResourcePack(MusicFile::MUSIC_FILE_MAIN_MENU, "Music/MainMenu.ogg");
+	mApp->mCompletedLoadingThreadTasks += MUSIC_LOADING_TASK_WEIGHT;
+	LoadMusicFromResourcePack(MusicFile::MUSIC_FILE_DAY_GRASSWALK, "Music/Grasswalk.ogg");
+	mApp->mCompletedLoadingThreadTasks += MUSIC_LOADING_TASK_WEIGHT;
+	LoadMusicFromResourcePack(MusicFile::MUSIC_FILE_NIGHT_MOONGRAINS, "Music/MoonGrains.ogg");
+	mApp->mCompletedLoadingThreadTasks += MUSIC_LOADING_TASK_WEIGHT;
+	LoadMusicFromResourcePack(MusicFile::MUSIC_FILE_POOL_WATERYGRAVES, "Music/WateryGraves.ogg");
+	mApp->mCompletedLoadingThreadTasks += MUSIC_LOADING_TASK_WEIGHT;
+	LoadMusicFromResourcePack(MusicFile::MUSIC_FILE_FOG_RIGORMORMIST, "Music/RigorMormist.ogg");
+	mApp->mCompletedLoadingThreadTasks += MUSIC_LOADING_TASK_WEIGHT;
+	LoadMusicFromResourcePack(MusicFile::MUSIC_FILE_ROOF_GRAZETHEROOF, "Music/GrazeTheRoof.ogg");
+	mApp->mCompletedLoadingThreadTasks += MUSIC_LOADING_TASK_WEIGHT;
+	LoadMusicFromResourcePack(MusicFile::MUSIC_FILE_CHOOSE_YOUR_SEEDS, "Music/ChooseYourSeeds.ogg");
+	mApp->mCompletedLoadingThreadTasks += MUSIC_LOADING_TASK_WEIGHT;
+	LoadMusicFromResourcePack(MusicFile::MUSIC_FILE_ZEN_GARDEN, "Music/ZenGarden.ogg");
+	mApp->mCompletedLoadingThreadTasks += MUSIC_LOADING_TASK_WEIGHT;
+	LoadMusicFromResourcePack(MusicFile::MUSIC_FILE_PUZZLE_CEREBRAWL, "Music/Cerebrawl.ogg");
+	mApp->mCompletedLoadingThreadTasks += MUSIC_LOADING_TASK_WEIGHT;
+	LoadMusicFromResourcePack(MusicFile::MUSIC_FILE_MINIGAME_LOONBOON, "Music/LoonBoon.ogg");
+	mApp->mCompletedLoadingThreadTasks += MUSIC_LOADING_TASK_WEIGHT;
+	LoadMusicFromResourcePack(MusicFile::MUSIC_FILE_CONVEYER, "Music/UltimateBattle.ogg");
+	mApp->mCompletedLoadingThreadTasks += MUSIC_LOADING_TASK_WEIGHT;
+	LoadMusicFromResourcePack(MusicFile::MUSIC_FILE_FINAL_BOSS_BRAINIAC_MANIAC, "Music/BrainiacManiac.ogg");
+	mApp->mCompletedLoadingThreadTasks += MUSIC_LOADING_TASK_WEIGHT;
 }
 
 void Music::MusicCreditScreenInit()
@@ -217,9 +290,24 @@ std::string Music::FindMusicInResourcePack(const char* theBaseName)
 		std::string aFullPath = aMusicPath + theBaseName + aAudioFormats[i];
 		if (mApp->FileExists(aFullPath))
 		{
-			PvzpTrace("Found custom music: %s", aFullPath.c_str());
+			PvzpTrace("Found custom music in resource pack: %s", aFullPath.c_str());
 			return aFullPath;
 		}
+	}
+
+	return "";
+}
+
+static std::string FindMusicLocal(const char* theBaseName)
+{
+	static const char* aAudioFormats[] = { ".ogg", ".mp3", ".wav", ".mo3" };
+	static const int aNumFormats = 4;
+
+	for (int i = 0; i < aNumFormats; ++i)
+	{
+		std::string aFullPath = std::string("Music/") + theBaseName + aAudioFormats[i];
+		if (gSexyAppBase->FileExists(aFullPath))
+			return aFullPath;
 	}
 
 	return "";
@@ -233,31 +321,30 @@ void Music::LoadMusicFromResourcePack(MusicFile theMusicFile, std::string_view t
 		return;
 	}
 
-	const char* aBaseName = nullptr;
-	if (theMusicFile == MusicFile::MUSIC_FILE_MAIN_MUSIC || theMusicFile == MusicFile::MUSIC_FILE_DRUMS)
-		aBaseName = "mainmusic";
-	else if (theMusicFile == MusicFile::MUSIC_FILE_HIHATS)
-		aBaseName = "mainmusic_hihats";
-	else if (theMusicFile == MusicFile::MUSIC_FILE_CREDITS_ZOMBIES_ON_YOUR_LAWN)
-		aBaseName = "ZombiesOnYourLawn";
-
-	if (aBaseName == nullptr)
+	const MusicFileMapping* aMapping = FindMusicMapping(theMusicFile);
+	if (aMapping == nullptr)
 	{
 		LoadSong(theMusicFile, theDefaultPath);
 		return;
 	}
 
-	std::string aCustomPath = FindMusicInResourcePack(aBaseName);
-
+	std::string aCustomPath = FindMusicInResourcePack(aMapping->mBaseName);
 	if (!aCustomPath.empty())
 	{
-		PvzpTrace("Loading custom music from resource pack: %s", aCustomPath.c_str());
+		PvzpTrace("Loading music from resource pack: %s", aCustomPath.c_str());
 		LoadSong(theMusicFile, aCustomPath);
+		return;
 	}
-	else
+
+	std::string aLocalPath = FindMusicLocal(aMapping->mBaseName);
+	if (!aLocalPath.empty())
 	{
-		LoadSong(theMusicFile, theDefaultPath);
+		PvzpTrace("Loading music from local: %s", aLocalPath.c_str());
+		LoadSong(theMusicFile, aLocalPath);
+		return;
 	}
+
+	LoadSong(theMusicFile, theDefaultPath);
 }
 
 void Music::UnloadResourcePackMusic()
@@ -309,6 +396,18 @@ void Music::RescanMusicFiles()
 	LoadMusicFromResourcePack(MusicFile::MUSIC_FILE_DRUMS, "sounds/mainmusic.mo3");
 	LoadMusicFromResourcePack(MusicFile::MUSIC_FILE_HIHATS, "sounds/mainmusic_hihats.mo3");
 	LoadMusicFromResourcePack(MusicFile::MUSIC_FILE_CREDITS_ZOMBIES_ON_YOUR_LAWN, "sounds/ZombiesOnYourLawn.ogg");
+	LoadMusicFromResourcePack(MusicFile::MUSIC_FILE_MAIN_MENU, "Music/MainMenu.ogg");
+	LoadMusicFromResourcePack(MusicFile::MUSIC_FILE_DAY_GRASSWALK, "Music/Grasswalk.ogg");
+	LoadMusicFromResourcePack(MusicFile::MUSIC_FILE_NIGHT_MOONGRAINS, "Music/MoonGrains.ogg");
+	LoadMusicFromResourcePack(MusicFile::MUSIC_FILE_POOL_WATERYGRAVES, "Music/WateryGraves.ogg");
+	LoadMusicFromResourcePack(MusicFile::MUSIC_FILE_FOG_RIGORMORMIST, "Music/RigorMormist.ogg");
+	LoadMusicFromResourcePack(MusicFile::MUSIC_FILE_ROOF_GRAZETHEROOF, "Music/GrazeTheRoof.ogg");
+	LoadMusicFromResourcePack(MusicFile::MUSIC_FILE_CHOOSE_YOUR_SEEDS, "Music/ChooseYourSeeds.ogg");
+	LoadMusicFromResourcePack(MusicFile::MUSIC_FILE_ZEN_GARDEN, "Music/ZenGarden.ogg");
+	LoadMusicFromResourcePack(MusicFile::MUSIC_FILE_PUZZLE_CEREBRAWL, "Music/Cerebrawl.ogg");
+	LoadMusicFromResourcePack(MusicFile::MUSIC_FILE_MINIGAME_LOONBOON, "Music/LoonBoon.ogg");
+	LoadMusicFromResourcePack(MusicFile::MUSIC_FILE_CONVEYER, "Music/UltimateBattle.ogg");
+	LoadMusicFromResourcePack(MusicFile::MUSIC_FILE_FINAL_BOSS_BRAINIAC_MANIAC, "Music/BrainiacManiac.ogg");
 }
 
 void Music::StopAllMusic()
@@ -346,7 +445,8 @@ void Music::PlayFromOffset(MusicFile theMusicFile, int theOffset, double theVolu
 {
 	SDLMusicInterface* anSDL = (SDLMusicInterface*)mApp->mMusicInterface.get();
 	auto anItr = anSDL->mMusicMap.find((int)theMusicFile);
-	PVZP_ASSERT(anItr != anSDL->mMusicMap.end());
+	if (anItr == anSDL->mMusicMap.end())
+		return;
 	SDLMusicInfo* aMusicInfo = &anItr->second;
 
 	if (mCurMusicTune == MusicTune::MUSIC_TUNE_CREDITS_ZOMBIES_ON_YOUR_LAWN)
@@ -354,7 +454,7 @@ void Music::PlayFromOffset(MusicFile theMusicFile, int theOffset, double theVolu
 		bool aNoLoop = theMusicFile == MusicFile::MUSIC_FILE_CREDITS_ZOMBIES_ON_YOUR_LAWN;
 		mMusicInterface->PlayMusic(theMusicFile, theOffset, aNoLoop);
 	}
-	else
+	else if (theMusicFile == MusicFile::MUSIC_FILE_MAIN_MUSIC || theMusicFile == MusicFile::MUSIC_FILE_DRUMS)
 	{
 		Mix_HaltMusicStream(aMusicInfo->mHMusic);
 		aMusicInfo->mStopOnFade = false;
@@ -364,6 +464,15 @@ void Music::PlayFromOffset(MusicFile theMusicFile, int theOffset, double theVolu
 		Mix_ModMusicStreamJumpToOrder(aMusicInfo->mHMusic, theOffset);
 		Mix_VolumeMusicStream(aMusicInfo->mHMusic, (int)(aMusicInfo->mVolume*128));
 		SetupVolumeForTune(mCurMusicTune, 0, 0);
+	}
+	else
+	{
+		Mix_HaltMusicStream(aMusicInfo->mHMusic);
+		aMusicInfo->mStopOnFade = false;
+		aMusicInfo->mVolume = aMusicInfo->mVolumeCap * theVolume;
+		aMusicInfo->mVolumeAdd = 0.0;
+		Mix_PlayMusicStream(aMusicInfo->mHMusic, -1);
+		Mix_VolumeMusicStream(aMusicInfo->mHMusic, (int)(aMusicInfo->mVolume*128));
 	}
 }
 
@@ -376,6 +485,31 @@ void Music::PlayMusic(MusicTune theMusicTune, int theOffset, int theDrumsOffset)
 	mCurMusicFileMain = MusicFile::MUSIC_FILE_NONE;
 	mCurMusicFileDrums = MusicFile::MUSIC_FILE_NONE;
 	mCurMusicFileHihats = MusicFile::MUSIC_FILE_NONE;
+
+	MusicFile aPerTuneFile = MusicFile::MUSIC_FILE_NONE;
+	switch (theMusicTune)
+	{
+	case MusicTune::MUSIC_TUNE_DAY_GRASSWALK:			aPerTuneFile = MusicFile::MUSIC_FILE_DAY_GRASSWALK; break;
+	case MusicTune::MUSIC_TUNE_NIGHT_MOONGRAINS:		aPerTuneFile = MusicFile::MUSIC_FILE_NIGHT_MOONGRAINS; break;
+	case MusicTune::MUSIC_TUNE_POOL_WATERYGRAVES:		aPerTuneFile = MusicFile::MUSIC_FILE_POOL_WATERYGRAVES; break;
+	case MusicTune::MUSIC_TUNE_FOG_RIGORMORMIST:		aPerTuneFile = MusicFile::MUSIC_FILE_FOG_RIGORMORMIST; break;
+	case MusicTune::MUSIC_TUNE_ROOF_GRAZETHEROOF:		aPerTuneFile = MusicFile::MUSIC_FILE_ROOF_GRAZETHEROOF; break;
+	case MusicTune::MUSIC_TUNE_CHOOSE_YOUR_SEEDS:		aPerTuneFile = MusicFile::MUSIC_FILE_CHOOSE_YOUR_SEEDS; break;
+	case MusicTune::MUSIC_TUNE_ZEN_GARDEN:				aPerTuneFile = MusicFile::MUSIC_FILE_ZEN_GARDEN; break;
+	case MusicTune::MUSIC_TUNE_PUZZLE_CEREBRAWL:		aPerTuneFile = MusicFile::MUSIC_FILE_PUZZLE_CEREBRAWL; break;
+	case MusicTune::MUSIC_TUNE_MINIGAME_LOONBOON:		aPerTuneFile = MusicFile::MUSIC_FILE_MINIGAME_LOONBOON; break;
+	case MusicTune::MUSIC_TUNE_CONVEYER:				aPerTuneFile = MusicFile::MUSIC_FILE_CONVEYER; break;
+	case MusicTune::MUSIC_TUNE_FINAL_BOSS_BRAINIAC_MANIAC: aPerTuneFile = MusicFile::MUSIC_FILE_FINAL_BOSS_BRAINIAC_MANIAC; break;
+	case MusicTune::MUSIC_TUNE_TITLE_CRAZY_DAVE_MAIN_THEME: aPerTuneFile = MusicFile::MUSIC_FILE_MAIN_MENU; break;
+	default: break;
+	}
+
+	if (aPerTuneFile != MusicFile::MUSIC_FILE_NONE && IsPerTuneFileLoaded(aPerTuneFile))
+	{
+		mCurMusicFileMain = aPerTuneFile;
+		PlayFromOffset(aPerTuneFile, 0, 1.0);
+		return;
+	}
 
 	switch (theMusicTune)
 	{
@@ -483,6 +617,8 @@ void Music::PlayMusic(MusicTune theMusicTune, int theOffset, int theDrumsOffset)
 
 unsigned long Music::GetMusicOrder(MusicFile theMusicFile)
 {
+	if (theMusicFile != MusicFile::MUSIC_FILE_MAIN_MUSIC && theMusicFile != MusicFile::MUSIC_FILE_DRUMS)
+		return 0;
 	PVZP_ASSERT(theMusicFile != MusicFile::MUSIC_FILE_NONE);
 	return ((SDLMusicInterface*)mApp->mMusicInterface.get())->GetMusicOrder((int)theMusicFile);
 }
@@ -510,6 +646,8 @@ void Music::UpdateMusicBurst()
 	if (mApp->mBoard == nullptr)
 		return;
 	if (mApp->mGameMode == GameMode::GAMEMODE_INTRO)
+		return;
+	if (mCurMusicFileMain != MusicFile::MUSIC_FILE_MAIN_MUSIC)
 		return;
 
 	int aBurstScheme;

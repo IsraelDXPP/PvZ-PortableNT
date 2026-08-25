@@ -126,7 +126,7 @@ public: // TODO: revert to protected
 		void         DeleteResource() override;
 	};
 
-	typedef std::map<std::string,BaseRes*> ResMap;
+	typedef std::map<std::string,std::unique_ptr<BaseRes>> ResMap;
 	typedef std::list<BaseRes*> ResList;
 	typedef std::map<std::string,ResList,StringLessNoCase> ResGroupMap;
 

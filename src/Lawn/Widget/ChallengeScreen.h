@@ -28,7 +28,7 @@
 #include <memory>
 using namespace Sexy;
 
-#define NUM_CHALLENGE_MODES (static_cast<int>(GameMode::NUM_GAME_MODES) - 1)
+constexpr const int NUM_CHALLENGE_MODES = static_cast<int>(GameMode::NUM_GAME_MODES) - 1;
 
 class LawnApp;
 class ToolTipWidget;

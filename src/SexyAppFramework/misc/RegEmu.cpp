@@ -33,7 +33,7 @@
 #include <fstream>
 #include <vector>
 
-#define REGEMU_VERSION 1
+constexpr const int REGEMU_VERSION = 1;
 
 struct RegValue
 {

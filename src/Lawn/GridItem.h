@@ -25,7 +25,7 @@
 #include <cstdint>
 #include "../ConstEnums.h"
 
-#define NUM_MOTION_TRAIL_FRAMES 12
+constexpr const int NUM_MOTION_TRAIL_FRAMES = 12;
 
 class LawnApp;
 class Board;

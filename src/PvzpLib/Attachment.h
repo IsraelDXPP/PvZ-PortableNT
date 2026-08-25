@@ -33,7 +33,7 @@ namespace Sexy
 }
 using namespace Sexy;
 
-#define MAX_EFFECTS_PER_ATTACHMENT 16
+constexpr const int MAX_EFFECTS_PER_ATTACHMENT = 16;
 
 class Trail;
 class Reanimation;

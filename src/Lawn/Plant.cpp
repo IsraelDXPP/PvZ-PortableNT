@@ -754,7 +754,7 @@ bool Plant::FindTargetAndFire(int theRow, PlantWeapon thePlantWeapon)
 		aHeadReanim->mAnimRate = 35.0f;
 		aHeadReanim->SetFramesForLayer("anim_shooting");
 
-		mShootingCounter = 33;
+		mShootingCounter = 35;
 		if (mSeedType == SeedType::SEED_REPEATER || mSeedType == SeedType::SEED_SPLITPEA || mSeedType == SeedType::SEED_LEFTPEATER)
 		{
 			aHeadReanim->mAnimRate = 45.0f;
@@ -1481,8 +1481,7 @@ Zombie* Plant::FindSquashTarget()
 
 void Plant::UpdateSquash()
 {
-	Reanimation* aBodyReanim = mApp->ReanimationTryToGet(mBodyReanimID);
-	(void)aBodyReanim; // unused in Release mode
+	[[maybe_unused]] Reanimation* aBodyReanim = mApp->ReanimationTryToGet(mBodyReanimID);  // unused in Release mode
 	PVZP_ASSERT(aBodyReanim);
 
 	if (mState == PlantState::STATE_NOTREADY)
@@ -1541,7 +1540,7 @@ void Plant::UpdateSquash()
 		}
 		else if (mState == PlantState::STATE_SQUASH_FALLING)
 		{
-			mY = PvzpAnimateCurve(10, 0, mStateCountdown, aDestY - 120, aDestY, PvzpCurves::CURVE_EASE_IN_OUT);
+			mY = PvzpAnimateCurve(10, 0, mStateCountdown, aDestY - 120, aDestY, PvzpCurves::CURVE_LINEAR);
 
 			if (mStateCountdown == 5)
 			{

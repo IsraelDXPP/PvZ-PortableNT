@@ -30,8 +30,8 @@
 //using namespace std;
 using namespace Sexy;
 
-#define MAX_PAGE_SPOTS 8
-#define MAX_PURCHASES 80
+constexpr const int MAX_PAGE_SPOTS = 8;
+constexpr const int MAX_PURCHASES = 80;
 
 class Coin;
 class LawnApp;

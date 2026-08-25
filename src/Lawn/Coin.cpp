@@ -1386,9 +1386,8 @@ void Coin::DroppedUsableSeed()
 	mTimesDropped++;
 }
 
-void Coin::MouseDown(int x, int y, int theClickCount)
+void Coin::MouseDown([[maybe_unused]] int x, [[maybe_unused]] int y, int theClickCount)
 {
-	(void)x;(void)y;
 	if (mBoard == nullptr || mBoard->mPaused || mApp->mGameScene != GameScenes::SCENE_PLAYING || mDead)
 	{
 		return;

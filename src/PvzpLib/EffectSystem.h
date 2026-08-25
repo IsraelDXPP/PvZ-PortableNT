@@ -30,7 +30,7 @@
 #include "graphics/Graphics.h"
 using namespace Sexy;
 
-#define MAX_TRIANGLES 256
+constexpr const int MAX_TRIANGLES = 256;
 
 class PvzpTriVertex
 {

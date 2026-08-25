@@ -273,8 +273,7 @@ Image* GetGIFImage(const std::string& theFileName)
 	#define LSBFirstOrder(x,y)  (((y) << 8) | (x))
 
 	int
-		opacity,
-		status;
+		opacity;
 
 	int i;
 
@@ -290,11 +289,7 @@ Image* GetGIFImage(const std::string& theFileName)
 	std::unique_ptr<unsigned char[]> global_colormap;
 
 	unsigned int
-		delay,
-		dispose,
-		global_colors,
-		image_count,
-		iterations;
+		global_colors;
 
 	/*
 	Open image file.
@@ -307,8 +302,7 @@ Image* GetGIFImage(const std::string& theFileName)
 	/*
 	Determine if this is a GIF file.
 	*/
-	status = p_fread(magick, sizeof(char), 6, fp.get());
-	(void)status; // unused
+	p_fread(magick, sizeof(char), 6, fp.get());
 
 	// a valid GIF file starts with a "GIF87" or "GIF89" signature
 	if (((strncmp((char*)magick, "GIF87", 5) != 0) && (strncmp((char*)magick, "GIF89", 5) != 0)))
@@ -339,11 +333,7 @@ Image* GetGIFImage(const std::string& theFileName)
 		p_fread(global_colormap.get(), sizeof(char), 3 * global_colors, fp.get());
 	}
 
-	delay = 0;
-	dispose = 0;
-	iterations = 1;
 	opacity = (-1);
-	image_count = 0;
 
 	for (; ; )
 	{
@@ -368,9 +358,6 @@ Image* GetGIFImage(const std::string& theFileName)
 				*/
 				while (ReadBlobBlock(fp.get(), (char*)header) > 0);
 
-				dispose = header[0] >> 2;
-				delay = (header[2] << 8) | header[1];
-				(void)delay; // Unused
 				if ((header[0] & 0x01) == 1)
 					opacity = header[3];
 				break;
@@ -385,18 +372,11 @@ Image* GetGIFImage(const std::string& theFileName)
 			}
 			case 0xff:
 			{
-				int
-					loop;
-
 				/*
 				Read Netscape Loop extension.
 				*/
-				loop = false;
-				if (ReadBlobBlock(fp.get(), (char*)header) > 0)
-					loop = !strncmp((char*)header, "NETSCAPE2.0", 11);
-				while (ReadBlobBlock(fp.get(), (char*)header) > 0)
-					if (loop)
-						iterations = (header[2] << 8) | header[1];
+				ReadBlobBlock(fp.get(), (char*)header);
+				while (ReadBlobBlock(fp.get(), (char*)header) > 0);
 				break;
 			}
 			default:
@@ -409,8 +389,6 @@ Image* GetGIFImage(const std::string& theFileName)
 
 		if (c != ',')  // not an image descriptor
 			continue;
-
-		image_count++;
 
 		uint16_t pagex;
 		uint16_t pagey;
@@ -434,11 +412,6 @@ Image* GetGIFImage(const std::string& theFileName)
 
 		interlaced = BitSet(flag, 0x40);
 
-		delay = 0;
-		dispose = 0;
-		(void)dispose; // unused
-		iterations = 1;
-		(void)iterations; //unused
 		if ((width == 0) || (height == 0))
 			return nullptr;
 		if (!BitSet(flag, 0x80))
@@ -466,8 +439,7 @@ Image* GetGIFImage(const std::string& theFileName)
 			*/
 			colormap = new unsigned char[3 * colors];
 
-			int pos = p_ftell(fp.get());
-			(void)pos; // unused
+			[[maybe_unused]] int pos = p_ftell(fp.get());
 
 			p_fread(colormap, sizeof(char), 3 * colors, fp.get());
 
@@ -485,8 +457,8 @@ Image* GetGIFImage(const std::string& theFileName)
 
 		global_colormap.reset();
 
-#define MaxStackSize  4096
-#define NullCode  (-1)
+constexpr const int MaxStackSize = 4096;
+constexpr const int NullCode = -1;
 
 		int
 			available,
@@ -583,8 +555,7 @@ Image* GetGIFImage(const std::string& theFileName)
 							/*
 							Read a new data block.
 							*/
-							int pos = p_ftell(fp.get());
-							(void)pos; // unused
+							[[maybe_unused]] int pos = p_ftell(fp.get());
 
 							count = ReadBlobBlock(fp.get(), (char*)packet.get());
 							if (count <= 0)
@@ -983,7 +954,7 @@ typedef struct {
 
 typedef pak_source_mgr * pak_src_ptr;
 
-#define INPUT_BUF_SIZE 4096
+constexpr const int INPUT_BUF_SIZE = 4096;
 
 METHODDEF(void) init_source (j_decompress_ptr cinfo)
 {

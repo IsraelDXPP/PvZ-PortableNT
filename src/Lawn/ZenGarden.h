@@ -29,8 +29,8 @@
 #include <stdint.h>
 #include <time.h>
 
-#define ZEN_MAX_GRIDSIZE_X 8
-#define ZEN_MAX_GRIDSIZE_Y 4
+constexpr const int ZEN_MAX_GRIDSIZE_X = 8;
+constexpr const int ZEN_MAX_GRIDSIZE_Y = 4;
 
 class LawnApp;
 class Board;

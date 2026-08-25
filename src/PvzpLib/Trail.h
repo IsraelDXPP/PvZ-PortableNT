@@ -26,7 +26,7 @@
 #include <memory>
 #include "PvzpParticle.h"
 
-#define MAX_TRAIL_TRIANGLES 38
+constexpr const int MAX_TRAIL_TRIANGLES = 38;
 
 enum TrailType : int32_t
 {

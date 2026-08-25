@@ -4463,16 +4463,16 @@ void SexyAppBase::LoadCurrentResourcePack()
 		ExtractResourcesByName(mResourceManager.get(), aIt->c_str());
 	if (!mLoaded)
 		return;
-	ReanimatorReloadDefinitions();
+	// ReanimatorReloadDefinitions();
 	PvzpParticleReloadDefinitions();
 	TrailReloadDefinitions();
-	ReloadReanimationAtlases();
-	ClearReanimAtlasCache();
-	ClearReanimationCache();
+	// ReloadReanimationAtlases();
+	// ClearReanimAtlasCache();
+	// ClearReanimationCache();
 	ClearParticleCache();
 	ClearTrailCache();
-	gLawnApp->mReanimatorCache->ReanimatorCacheDispose();
-	gLawnApp->mReanimatorCache->ReanimatorCacheInitialize();
+	// gLawnApp->mReanimatorCache->ReanimatorCacheDispose();
+	// gLawnApp->mReanimatorCache->ReanimatorCacheInitialize();
 	FilterEffectDisposeForApp();
 	if (gLawnApp->mMusic != nullptr)
 		gLawnApp->mMusic->UnloadResourcePackMusic();

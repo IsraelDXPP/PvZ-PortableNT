@@ -216,7 +216,7 @@ void Music::LoadSong(MusicFile theMusicFile, std::string_view theFileName)
 	if (!PvzpLoadMusic(theMusicFile, theFileName))
 	{
 		PvzpTrace("music failed to load\n");
-		mMusicDisabled = true;
+		// mMusicDisabled = true; // QEWide: don't disable ALL music just because one file failed
 	}
 	else
 	{

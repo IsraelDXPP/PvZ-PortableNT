@@ -353,12 +353,10 @@ void Music::LoadMusicFromResourcePack(MusicFile theMusicFile, std::string_view t
 void Music::UnloadResourcePackMusic()
 {
 	MusicTune aCurTune = mCurMusicTune;
-	int aPauseOffset = mPauseOffset;
-	int aPauseOffsetDrums = mPauseOffsetDrums;
 	UnloadAllMusic();
 	RescanMusicFiles();
 	if (aCurTune != MusicTune::MUSIC_TUNE_NONE)
-		PlayMusic(aCurTune, aPauseOffset, aPauseOffsetDrums);
+		PlayMusic(aCurTune, -1, -1);
 }
 
 void Music::UnloadAllMusic()

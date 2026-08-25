@@ -40,14 +40,14 @@
 
 using namespace Sexy;
 
-#define MAX_GRID_SIZE_X 9
-#define MAX_GRID_SIZE_Y 6
-#define MAX_ZOMBIES_IN_WAVE 50
-#define MAX_ZOMBIE_WAVES 100
-#define MAX_GRAVE_STONES MAX_GRID_SIZE_X * MAX_GRID_SIZE_Y
-#define MAX_POOL_GRID_SIZE 10
-#define MAX_RENDER_ITEMS 1024
-#define PROGRESS_METER_COUNTER 150
+constexpr const int MAX_GRID_SIZE_X = 9;
+constexpr const int MAX_GRID_SIZE_Y = 6;
+constexpr const int MAX_ZOMBIES_IN_WAVE = 50;
+constexpr const int MAX_ZOMBIE_WAVES = 100;
+constexpr const int MAX_GRAVE_STONES = MAX_GRID_SIZE_X * MAX_GRID_SIZE_Y;
+constexpr const int MAX_POOL_GRID_SIZE = 10;
+constexpr const int MAX_RENDER_ITEMS = 1024;
+constexpr const int PROGRESS_METER_COUNTER = 150;
 
 class LawnApp;
 class CursorObject;

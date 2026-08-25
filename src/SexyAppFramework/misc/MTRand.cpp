@@ -37,23 +37,24 @@ email: m-mat @ math.sci.hiroshima-u.ac.jp (remove space)
 
 #include "MTRand.h"
 #include "Debug.h"
+#include <cstdint>
 #include <stdio.h>
 
 using namespace Sexy;
 
 /* Period parameters */
-#define MTRAND_M 397
-#define MATRIX_A 0x9908b0dfUL   /* constant vector a */
-#define UPPER_MASK 0x80000000UL /* most significant w-r bits */
-#define LOWER_MASK 0x7fffffffUL /* least significant r bits */
+constexpr const int MTRAND_M = 397;
+constexpr const uint32_t MATRIX_A = 0x9908b0df;   /* constant vector a */
+constexpr const uint32_t UPPER_MASK = 0x80000000; /* most significant w-r bits */
+constexpr const uint32_t LOWER_MASK = 0x7fffffff; /* least significant r bits */
 
 /* Tempering parameters */
-#define TEMPERING_MASK_B 0x9d2c5680
-#define TEMPERING_MASK_C 0xefc60000
-#define TEMPERING_SHIFT_U(y)  (y >> 11)
-#define TEMPERING_SHIFT_S(y)  (y << 7)
-#define TEMPERING_SHIFT_T(y)  (y << 15)
-#define TEMPERING_SHIFT_L(y)  (y >> 18)
+constexpr const unsigned int TEMPERING_MASK_B = 0x9d2c5680;
+constexpr const unsigned int TEMPERING_MASK_C = 0xefc60000;
+constexpr uint32_t TEMPERING_SHIFT_U(uint32_t y) { return y >> 11; }
+constexpr uint32_t TEMPERING_SHIFT_S(uint32_t y) { return y << 7; }
+constexpr uint32_t TEMPERING_SHIFT_T(uint32_t y) { return y << 15; }
+constexpr uint32_t TEMPERING_SHIFT_L(uint32_t y) { return y >> 18; }
 
 
 MTRand::MTRand(const std::string& theSerialData)

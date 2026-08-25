@@ -117,9 +117,8 @@ void Slider::SliderDraw(Graphics* g)
 	//g->FillRect(0, 0, mWidth, mHeight);
 }
 
-void Slider::MouseDown(int x, int y, int theClickCount)
+void Slider::MouseDown(int x, int y, [[maybe_unused]] int theClickCount)
 {
-	(void)theClickCount;
 	if (mHorizontal)
 	{
 		int aThumbX = (int) (mVal * (mWidth - mThumbImage->GetWidth())) + mThumbOffsetX;
@@ -196,9 +195,8 @@ void Slider::MouseDrag(int x, int y)
 	}
 }
 
-void Slider::MouseUp(int x, int y)
+void Slider::MouseUp([[maybe_unused]] int x, [[maybe_unused]] int y)
 {
-	(void)x;(void)y;
 	mDragging = false;
 	mWidgetManager->mApp->SetCursor(CURSOR_POINTER);
 	mListener->SliderVal(mId, mVal);

@@ -25,7 +25,7 @@
 #include <string>
 #include "GameObject.h"
 
-#define MAX_MAGNET_ITEMS 5
+constexpr const int MAX_MAGNET_ITEMS = 5;
 
 enum PlantSubClass : int32_t
 {

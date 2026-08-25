@@ -7,7 +7,7 @@
 namespace Sexy
 {
 
-#define MTRAND_N 624
+constexpr const int MTRAND_N = 624;
 
 class MTRand
 {

@@ -800,7 +800,7 @@ ZombieType AlmanacDialog::ZombieHitTest(int x, int y)
 	return ZombieType::ZOMBIE_INVALID;
 }
 
-void AlmanacDialog::MouseUp(int x, int y, int theClickCount)
+void AlmanacDialog::MouseUp([[maybe_unused]] int x, [[maybe_unused]] int y, [[maybe_unused]] int theClickCount)
 {
 	(void)x;(void)y;(void)theClickCount;
 	if (mDescriptionSliderDragging)
@@ -814,7 +814,7 @@ void AlmanacDialog::MouseUp(int x, int y, int theClickCount)
 	else if (mIndexButton->IsMouseOver())	SetPage(ALMANAC_PAGE_INDEX);
 }
 
-void AlmanacDialog::MouseDown(int x, int y, int theClickCount)
+void AlmanacDialog::MouseDown(int x, int y, [[maybe_unused]] int theClickCount)
 {
 	(void)theClickCount;
 	if (mDescriptionSliderRect.Contains(x, y))

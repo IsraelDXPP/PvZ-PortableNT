@@ -31,15 +31,7 @@ using namespace Sexy;
 
 inline int QueryCounters(int64_t *lpPerformanceCount)
 {
-	(void)lpPerformanceCount;
-	unreachable();
-	return 1;
-}
-
-inline int DeltaCounters(int64_t *lpPerformanceCount)
-{
-	(void)lpPerformanceCount;
-	unreachable();
+	*lpPerformanceCount = static_cast<int64_t>(SDL_GetPerformanceCounter());
 	return 1;
 }
 
@@ -224,7 +216,7 @@ void SexyPerf::EndPerf()
 
 	gPerfOn = false;
 
-	int64_t aFreq = PerfTimer::GetCPUSpeed();
+	int64_t aFreq = SDL_GetPerformanceFrequency();
 
 	gDuration = ((double)(anEndTime - gStartTime - gCollateTime))*1000/aFreq;
 

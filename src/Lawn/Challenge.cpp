@@ -1352,9 +1352,8 @@ Rect Challenge::SlotMachineGetHandleRect()
 	return Rect(mBoard->mSeedBank->mX + 473, mBoard->mSeedBank->mY, 55, 80);
 }
 
-int Challenge::MouseUp(int x, int y)
+int Challenge::MouseUp([[maybe_unused]] int x, [[maybe_unused]] int y)
 {
-	(void)x;(void)y;
 	if (mApp->mGameMode == GAMEMODE_CHALLENGE_BEGHOULED)
 	{
 		if (mBeghouledMouseCapture && !mBoard->mAdvice->IsBeingDisplayed() && mChallengeScore == 0)
@@ -2899,7 +2898,7 @@ void Challenge::WhackAZombieSpawning()
 	}
 }
 
-int Challenge::UpdateZombieSpawning()
+bool Challenge::UpdateZombieSpawning()
 {
 	if (mApp->IsWhackAZombieLevel())
 	{

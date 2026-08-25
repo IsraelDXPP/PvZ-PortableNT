@@ -22,7 +22,7 @@
 #ifndef __PVZPLIST_H__
 #define __PVZPLIST_H__
 
-#define MAX_GLOBAL_ALLOCATORS 128
+constexpr const int MAX_GLOBAL_ALLOCATORS = 128;
 
 #include "PvzpDebug.h"
 #include "PvzpCommon.h"

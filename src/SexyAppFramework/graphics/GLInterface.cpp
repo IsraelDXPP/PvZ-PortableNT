@@ -38,7 +38,7 @@
 #include <mutex>
 #include <vector>
 
-#define MAX_VERTICES 16384
+constexpr const int MAX_VERTICES = 16384;
 
 #ifndef GL_FRAMEBUFFER_SRGB
 #define GL_FRAMEBUFFER_SRGB 0x8DB9 // Not in GLES 2.0 headers, but needed to disable sRGB on Windows.
@@ -69,7 +69,7 @@ static inline uint32_t VertexColor(uint32_t triVertexColor, uint32_t fallback) n
 	return triVertexColor ? ArgbToRgba(triVertexColor) : fallback;
 }
 
-#define GetColorFromTriVertex(v, c) VertexColor((v).color, (c))
+static inline uint32_t GetColorFromTriVertex(const TriVertex& v, uint32_t c) noexcept { return VertexColor(v.color, c); }
 
 static int gMinTextureWidth;
 static int gMinTextureHeight;

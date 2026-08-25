@@ -27,8 +27,8 @@
 #include "../SexyAppFramework/Common.h"
 #include "../LawnApp.h"
 
-#define MAX_MESSAGE_LENGTH 128
-#define MAX_REANIM_LINES 5
+constexpr const int MAX_MESSAGE_LENGTH = 128;
+constexpr const int MAX_REANIM_LINES = 5;
 
 class LawnApp;
 namespace Sexy

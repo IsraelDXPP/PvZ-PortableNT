@@ -22,10 +22,10 @@
 #ifndef __PLAYERINFO_H__
 #define __PLAYERINFO_H__
 
-#define MAX_POTTED_PLANTS 200
-#define PURCHASE_COUNT_OFFSET 1000
-#define ZOMBATAR_RECORD_SIZE 0x48
-#define MAX_ZOMBATAR_HEADS 100
+constexpr const int MAX_POTTED_PLANTS = 200;
+constexpr const int PURCHASE_COUNT_OFFSET = 1000;
+constexpr const int ZOMBATAR_RECORD_SIZE = 0x48;
+constexpr const int MAX_ZOMBATAR_HEADS = 100;
 
 #include <cstdint>
 #include <ctime>

@@ -1080,7 +1080,7 @@ void PvzpResourceManager::AddImageToMap(SharedImageRef* theImage, const std::str
 		auto aIt = mImageMap.find(thePath);
 		if (aIt != mImageMap.end())
 			mImageMap.erase(aIt);
-		mImageMap.insert(ResMap::value_type(thePath, std::move(aImageRes)));
+		mImageMap.try_emplace(thePath, std::move(aImageRes));
 	}
 	else
 	{
@@ -1088,7 +1088,7 @@ void PvzpResourceManager::AddImageToMap(SharedImageRef* theImage, const std::str
 		auto aIt = aPackMap.find(thePath);
 		if (aIt != aPackMap.end())
 			aPackMap.erase(aIt);
-		aPackMap.insert(ResMap::value_type(thePath, std::move(aImageRes)));
+		aPackMap.try_emplace(thePath, std::move(aImageRes));
 	}
 }
 

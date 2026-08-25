@@ -157,7 +157,7 @@ public: // TODO: revert to protected
 
 	bool					Fail(const std::string& theErrorText);
 
-	virtual bool			ParseCommonResource(XMLElement &theElement, BaseRes *theRes, ResMap &theMap);
+	virtual bool			ParseCommonResource(XMLElement &theElement, std::unique_ptr<BaseRes> &theRes, ResMap &theMap);
 	virtual bool			ParseSoundResource(XMLElement &theElement);
 	virtual bool			ParseImageResource(XMLElement &theElement);
 	virtual bool			ParseFontResource(XMLElement &theElement);

@@ -180,7 +180,7 @@ bool ResourceManager::ParseCommonResource(XMLElement &theElement, std::unique_pt
 
 	bool aIsInResourcePack = theRes->mType == ResType_Image && !mCurResourcePack.empty();
 	if (aIsInResourcePack)
-		((ImageRes*)theRes)->mInResourcePack = aIsInResourcePack;
+		((ImageRes*)theRes.get())->mInResourcePack = aIsInResourcePack;
 
 	const std::string &aPath = theElement.mAttributes["path"];
 	if (aPath.empty())

@@ -2436,6 +2436,8 @@ void SexyAppBase::PurgeAllImageBits()
 
 	for (MemoryImage* img : imagesToProcess)
 	{
+		if (img->mIsVolatile)
+			continue;
 		if (img->mBits != nullptr || img->mColorIndices != nullptr)
 			img->PurgeBits();
 	}

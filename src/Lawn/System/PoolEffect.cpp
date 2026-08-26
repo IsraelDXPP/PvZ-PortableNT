@@ -48,6 +48,7 @@ void PoolEffect::PoolEffectInitialize()
 	mCausticImage->mBits = std::make_unique<uint32_t[]>(CAUSTIC_IMAGE_WIDTH * CAUSTIC_IMAGE_HEIGHT + 1);
 	mCausticImage->mHasTrans = true;
 	mCausticImage->mHasAlpha = true;
+	mCausticImage->mIsVolatile = true;
 	mCausticImage->mRenderFlags |= RenderImageFlag_Repeat;
 	memset(mCausticImage->mBits.get(), 0xFF, CAUSTIC_IMAGE_WIDTH * CAUSTIC_IMAGE_HEIGHT * 4); //4
 	mCausticImage->mBits[CAUSTIC_IMAGE_WIDTH * CAUSTIC_IMAGE_HEIGHT] = MEMORYCHECK_ID;

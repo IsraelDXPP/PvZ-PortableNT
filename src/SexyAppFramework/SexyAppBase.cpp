@@ -2422,6 +2422,25 @@ void SexyAppBase::DeleteExtraImageData()
 		img->DeleteExtraBuffers();
 }
 
+void SexyAppBase::PurgeAllImageBits()
+{
+	if (mGLInterface == nullptr)
+		return;
+
+	std::vector<MemoryImage*> imagesToProcess;
+	{
+		std::scoped_lock anAutoCrit(mGLInterface->mCritSect);
+		for (auto anItr = mMemoryImageSet.begin(); anItr != mMemoryImageSet.end(); ++anItr)
+			imagesToProcess.push_back(*anItr);
+	}
+
+	for (MemoryImage* img : imagesToProcess)
+	{
+		if (img->mBits != nullptr || img->mColorIndices != nullptr)
+			img->PurgeBits();
+	}
+}
+
 void SexyAppBase::ReInitImages()
 {
 	std::vector<MemoryImage*> imagesToProcess;
@@ -4446,6 +4465,7 @@ void SexyAppBase::SwitchResourcePack()
 	}
 	else
 		mResourcePack = "";
+	PurgeAllImageBits();
 	LoadCurrentResourcePack();
 }
 

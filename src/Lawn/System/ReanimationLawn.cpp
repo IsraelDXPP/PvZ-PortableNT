@@ -352,6 +352,25 @@ void ReanimatorCache::ReanimatorCacheDispose()
 	}
 }
 
+void ReanimatorCache::ReanimatorCachePurgeBits()
+{
+	for (auto& aImage : mPlantImages)
+		if (aImage != nullptr && (aImage->mBits != nullptr || aImage->mColorIndices != nullptr))
+			aImage->PurgeBits();
+	for (auto& aImage : mZombieImages)
+		if (aImage != nullptr && (aImage->mBits != nullptr || aImage->mColorIndices != nullptr))
+			aImage->PurgeBits();
+	for (auto& aImage : mLawnMowers)
+		if (aImage != nullptr && (aImage->mBits != nullptr || aImage->mColorIndices != nullptr))
+			aImage->PurgeBits();
+	for (PvzpListNode<ReanimCacheImageVariation>* aNode = mImageVariationList.mHead; aNode != nullptr; aNode = aNode->mNext)
+	{
+		MemoryImage* aImage = aNode->mValue.mImage;
+		if (aImage != nullptr && (aImage->mBits != nullptr || aImage->mColorIndices != nullptr))
+			aImage->PurgeBits();
+	}
+}
+
 
 void ReanimatorCache::DrawCachedPlant(Graphics* g, float thePosX, float thePosY, SeedType theSeedType, DrawVariation theDrawVariation)
 {

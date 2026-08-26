@@ -30,10 +30,6 @@
 #include "SexyAppBase.h"
 #include "../LawnApp.h"
 #include <algorithm>
-#include <map>
-
-static std::map<Image*, std::string> gImagePathCache;
-static std::map<std::string, Image*> gImageCache;
 
 int gParticleDefCount;
 std::unique_ptr<PvzpParticleDefinition[]> gParticleDefArray;
@@ -991,7 +987,7 @@ void RenderParticle(Graphics* g, PvzpParticle* theParticle, const Color& theColo
 	PvzpParticleEmitter* aEmitter = theParticle->mParticleEmitter;
 	PvzpEmitterDefinition* aEmitterDef = aEmitter->mEmitterDef;
 	Image* aImage = aEmitter->mImageOverride != nullptr ? aEmitter->mImageOverride : aEmitterDef->mImage;
-	aImage = PvzpResolveResourcePackImage(aImage, gImagePathCache, gImageCache);
+	aImage = PvzpResolveResourcePackImage(aImage);
 	if (aImage == nullptr)
 		return;
 
@@ -1327,6 +1323,5 @@ PvzpParticleSystem* PvzpParticleHolder::AllocParticleSystem(float theX, float th
 
 void ClearParticleCache()
 {
-	gImagePathCache.clear();
-	gImageCache.clear();
+	PvzpClearImageCaches();
 }

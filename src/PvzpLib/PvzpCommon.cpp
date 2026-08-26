@@ -38,6 +38,15 @@
 #include "misc/SexyMatrix.h"
 #include "graphics/GLInterface.h"
 
+std::map<Image*, std::string> gPvzpImagePathCache;
+std::map<std::string, Image*> gPvzpImageCache;
+
+void PvzpClearImageCaches()
+{
+	gPvzpImagePathCache.clear();
+	gPvzpImageCache.clear();
+}
+
 void Pvzp_SWTri_AddAllDrawTriFuncs()
 {
 	SWTri_AddDrawTriFunc(true, false, false, false, 0x8888, false, PvzpDrawTriangle_8888_TEX1_TALPHA0_MOD0_GLOB0_BLEND0);
@@ -1209,29 +1218,29 @@ bool PvzpResourceManager::FindImagePath(Image* theImage, std::string* thePath)
 	return false;
 }
 
-Image* PvzpResolveResourcePackImage(Image* theImage, std::map<Image*, std::string>& thePathCache, std::map<std::string, Image*>& theImageCache)
+Image* PvzpResolveResourcePackImage(Image* theImage)
 {
 	if (theImage == nullptr || gSexyAppBase->mResourcePackIndex == -1)
 		return theImage;
 
 	std::string aPath;
-	auto aIt = thePathCache.find(theImage);
-	if (aIt != thePathCache.end())
+	auto aIt = gPvzpImagePathCache.find(theImage);
+	if (aIt != gPvzpImagePathCache.end())
 		aPath = aIt->second;
 	else
 	{
 		PvzpFindImagePath(theImage, &aPath);
-		thePathCache[theImage] = aPath;
+		gPvzpImagePathCache[theImage] = aPath;
 	}
 	if (aPath.empty())
 		return theImage;
 
-	auto aItr = theImageCache.find(aPath);
-	if (aItr != theImageCache.end())
+	auto aItr = gPvzpImageCache.find(aPath);
+	if (aItr != gPvzpImageCache.end())
 		return aItr->second;
 
 	Image* aResolved = gSexyAppBase->mResourceManager->GetImage(aPath);
-	theImageCache[aPath] = aResolved;
+	gPvzpImageCache[aPath] = aResolved;
 	return aResolved;
 }
 

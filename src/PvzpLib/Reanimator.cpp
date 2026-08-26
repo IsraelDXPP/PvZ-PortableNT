@@ -20,7 +20,6 @@
  */
 
 #include <algorithm>
-#include <map>
 #include "PvzpDebug.h"
 #include "PvzpCommon.h"
 #include "Definition.h"
@@ -36,9 +35,6 @@
 #include "graphics/MemoryImage.h"
 
 constexpr const int NO_BASE_POSE = -2;
-
-static std::map<Image*, std::string> gImagePathCache;
-static std::map<std::string, Image*> gImageCache;
 
 unsigned int gReanimatorDefCount;
 std::unique_ptr<ReanimatorDefinition[]> gReanimatorDefArray;
@@ -530,8 +526,7 @@ void Reanimation::Update()
 
 void ClearReanimationCache()
 {
-	gImagePathCache.clear();
-	gImageCache.clear();
+	PvzpClearImageCaches();
 }
 
 void BlendTransform(ReanimatorTransform* theResult, const ReanimatorTransform& theTransform1, const ReanimatorTransform& theTransform2, float theBlendFactor)
@@ -704,7 +699,7 @@ bool Reanimation::DrawTrack(Graphics* g, int theTrackIndex, [[maybe_unused]] int
 	}
 
 	Image* aImage = aTransform.mImage;
-	aImage = PvzpResolveResourcePackImage(aImage, gImagePathCache, gImageCache);
+	aImage = PvzpResolveResourcePackImage(aImage);
 	ReanimAtlasImage* aAtlasImage = nullptr;
 	// Extract pivot info from the original track image before any override / cleanup logic.
 	Image* aPivotImage = aImage;

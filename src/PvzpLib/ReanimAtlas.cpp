@@ -30,8 +30,6 @@
 #include "PvzpCommon.h"
 
 static std::vector<ReanimAtlas*> gReanimAtlases;
-static std::map<Image*, std::string> gImagePathCache;
-static std::map<std::string, Image*> gImageCache;
 
 ReanimAtlas::ReanimAtlas()
 {
@@ -270,7 +268,7 @@ void ReanimAtlas::ReloadMemoryImage(int theWidth, int theHeight)
 	{
 		ReanimAtlasImage* aImage = &mImageArray[aImageIndex];
 		Image* anImage = aImage->mOriginalImage;
-		anImage = PvzpResolveResourcePackImage(anImage, gImagePathCache, gImageCache);
+		anImage = PvzpResolveResourcePackImage(anImage);
 		aMemoryGraphis.DrawImage(anImage, aImage->mX, aImage->mY);
 	}
 	FixPixelsOnAlphaEdgeForBlending(mMemoryImage);
@@ -294,6 +292,5 @@ void ReloadReanimationAtlases()
 
 void ClearReanimAtlasCache()
 {
-	gImagePathCache.clear();
-	gImageCache.clear();
+	PvzpClearImageCaches();
 }

@@ -189,7 +189,7 @@ AwardScreen::AwardScreen(LawnApp* theApp, AwardType theAwardType, bool theShowin
 		mStartButton->SetFont(Sexy::FONT_HOUSEOFTERROR20);
 		mStartButton->mColors[ButtonWidget::COLOR_LABEL] = Color(255, 255, 255);
 		mStartButton->mColors[ButtonWidget::COLOR_LABEL_HILITE] = Color(213, 159, 43);
-		mStartButton->Resize(325 + BOARD_ADDITIONAL_WIDTH, 505 + BOARD_OFFSET_Y, 190, 73);
+		mStartButton->Resize(325, 505, 190, 73);
 		mStartButton->mTextOffsetX = 33;
 		mStartButton->mTextOffsetY = -2;
 		mStartButton->mButtonOffsetX = -2;
@@ -282,7 +282,7 @@ void AwardScreen::DrawAwardSeed(Graphics* g)
 		aMessage = Plant::GetToolTip(aSeedType);
 	DrawBottom(g, "[NEW_PLANT]", aAward, aMessage);
 
-	g->SetScale(2, 2, 350 + BOARD_ADDITIONAL_WIDTH, 129 + BOARD_OFFSET_Y);
+	g->SetScale(2, 2, 350, 129);
 	DrawSeedPacket(g, 350 + BOARD_ADDITIONAL_WIDTH, 129 + BOARD_OFFSET_Y, aSeedType, SEED_NONE, 0, 255, true, false);
 	g->SetScale(1, 1, 0, 0);
 }
@@ -307,7 +307,7 @@ void AwardScreen::Draw(Graphics* g)
 	}
 	else if (mAwardType == AWARD_HELP_ZOMBIENOTE)
 	{
-		g->DrawImage(Sexy::IMAGE_BACKGROUND1, -700 + BOARD_ADDITIONAL_WIDTH, -300 + BOARD_OFFSET_Y, 2800, 1200);
+		g->DrawImage(Sexy::IMAGE_BACKGROUND1, -700, -300, 2800, 1200);
 		g->DrawImage(Sexy::IMAGE_ZOMBIE_NOTE, 80 + BOARD_ADDITIONAL_WIDTH, 80 + BOARD_OFFSET_Y);
 		g->DrawImage(Sexy::IMAGE_ZOMBIE_NOTE_HELP, 131 + BOARD_ADDITIONAL_WIDTH, 132 + BOARD_OFFSET_Y);
 	}
@@ -405,7 +405,7 @@ void AwardScreen::Draw(Graphics* g)
 		else if (aLevel == 1 && mApp->HasFinishedAdventure())
 		{
 			DrawBottom(g, "[WIN_MESSAGE1]", "[SILVER_SUNFLOWER_TROPHY]", "[WIN_MESSAGE2]");
-			PvzpDrawImageCelCenterScaledF(g, Sexy::IMAGE_SUNFLOWER_TROPHY, 325 + BOARD_ADDITIONAL_WIDTH, 65 + BOARD_OFFSET_Y, 0, 0.7f, 0.7f);
+			PvzpDrawImageCelCenterScaledF(g, Sexy::IMAGE_SUNFLOWER_TROPHY, 325 + BOARD_ADDITIONAL_WIDTH, 65 + BOARD_OFFSET_Y, 0, 0.6f, 0.6f);
 		}
 		else
 		{

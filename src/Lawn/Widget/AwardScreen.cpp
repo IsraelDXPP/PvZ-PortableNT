@@ -405,7 +405,7 @@ void AwardScreen::Draw(Graphics* g)
 		else if (aLevel == 1 && mApp->HasFinishedAdventure())
 		{
 			DrawBottom(g, "[WIN_MESSAGE1]", "[SILVER_SUNFLOWER_TROPHY]", "[WIN_MESSAGE2]");
-			PvzpDrawImageCelCenterScaledF(g, Sexy::IMAGE_SUNFLOWER_TROPHY, 325, 65, 0, 0.7f, 0.7f);
+			PvzpDrawImageCelCenterScaledF(g, Sexy::IMAGE_SUNFLOWER_TROPHY, 325, 65, 0, 0.6f, 0.6f);
 		}
 		else
 		{

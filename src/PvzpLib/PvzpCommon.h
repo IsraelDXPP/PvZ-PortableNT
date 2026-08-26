@@ -100,7 +100,10 @@ bool			PvzpLoadNextResource();
 void					PvzpAddImageToMap(SharedImageRef* theImage, const std::string& thePath, const std::string& theResourcePack = "");
 bool					PvzpFindImagePath(Image* theImage, std::string* thePath);
 bool					PvzpFindFontPath(_Font* theFont, std::string* thePath);
-Image*					PvzpResolveResourcePackImage(Image* theImage, std::map<Image*, std::string>& thePathCache, std::map<std::string, Image*>& theImageCache);
+extern std::map<Image*, std::string>		gPvzpImagePathCache;
+extern std::map<std::string, Image*>		gPvzpImageCache;
+Image*					PvzpResolveResourcePackImage(Image* theImage);
+void					PvzpClearImageCaches();
 
 float		PvzpCurveQuad(float theTime);
 float		PvzpCurveInvQuad(float theTime);

@@ -399,6 +399,11 @@ bool ResourceManager::ParseImageResource(XMLElement &theElement)
 		{
 			DoLoadImage(aRes);
 			delete aImage;
+			if (aRes->mImage != nullptr)
+			{
+				GLImage* aGLImage = (GLImage*) aRes->mImage;
+				aGLImage->PurgeBits();
+			}
 		}
 	}
 

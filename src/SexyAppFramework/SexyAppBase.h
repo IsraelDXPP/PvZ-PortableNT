@@ -370,6 +370,7 @@ protected:
 	virtual void			ReInitImages();
 	virtual void			DeleteNativeImageData();
 	virtual void			DeleteExtraImageData();
+	virtual void			PurgeAllImageBits();
 
 	// Loading thread methods
 	virtual void			LoadingThreadCompleted();

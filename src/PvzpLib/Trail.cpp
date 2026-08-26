@@ -26,12 +26,8 @@
 #include "../LawnApp.h"
 #include "EffectSystem.h"
 #include <algorithm>
-#include <map>
 #include "graphics/Graphics.h"
 #include "graphics/TriVertex.h"
-
-static std::map<Image*, std::string> gImagePathCache;
-static std::map<std::string, Image*> gImageCache;
 
 int gTrailDefCount;
 std::unique_ptr<TrailDefinition[]> gTrailDefArray;
@@ -122,8 +118,7 @@ void TrailReloadDefinitions()
 
 void ClearTrailCache()
 {
-	gImagePathCache.clear();
-	gImageCache.clear();
+	PvzpClearImageCaches();
 }
 
 Trail::Trail()
@@ -308,7 +303,7 @@ void Trail::Draw(Graphics* g)
 		aVertArray[aVertNext][2].color = aColorNext.ToInt();
 	}
 
-	Image* aImage = PvzpResolveResourcePackImage(mDefinition->mImage, gImagePathCache, gImageCache);
+	Image* aImage = PvzpResolveResourcePackImage(mDefinition->mImage);
 	g->DrawTrianglesTex(aImage, aVertArray, aTriangleCount);
 }
 

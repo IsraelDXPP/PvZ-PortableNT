@@ -877,6 +877,7 @@ bool SexyAppBase::ProcessDeferredMessages(bool singleMessage)
 
 			case SDL_APP_WILLENTERBACKGROUND:
 				mMinimized = true;
+				PurgeAllImageBits();
 				RehupFocus();
 				break;
 

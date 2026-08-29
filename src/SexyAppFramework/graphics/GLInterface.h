@@ -34,6 +34,7 @@
 #include "misc/Rect.h"
 #include "misc/Ratio.h"
 #include "misc/SexyMatrix.h"
+#include <memory>
 
 namespace Sexy
 {
@@ -190,7 +191,7 @@ public:
 	int						mRefreshRate;
 	int						mMillisecondsPerFrame;
 
-	GLImage*				mScreenImage;
+	std::unique_ptr<GLImage>	mScreenImage;
 
 	int						mNextCursorX;
 	int						mNextCursorY;

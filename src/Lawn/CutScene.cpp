@@ -116,16 +116,11 @@ CutScene::CutScene()
 	mCrazyDaveCountDown = 0;
 	mCrazyDaveLastTalkIndex = -1;
 	mUpsellHideBoard = false;
-	mUpsellChallengeScreen = nullptr;
 	mPreUpdatingBoard = false;
 }
 
 CutScene::~CutScene()
 {
-	if (mUpsellChallengeScreen)
-	{
-		delete mUpsellChallengeScreen;
-	}
 	mApp->mMuteSoundsForCutscene = false;
 
 	mApp->mResourceManager->ReleaseTrackedResources(mLoadedResourceNames);
@@ -1151,7 +1146,7 @@ void CutScene::AnimateBoard()
 	{
 		int aTimeSeedChoserSlideOnStart = TimeSeedChoserSlideOnStart + mCrazyDaveTime;
 		int aTimeSeedChoserSlideOnEnd = TimeSeedChoserSlideOnEnd + mCrazyDaveTime;
-		SeedChooserScreen* aSeedChoser = mApp->mSeedChooserScreen;
+		SeedChooserScreen* aSeedChoser = mApp->mSeedChooserScreen.get();
 		// Seed chooser slides on
 		if (mCutsceneTime > aTimeSeedChoserSlideOnStart && mCutsceneTime <= aTimeSeedChoserSlideOnEnd)
 		{
@@ -1327,7 +1322,7 @@ void CutScene::AnimateBoard()
 		}
 	}
 
-	mApp->mSeedChooserScreen->mParent->BringToFront(mApp->mSeedChooserScreen);
+	mApp->mSeedChooserScreen->mParent->BringToFront(mApp->mSeedChooserScreen.get());
 }
 
 void CutScene::ShowShovel()
@@ -1360,7 +1355,7 @@ void CutScene::StartSeedChooser()
 {
 	mApp->mSeedChooserScreen->mMouseVisible = true;
 	mSeedChoosing = true;
-	mApp->mWidgetManager->SetFocus(mApp->mSeedChooserScreen);
+	mApp->mWidgetManager->SetFocus(mApp->mSeedChooserScreen.get());
 }
 
 void CutScene::EndSeedChooser()
@@ -1781,11 +1776,7 @@ void CutScene::ClearUpsellBoard()
 	}
 	mBoard->mPoolSparklyParticleID = ParticleSystemID::PARTICLESYSTEMID_NULL;
 
-	if (mUpsellChallengeScreen)
-	{
-		delete mUpsellChallengeScreen;
-		mUpsellChallengeScreen = nullptr;
-	}
+	mUpsellChallengeScreen.reset();
 }
 
 void CutScene::AddUpsellZombie(ZombieType theZombieType, int thePixelX, int theGridY)
@@ -1970,7 +1961,7 @@ void CutScene::LoadUpsellBoardFog()
 void CutScene::LoadUpsellChallengeScreen()
 {
 	ClearUpsellBoard();
-	mUpsellChallengeScreen = new ChallengeScreen(mApp, ChallengePage::CHALLENGE_PAGE_CHALLENGE);
+	mUpsellChallengeScreen = std::make_unique<ChallengeScreen>(mApp, ChallengePage::CHALLENGE_PAGE_CHALLENGE);
 }
 
 void CutScene::LoadUpsellBoardRoof()

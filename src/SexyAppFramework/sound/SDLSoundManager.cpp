@@ -50,13 +50,13 @@ SDLSoundManager::SDLSoundManager()
 
 	if (SDL_InitSubSystem(SDL_INIT_AUDIO))
 	{
-		Sexy::PrintF("Failed to initialize SDL audio subsystem\n");
+		Sexy::LogInfoLn("Failed to initialize SDL audio subsystem");
 		return;
 	}
 
 	if (Mix_OpenAudio(44100, AUDIO_S16SYS, 2, 2048))
 	{
-		Sexy::PrintF("Failed to initialize SDL mixer\n");
+		Sexy::LogInfoLn("Failed to initialize SDL mixer");
 		return;
 	}
 	mInitializedMixer = true;

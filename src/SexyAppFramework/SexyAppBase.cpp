@@ -42,6 +42,7 @@
 #include <memory>
 #include <system_error>
 #include <tuple>
+#include <format>
 
 #include <SDL.h>
 
@@ -512,9 +513,9 @@ bool SexyAppBase::ReadDemoBuffer(std::string &theError)
 	std::string aRecordedVersion(aStrLen, '\0');
 	if (!aFile.read(aRecordedVersion.data(), aStrLen)) return false;
 	if (aRecordedVersion.empty())
-		SDL_Log("Demo has no program version tag; replay may diverge.");
+		Sexy::LogInfoLn("Demo has no program version tag; replay may diverge.");
 	else if (mProductVersion != aRecordedVersion)
-		SDL_Log("Demo was recorded with a different program version (recorded: %s, current: %s); replay may diverge.", aRecordedVersion.c_str(), mProductVersion.c_str());
+		Sexy::LogInfoLn("Demo was recorded with a different program version (recorded: {}, current: {}); replay may diverge.", aRecordedVersion, mProductVersion);
 
 	std::streampos aFilePos = aFile.tellg();
 	aFile.seekg(0, std::ios::end);
@@ -1546,15 +1547,12 @@ std::string SexyAppBase::GetGameSEHInfo()
 {
 	int aSecLoaded = (SDL_GetTicks() - mTimeLoaded) / 1000;
 
-	char aTimeStr[16];
-	snprintf(aTimeStr, sizeof(aTimeStr), "%02d:%02d:%02d", (aSecLoaded/60/60), (aSecLoaded/60)%60, aSecLoaded%60);
-
 	std::string anInfoString =
 		"Product: " + mProdName + "\r\n" +
 		"Version: " + mProductVersion + "\r\n";
 
 	anInfoString +=
-		"Time Loaded: " + std::string(aTimeStr) + "\r\n"
+		"Time Loaded: " + std::format("{:02}:{:02}:{:02}", (aSecLoaded/60/60), (aSecLoaded/60)%60, aSecLoaded%60) + "\r\n"
 		"Fullscreen: " + (mIsWindowed ? std::string("No") : std::string("Yes")) + "\r\n";
 
 	return anInfoString;
@@ -1904,7 +1902,7 @@ void SexyAppBase::EndPopup()
 int SexyAppBase::MsgBox(const std::string& theText, const std::string& theTitle, [[maybe_unused]] int theFlags)
 {
 	BeginPopup();
-	Sexy::PrintF("%s\n===\n%s\n", theTitle.c_str(), theText.c_str());
+	Sexy::LogInfoLn("{}\n===\n{}", theTitle, theText);
 
 #ifdef __SWITCH__
 	ErrorApplicationConfig c;
@@ -1928,7 +1926,7 @@ void SexyAppBase::Popup(const std::string& theString)
 	BeginPopup();
 	if (!mShutdown)
 	{
-		Sexy::PrintF("FATAL ERROR\n===\n%s\n", theString.c_str());
+		Sexy::LogInfoLn("FATAL ERROR\n===\n{}", theString);
 #if defined(__SWITCH__)
 		ErrorApplicationConfig c;
 		errorApplicationCreate(&c, "Fatal error", theString.c_str());
@@ -2309,7 +2307,7 @@ void SexyAppBase::LoadingThreadProcStub(SexyAppBase *theArg)
 
 	aSexyApp->LoadingThreadProc();
 
-	Sexy::PrintF("Resource Loading Time: %d\r\n", (SDL_GetTicks() - aSexyApp->mTimeLoaded));
+	Sexy::LogInfoLn("Resource Loading Time: {}", (SDL_GetTicks() - aSexyApp->mTimeLoaded));
 
 	aSexyApp->mLoadingThreadCompleted = true;
 }
@@ -2951,15 +2949,15 @@ void SexyAppBase::Start()
 
 	WaitForLoadingThread();
 
-	Sexy::PrintF("Seconds       = %g\r\n", (SDL_GetTicks() - aStartTime) / 1000.0);
-	Sexy::PrintF("Sleep Count   = %u\r\n", mSleepCount);
-	Sexy::PrintF("Update Count  = %u\r\n", mUpdateCount);
-	Sexy::PrintF("Draw Count    = %u\r\n", mDrawCount);
-	Sexy::PrintF("Draw Time     = %" PRIu64 "\r\n", mDrawTime);
-	Sexy::PrintF("Screen Blt    = %u\r\n", mScreenBltTime);
+	Sexy::LogInfoLn("Seconds       = {:.6g}", (SDL_GetTicks() - aStartTime) / 1000.0);
+	Sexy::LogInfoLn("Sleep Count   = {}", mSleepCount);
+	Sexy::LogInfoLn("Update Count  = {}", mUpdateCount);
+	Sexy::LogInfoLn("Draw Count    = {}", mDrawCount);
+	Sexy::LogInfoLn("Draw Time     = {}", mDrawTime);
+	Sexy::LogInfoLn("Screen Blt    = {}", mScreenBltTime);
 	if (mDrawTime+mScreenBltTime > 0)
 	{
-		Sexy::PrintF("Avg FPS       = %" PRIu64 "\r\n", static_cast<uint64_t>(mDrawCount) * 1000 / (mDrawTime+mScreenBltTime));
+		Sexy::LogInfoLn("Avg FPS       = {}", static_cast<uint64_t>(mDrawCount) * 1000 / (mDrawTime+mScreenBltTime));
 	}
 
 	PreTerminate();
@@ -3170,8 +3168,8 @@ static std::string GetTimestampedDemoFileName(std::string_view theDemoPrefix)
 	time_t aNow = time(nullptr);
 	tm aNowTM = *localtime(&aNow);
 
-	std::string aBaseName = StrFormat((std::string(theDemoPrefix) + "-%04d%02d%02d-%02d%02d%02d").c_str(),
-		aNowTM.tm_year + 1900, aNowTM.tm_mon + 1, aNowTM.tm_mday, aNowTM.tm_hour, aNowTM.tm_min, aNowTM.tm_sec);
+	std::string aBaseName = std::format("{}-{:04d}{:02d}{:02d}-{:02d}{:02d}{:02d}",
+		theDemoPrefix, aNowTM.tm_year + 1900, aNowTM.tm_mon + 1, aNowTM.tm_mday, aNowTM.tm_hour, aNowTM.tm_min, aNowTM.tm_sec);
 	std::string aName = aBaseName + ".dmo";
 	const std::string aSuffixPrefix = aBaseName + '-';
 	auto aDemoFiles = FindDemoFiles(theDemoPrefix, true);
@@ -3180,7 +3178,7 @@ static std::string GetTimestampedDemoFileName(std::string_view theDemoPrefix)
 		if (aFileName == aName)
 			return aBaseName + "-2.dmo";
 		if (aFileName.starts_with(aSuffixPrefix))
-			return StrFormat("%s-%d.dmo", aBaseName.c_str(), atoi(aFileName.c_str() + aSuffixPrefix.length()) + 1);
+			return std::format("{}-{}.dmo", aBaseName, atoi(aFileName.c_str() + aSuffixPrefix.length()) + 1);
 	}
 
 	return aName;
@@ -3458,7 +3456,7 @@ void SexyAppBase::Init()
 
 	if (mGLInterface == nullptr)
 	{
-		Sexy::LogError("FATAL: Failed to create OpenGL interface.");
+		Sexy::LogErrorLn("FATAL: Failed to create OpenGL interface.");
 		mShutdown = true;
 		return;
 	}

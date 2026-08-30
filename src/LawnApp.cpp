@@ -20,6 +20,9 @@
  */
 
 #include <time.h>
+#include <cstdarg>
+#include <cstdio>
+#include <format>
 #include "LawnApp.h"
 #include "Resources.h"
 #include "Lawn/LawnCommon.h"
@@ -643,7 +646,7 @@ AlmanacDialog* LawnApp::DoAlmanacDialog(SeedType theSeedType, ZombieType theZomb
 	}
 
 	int aDuration = mTimer.GetDuration();
-	PvzpTrace("almanac load time: %d ms", aDuration);
+	PvzpLogLn("almanac load time: {} ms", aDuration);
 
 	return aDialog;
 }
@@ -831,6 +834,38 @@ void LawnApp::FinishCreateUserDialog(bool isYes)
 	}
 }
 
+std::string LawnApp::GetFormattedString(std::string_view theComponentId, std::string_view theDefault, ...)
+{
+	std::string aFormat = GetString(theComponentId, theDefault);
+
+	va_list args;
+	va_start(args, theDefault);
+
+	va_list argsCopy;
+	va_copy(argsCopy, args);
+#ifdef _WIN32
+	int required = _vscprintf(aFormat.c_str(), argsCopy);
+#else
+	int required = vsnprintf(nullptr, 0, aFormat.c_str(), argsCopy);
+#endif
+	va_end(argsCopy);
+
+	std::string aResult;
+	if (required > 0)
+	{
+		aResult.resize((size_t)required + 1);
+#ifdef _WIN32
+		_vsnprintf(aResult.data(), (size_t)required + 1, aFormat.c_str(), args);
+#else
+		vsnprintf(aResult.data(), (size_t)required + 1, aFormat.c_str(), args);
+#endif
+		aResult.resize((size_t)required);
+	}
+
+	va_end(args);
+	return aResult;
+}
+
 void LawnApp::DoConfirmDeleteUserDialog(const std::string& theName)
 {
 	KillDialog(Dialogs::DIALOG_CONFIRMDELETEUSER);
@@ -838,9 +873,7 @@ void LawnApp::DoConfirmDeleteUserDialog(const std::string& theName)
 		Dialogs::DIALOG_CONFIRMDELETEUSER,
 		true,
 		GetString("ARE_YOU_SURE", "Are You Sure?"),
-		StrFormat(
-			GetString("DELETE_USER_WARNING", "This will permanently remove '%s' from the player roster!").c_str(),
-			theName.c_str()),
+		GetFormattedString("DELETE_USER_WARNING", "This will permanently remove '%s' from the player roster!", theName.c_str()),
 		"",
 		Dialog::BUTTONS_YES_NO
 	);
@@ -1134,11 +1167,12 @@ void LawnApp::Init()
 	if (mRecordingDemoBuffer || mPlayingDemoBuffer)
 		mAppRandSeed = mRandSeed; // demo sessions derive the app-level seed from the recorded one
 
-	// these debug checks break the whole exe in release mode
-//#ifdef PVZ_DEBUG
-	PvzpAssertInitForApp();
-	PvzpLogLn("session id: %lld", static_cast<long long>(mSessionID));
-//#endif
+	Sexy::MkDir(Sexy::GetAppDataPath("userdata"));
+#ifdef PVZ_DEBUG
+	Sexy::RegisterLogFileSink(Sexy::GetAppDataPath("userdata/") + "log.txt");
+	PvzpLogLn("Started {}", static_cast<uint64_t>(std::time(nullptr)));
+#endif
+	PvzpLogLn("session id: {}", static_cast<long long>(mSessionID));
 
 	if (!mResourceManager->ParseResourcesFile("properties/resources.xml"))
 	{
@@ -1177,7 +1211,7 @@ void LawnApp::Init()
 
 #ifdef PVZ_DEBUG
 	int aDuration = mTimer.GetDuration();
-	PvzpTrace("loading: 'profiles' %d ms", aDuration);
+	PvzpLogLn("loading: 'profiles' {} ms", aDuration);
 #endif
 	mTimer.Start();
 
@@ -1209,7 +1243,7 @@ void LawnApp::Init()
 
 #ifdef PVZ_DEBUG
 	aDuration = mTimer.GetDuration();
-	PvzpTrace("loading: 'system' %d ms", aDuration);
+	PvzpLogLn("loading: 'system' {} ms", aDuration);
 #endif
 	mTimer.Start();
 
@@ -1219,7 +1253,7 @@ void LawnApp::Init()
 
 #ifdef PVZ_DEBUG
 	aDuration = mTimer.GetDuration();
-	PvzpTrace("loading: 'loaderbar' %d ms", aDuration);
+	PvzpLogLn("loading: 'loaderbar' {} ms", aDuration);
 #endif
 	mTimer.Start();
 }
@@ -1639,7 +1673,7 @@ void LawnApp::LoadingThreadProc()
 	mDefaultFont = FONT_PICO129; // framework widgets fall back to this when no font is set
 
 	aHesitationResources.EndBracket();
-	PvzpTrace("loading '%s' %d ms", "resources", static_cast<int>(aTimer.GetDuration()));
+	PvzpLogLn("loading '{}' {} ms", "resources", static_cast<int>(aTimer.GetDuration()));
 
 	mMusic->MusicInit();
 	// aDuration goes unused
@@ -1653,11 +1687,11 @@ void LawnApp::LoadingThreadProc()
 	mReanimatorCache->ReanimatorCacheInitialize();
 	PvzpFoleyInitialize(gLawnFoleyParamArray, LENGTH(gLawnFoleyParamArray));
 
-	PvzpTrace("loading '%s' %d ms", "stuff", static_cast<int>(aTimer.GetDuration()));
+	PvzpLogLn("loading '{}' {} ms", "stuff", static_cast<int>(aTimer.GetDuration()));
 	aTimer.Start();
 
 	TrailLoadDefinitions(gLawnTrailArray, LENGTH(gLawnTrailArray));
-	PvzpTrace("loading '%s' %d ms", "trail", static_cast<int>(aTimer.GetDuration()));
+	PvzpLogLn("loading '{}' {} ms", "trail", static_cast<int>(aTimer.GetDuration()));
 	aTimer.Start();
 	PvzpHesitationTrace("trail");
 
@@ -1709,9 +1743,7 @@ void LawnApp::URLOpenFailed(const std::string& theURL)
 	CopyToClipboard(theURL);
 
 	std::string aString =
-		StrFormat(
-			GetString("OPEN_URL", "Please open the following URL in your browser\n\n%s\n\nFor your convenience, this URL has already been copied to your clipboard.").c_str(),
-			theURL.c_str());
+		GetFormattedString("OPEN_URL", "Please open the following URL in your browser\n\n%s\n\nFor your convenience, this URL has already been copied to your clipboard.", theURL.c_str());
 
 	DoDialog(Dialogs::DIALOG_OPENURL_WAIT, true, GetString("OPEN_BROWSER", "Open Browser"), "[DIALOG_BUTTON_OK]", aString, Dialog::BUTTONS_FOOTER);
 }
@@ -1943,7 +1975,7 @@ std::string LawnApp::GetStageString(int theLevel)
 {
 	int aArea = std::clamp((theLevel - 1) / LEVELS_PER_AREA + 1, 1, ADVENTURE_AREAS + 1);
 	int aSub = theLevel - (aArea - 1) * LEVELS_PER_AREA;
-	return StrFormat("%d-%d", aArea, aSub);
+	return std::format("{}-{}", aArea, aSub);
 }
 
 bool LawnApp::IsAdventureMode()
@@ -2332,7 +2364,7 @@ void LawnApp::RemoveParticle(ParticleSystemID theParticleID)
 
 bool LawnApp::AdvanceCrazyDaveText()
 {
-	std::string aMessageName = StrFormat("[CRAZY_DAVE_%d]", mCrazyDaveMessageIndex + 1);
+	std::string aMessageName = std::format("[CRAZY_DAVE_{}]", mCrazyDaveMessageIndex + 1);
 	if (!PvzpStringListExists(aMessageName))
 	{
 		return false;
@@ -2344,7 +2376,7 @@ bool LawnApp::AdvanceCrazyDaveText()
 
 std::string LawnApp::GetCrazyDaveText(int theMessageIndex)
 {
-	std::string aMessage = StrFormat("[CRAZY_DAVE_%d]", theMessageIndex);
+	std::string aMessage = std::format("[CRAZY_DAVE_{}]", theMessageIndex);
 	aMessage = PvzpReplaceString(aMessage, "{PLAYER_NAME}", mPlayerInfo->mName);
 	aMessage = PvzpReplaceString(aMessage, "{MONEY}", GetMoneyString(mPlayerInfo->mCoins));
 	int aCost = StoreScreen::GetItemCost(StoreItem::STORE_ITEM_PACKET_UPGRADE);
@@ -2496,7 +2528,7 @@ void LawnApp::CrazyDaveDoneHanding()
 	ReanimatorTrackInstance* aHandTrackInstance = aCrazyDaveReanim->GetTrackInstanceByName("Dave_handinghand");
 	AttachmentDie(aHandTrackInstance->mAttachmentID);
 
-	PvzpTrace("DoneHanding");
+	PvzpLogLn("DoneHanding");
 }
 
 void LawnApp::CrazyDaveStopSound()
@@ -2614,7 +2646,7 @@ void LawnApp::CrazyDaveTalkMessage(const std::string& theMessage)
 
 			Reanimation* aWallnutReanim = AddReanimation(0.0f, 0.0f, 0, ReanimationType::REANIM_WALLNUT);
 			aWallnutReanim->PlayReanim("anim_idle", ReanimLoopType::REANIM_LOOP, 0, 12.0f);
-			PvzpTrace("Handed");
+			PvzpLogLn("Handed");
 
 			ReanimatorTrackInstance* aHandTrackInstance = aCrazyDaveReanim->GetTrackInstanceByName("Dave_handinghand");
 			AttachEffect* aAttachEffect = AttachReanim(aHandTrackInstance->mAttachmentID, aWallnutReanim, 100.0f, 393.0f);
@@ -2951,7 +2983,7 @@ void LawnApp::PreloadForUser()
 	int aNumTasks = mCompletedLoadingThreadTasks + GetNumPreloadingTasks();
 	if (mTitleScreen && mTitleScreen->mQuickLoadKey != KeyCode::KEYCODE_UNKNOWN)
 	{
-		PvzpTrace("preload canceled\n");
+		PvzpLogLn("preload canceled");
 		mNumLoadingThreadTasks = aNumTasks;
 		return;
 	}
@@ -2988,7 +3020,7 @@ void LawnApp::PreloadForUser()
 
 				if (mTitleScreen && mTitleScreen->mQuickLoadKey != KeyCode::KEYCODE_UNKNOWN)
 				{
-					PvzpTrace("preload canceled\n");
+					PvzpLogLn("preload canceled");
 					mNumLoadingThreadTasks = aNumTasks;
 					return;
 				}
@@ -3020,7 +3052,7 @@ void LawnApp::PreloadForUser()
 
 			if (mTitleScreen && mTitleScreen->mQuickLoadKey != KeyCode::KEYCODE_UNKNOWN)
 			{
-				PvzpTrace("preload canceled\n");
+				PvzpLogLn("preload canceled");
 				mNumLoadingThreadTasks = aNumTasks;
 				return;
 			}
@@ -3035,7 +3067,7 @@ void LawnApp::PreloadForUser()
 
 	if (mCompletedLoadingThreadTasks != aNumTasks)
 	{
-		PvzpTrace("num preload tasks wasn't calculated correctly");
+		PvzpLogLn("num preload tasks wasn't calculated correctly");
 		mCompletedLoadingThreadTasks = aNumTasks;
 	}
 }
@@ -3101,15 +3133,15 @@ std::string LawnApp::GetMoneyString(int theAmount)
 	int aValue = theAmount * 10;
 	if (aValue > 999999)
 	{
-		return StrFormat("$%d,%03d,%03d", aValue / 1000000, (aValue - aValue / 1000000 * 1000000) / 1000, aValue - aValue / 1000 * 1000);
+		return std::format("${},{:03d},{:03d}", aValue / 1000000, (aValue - aValue / 1000000 * 1000000) / 1000, aValue - aValue / 1000 * 1000);
 	}
 	else if (aValue > 9999)
 	{
-		return StrFormat("$%d,%03d", aValue / 1000, aValue - aValue / 1000 * 1000);
+		return std::format("${},{:03d}", aValue / 1000, aValue - aValue / 1000 * 1000);
 	}
 	else
 	{
-		return StrFormat("$%d", aValue);
+		return std::format("${}", aValue);
 	}
 }
 
@@ -3150,7 +3182,7 @@ std::string LawnGetCurrentLevelName()
 	}
 	if (gLawnApp->IsAdventureMode())
 	{
-		return StrFormat("F%s", gLawnApp->GetStageString(gLawnApp->mBoard->mLevel).c_str());
+		return std::format("F{}", gLawnApp->GetStageString(gLawnApp->mBoard->mLevel));
 	}
 
 	return gLawnApp->GetCurrentChallengeDef().mChallengeName;

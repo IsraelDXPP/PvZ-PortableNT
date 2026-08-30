@@ -30,6 +30,7 @@
 #include "graphics/GLImage.h"
 #include <algorithm>
 #include <mutex>
+#include <format>
 #include "fcaseopen/fcaseopen.h"
 
 using namespace Sexy;
@@ -189,7 +190,7 @@ bool FontData::Error(const std::string& theError)
 
 		if (mCurrentLine.length() > 0)
 		{
-			anErrorString += " on Line " + StrFormat("%d:\r\n\r\n", mCurrentLineNum) + mCurrentLine;
+			anErrorString += " on Line " + std::format("{}:\r\n\r\n", mCurrentLineNum) + mCurrentLine;
 		}
 
 		mApp->Popup(anErrorString);
@@ -340,19 +341,13 @@ bool FontData::HandleCommand(const ListDataElement& theParams)
 					ListDataElement* aRectElement = new ListDataElement();
 					aRectList->mElementVector.emplace_back(aRectElement);
 
-					char aStr[256];
+					aRectElement->mElementVector.push_back(std::make_unique<SingleDataElement>(std::to_string(aRectIntVector[0] + aXPos)));
 
-					snprintf(aStr, sizeof(aStr), "%d", aRectIntVector[0] + aXPos);
-					aRectElement->mElementVector.push_back(std::make_unique<SingleDataElement>(aStr));
+					aRectElement->mElementVector.push_back(std::make_unique<SingleDataElement>(std::to_string(aRectIntVector[1])));
 
-					snprintf(aStr, sizeof(aStr), "%d", aRectIntVector[1]);
-					aRectElement->mElementVector.push_back(std::make_unique<SingleDataElement>(aStr));
+					aRectElement->mElementVector.push_back(std::make_unique<SingleDataElement>(std::to_string(aWidthsVector[aWidthNum])));
 
-					snprintf(aStr, sizeof(aStr), "%d", aWidthsVector[aWidthNum]);
-					aRectElement->mElementVector.push_back(std::make_unique<SingleDataElement>(aStr));
-
-					snprintf(aStr, sizeof(aStr), "%d", aRectIntVector[3]);
-					aRectElement->mElementVector.push_back(std::make_unique<SingleDataElement>(aStr));
+					aRectElement->mElementVector.push_back(std::make_unique<SingleDataElement>(std::to_string(aRectIntVector[3])));
 
 					aXPos += aWidthsVector[aWidthNum];
 				}

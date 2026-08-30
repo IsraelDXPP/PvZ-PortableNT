@@ -38,6 +38,7 @@
 
 #include <algorithm>
 #include <cstring>
+#include <format>
 
 constexpr int ZOMBATAR_COLOR_NONE = -1;
 constexpr int ZOMBATAR_SKIN_COLOR_COUNT = 12;
@@ -1027,7 +1028,7 @@ void ZombatarWidget::DrawList(Graphics* g)
 
 	g->SetFont(FONT_BRIANNETOD12);
 	g->SetColor(Color(255, 255, 255));
-	g->DrawString(Sexy::StrFormat("%d / %d", mCurrentIndex + 1, aCount), ZOMBATAR_LIST_COUNTER_X, ZOMBATAR_LIST_COUNTER_Y);
+	g->DrawString(std::format("{} / {}", mCurrentIndex + 1, aCount), ZOMBATAR_LIST_COUNTER_X, ZOMBATAR_LIST_COUNTER_Y);
 
 	g->SetFont(FONT_DWARVENTODCRAFT12);
 	g->SetColor(mDeleteHover ? Color(22, 253, 5) : Color(255, 255, 255));
@@ -1169,8 +1170,7 @@ void ZombatarWidget::DrawCreate(Graphics* g)
 	{
 		g->SetFont(FONT_BRIANNETOD12);
 		g->SetColor(Color(255, 255, 255));
-		std::string aPage = Sexy::StrFormat(
-			mApp->GetString("ZOMBATAR_PAGE", "Page %d / %d").c_str(), mSubPage + 1, mMaxSubPages + 1);
+		std::string aPage = mApp->GetFormattedString("ZOMBATAR_PAGE", "Page %d / %d", mSubPage + 1, mMaxSubPages + 1);
 		g->DrawString(aPage, 321, 441);
 	}
 }

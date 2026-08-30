@@ -85,7 +85,7 @@ void SexyApp::HandleCmdLineParam(std::string_view theParamName, std::string_view
 		std::string aVersionString =
 			"Product: " + mProdName + "\n" +
 			"Version: " + mProductVersion + "\n" +
-			"Build Num: " + StrFormat("%d", mBuildNum) + "\n" +
+			"Build Num: " + std::to_string(mBuildNum) + "\n" +
 			"Commit Date: " + mCommitDate + "\n" +
 			CLI_LICENSE_SUMMARY;
 
@@ -104,7 +104,7 @@ void SexyApp::HandleCmdLineParam(std::string_view theParamName, std::string_view
 std::string SexyApp::GetGameSEHInfo()
 {
 	std::string anInfoString = SexyAppBase::GetGameSEHInfo() +
-		"Build Num: " + StrFormat("%d", mBuildNum) + "\r\n" +
+		"Build Num: " + std::to_string(mBuildNum) + "\r\n" +
 		"Commit Date: " + mCommitDate + "\r\n";
 
 	return anInfoString;
@@ -132,9 +132,9 @@ void SexyApp::InitPropertiesHook()
 
 void SexyApp::Init()
 {
-	Sexy::PrintF("Product: %s\n", mProdName.c_str());
-	Sexy::PrintF("BuildNum: %d\n", mBuildNum);
-	Sexy::PrintF("CommitDate: %s\n", mCommitDate.c_str());
+	Sexy::LogInfoLn("Product: {}", mProdName);
+	Sexy::LogInfoLn("BuildNum: {}", mBuildNum);
+	Sexy::LogInfoLn("CommitDate: {}", mCommitDate);
 
 	SexyAppBase::Init();
 }

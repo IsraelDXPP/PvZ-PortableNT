@@ -75,7 +75,7 @@ void SexyAppBase::MakeWindow()
 		if (!mContext)
 		{
 			if (mWindow) { SDL_DestroyWindow((SDL_Window*)mWindow); mWindow = nullptr; }
-			Sexy::LogError("Failed to create OpenGL ES context (ANGLE).");
+			Sexy::LogErrorLn("Failed to create OpenGL ES context (ANGLE).");
 			return;
 		}
 
@@ -84,10 +84,9 @@ void SexyAppBase::MakeWindow()
 
 	if (mGLInterface == nullptr)
 	{
-		mGLInterface = new GLInterface(this);
+		mGLInterface = std::make_unique<GLInterface>(this);
 		if (!InitGLInterface())
 		{
-			delete mGLInterface;
 			mGLInterface = nullptr;
 			return;
 		}

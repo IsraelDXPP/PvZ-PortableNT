@@ -33,8 +33,10 @@
 #include "graphics/Font.h"
 #include "misc/PerfTimer.h"
 #include "graphics/MemoryImage.h"
-
-constexpr const int NO_BASE_POSE = -2;
+#include <algorithm>
+#include <format>
+ 
+ constexpr const int NO_BASE_POSE = -2;
 
 unsigned int gReanimatorDefCount;
 std::unique_ptr<ReanimatorDefinition[]> gReanimatorDefArray;
@@ -377,10 +379,10 @@ void ReanimationCreateAtlas(ReanimatorDefinition* theDefinition, ReanimationType
 	theDefinition->mReanimAtlas = aAtlas;
 	aAtlas->ReanimAtlasCreate(theDefinition);
 
-	PvzpHesitationTrace("atlas '%s'", aParam.mReanimFileName);
+	PvzpHesitationTrace("atlas '{}'", aParam.mReanimFileName);
 	int aDuration = std::max(aTimer.GetDuration(), 0.0);
 	if (aDuration > 20 && theReanimationType != ReanimationType::REANIM_NONE)  // report slow atlas creation
-		PvzpTraceAndLogLn("LOADING:Long atlas '%s' %d ms on %s", aParam.mReanimFileName, aDuration, LawnGetCurrentLevelName().c_str());
+		PvzpLogLn("LOADING:Long atlas '{}' {} ms on {}", aParam.mReanimFileName, aDuration, LawnGetCurrentLevelName());
 }
 
 void ReanimationPreload(ReanimationType theReanimationType)
@@ -391,7 +393,7 @@ void ReanimationPreload(ReanimationType theReanimationType)
 	ReanimationCreateAtlas(aReanimDef, theReanimationType);
 	if (aReanimDef->mReanimAtlas)
 	{
-		PvzpSandImageIfNeeded(aReanimDef->mReanimAtlas->mMemoryImage);
+		PvzpSandImageIfNeeded(aReanimDef->mReanimAtlas->mMemoryImage.get());
 	}
 }
 
@@ -775,7 +777,7 @@ bool Reanimation::DrawTrack(Graphics* g, int theTrackIndex, [[maybe_unused]] int
 	if (aAtlasImage != nullptr)  // atlas exists, the frame has an image, and no override is set
 	{
 		Rect aSrcRect(aAtlasImage->mX, aAtlasImage->mY, aAtlasImage->mWidth, aAtlasImage->mHeight);
-		aImage = mDefinition->mReanimAtlas->mMemoryImage;
+		aImage = mDefinition->mReanimAtlas->mMemoryImage.get();
 		if (mFilterEffect != FilterEffect::FILTER_EFFECT_NONE)
 		{
 			aImage = FilterEffectGetImage(aImage, mFilterEffect);
@@ -990,7 +992,7 @@ int Reanimation::FindTrackIndex(const char* theTrackName)
 		if (strcasecmp(mDefinition->mTracks.tracks[aTrackIndex].mName, theTrackName) == 0)
 			return aTrackIndex;
 
-	PvzpTrace("Can't find track '%s'", theTrackName);
+	PvzpLogLn("Can't find track '{}'", theTrackName);
 	return 0;
 }
 
@@ -1203,7 +1205,7 @@ void ReanimatorEnsureDefinitionLoaded(ReanimationType theReanimType, bool theIsP
 	if (aReanimDef->mTracks.tracks != nullptr)  // non-null tracks means the definition is already loaded
 		return;
 	const ReanimationParams* aReanimParams = &gReanimationParamArray[theReanimType];
-	PvzpTrace("'%s'\n", aReanimParams->mReanimFileName);
+	PvzpLogLn("'{}'", aReanimParams->mReanimFileName);
 	if (theIsPreloading)
 	{
 		if (gSexyAppBase->mShutdown || LawnGetCloseRequest())  // abort preloading when the app is shutting down
@@ -1212,23 +1214,21 @@ void ReanimatorEnsureDefinitionLoaded(ReanimationType theReanimType, bool theIsP
 	else
 	{
 		if (LawnHasUsedCheatKeys())
-			PvzpTraceAndLogLn("Cheater failed to preload '%s' on %s", aReanimParams->mReanimFileName, LawnGetCurrentLevelName().c_str());
+			PvzpLogLn("Cheater failed to preload '{}' on {}", aReanimParams->mReanimFileName, LawnGetCurrentLevelName());
 		else
-			PvzpTraceAndLogLn("Non-cheater failed to preload '%s' on %s", aReanimParams->mReanimFileName, LawnGetCurrentLevelName().c_str());
+			PvzpLogLn("Non-cheater failed to preload '{}' on {}", aReanimParams->mReanimFileName, LawnGetCurrentLevelName());
 	}
 
 	PerfTimer aTimer;
 	aTimer.Start();
-	PvzpHesitationBracket aHesitation("Load Reanim '%s'", aReanimParams->mReanimFileName);
+	PvzpHesitationBracket aHesitation("Load Reanim '{}'", aReanimParams->mReanimFileName);
 	if (!ReanimationLoadDefinition(aReanimParams->mReanimFileName, aReanimDef))
 	{
-		char aBuf[1024];
-		snprintf(aBuf, sizeof(aBuf), "Failed to load reanim '%s'", aReanimParams->mReanimFileName);
-		PvzpErrorMessageBox(aBuf, "Error");
+		PvzpErrorMessageBox(std::format("Failed to load reanim '{}'", aReanimParams->mReanimFileName), "Error");
 	}
 	int aDuration = aTimer.GetDuration();
 	if (aDuration > 100)  // report slow reanim loading
-		PvzpTraceAndLogLn("LOADING:Long reanim '%s' %d ms on %s", aReanimParams->mReanimFileName, aDuration, LawnGetCurrentLevelName().c_str());
+		PvzpLogLn("LOADING:Long reanim '{}' {} ms on {}", aReanimParams->mReanimFileName, aDuration, LawnGetCurrentLevelName());
 }
 
 void ReanimatorLoadDefinitions(const ReanimationParams* theReanimationParamArray, int theReanimationParamArraySize)
@@ -1517,7 +1517,7 @@ void Reanimation::UpdateAttacherTrack(int theTrackIndex)
 	ReanimationType aReanimationType = ReanimationType::REANIM_NONE;
 	if (aAttacherInfo.mReanimName.size() != 0)
 	{
-		std::string aReanimFileName = StrFormat("reanim/%s.reanim", aAttacherInfo.mReanimName.c_str());
+		std::string aReanimFileName = std::format("reanim/{}.reanim", aAttacherInfo.mReanimName);
 		for (unsigned int i = 0; i < gReanimationParamArraySize; i++)  // find the reanim type for this file name
 		{
 			const ReanimationParams* aParams = &gReanimationParamArray[i];

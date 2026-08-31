@@ -45,6 +45,7 @@
 #include "widget/Dialog.h"
 #include "widget/WidgetManager.h"
 #include <algorithm>
+#include <format>
 
 static float gFlowerCenter[3][2] = { { 765.0f, 483.0f }, { 663.0f, 455.0f }, { 701.0f, 439.0f } };
 
@@ -321,7 +322,7 @@ GameSelector::GameSelector(LawnApp* theApp)
 	for (int i = 0; i < 6; i++)
 	{
 		Reanimation* aCloudReanim = mApp->AddReanimation(0.5f, 0.5f, 0, ReanimationType::REANIM_SELECTOR_SCREEN);
-		std::string aAnimName = Sexy::StrFormat("anim_cloud%d", (i > 1 ? i + 2 : i + 1));
+		std::string aAnimName = std::format("anim_cloud{}", (i > 1 ? i + 2 : i + 1));
 		aCloudReanim->PlayReanim(aAnimName.c_str(), ReanimLoopType::REANIM_PLAY_ONCE_AND_HOLD, 0, 0.0f);
 		mCloudReanimID[i] = mApp->ReanimationGetID(aCloudReanim);
 		mCloudCounter[i] = RandRangeInt(-6000, 2000);
@@ -338,7 +339,7 @@ GameSelector::GameSelector(LawnApp* theApp)
 	for (int i = 0; i < 3; i++)
 	{
 		Reanimation* aFlowerReanim = mApp->AddReanimation(0.5f + BOARD_ADDITIONAL_WIDTH, 0.5f + BOARD_OFFSET_Y, 0, ReanimationType::REANIM_SELECTOR_SCREEN);
-		std::string aAnimName = Sexy::StrFormat("anim_flower%d", i + 1);
+		std::string aAnimName = std::format("anim_flower{}", i + 1);
 		aFlowerReanim->PlayReanim(aAnimName.c_str(), ReanimLoopType::REANIM_PLAY_ONCE_AND_HOLD, 0, 0.0f);
 		aFlowerReanim->mAnimRate = 0.0f;
 		aFlowerReanim->AttachToAnotherReanimation(aSelectorReanim, "SelectorScreen_BG_Right");
@@ -1092,7 +1093,7 @@ void GameSelector::KeyChar(char theChar)
 
 	if ((gIsPartnerBuild || mApp->mDebugKeysEnabled) && theChar == 'u' && mApp->mPlayerInfo)
 	{
-		PvzpTraceAndLogLn("Selector cheat key '%c'", theChar);
+		PvzpLogLn("Selector cheat key '{}'", theChar);
 
 		mApp->mPlayerInfo->mFinishedAdventure = 2;
 		mApp->mPlayerInfo->AddCoins(50000);
@@ -1113,7 +1114,7 @@ void GameSelector::KeyChar(char theChar)
 
 	if (mApp->mDebugKeysEnabled)
 	{
-		PvzpTraceAndLogLn("Selector cheat key '%c'", theChar);
+		PvzpLogLn("Selector cheat key '{}'", theChar);
 		if (theChar == 'c' || theChar == 'C')
 		{
 			mMinigamesLocked = false;

@@ -105,13 +105,12 @@ int main(int argc, char** argv)
 	}
 	catch (const std::exception& theException)
 	{
-		PvzpLogLn("Unhandled exception: %s", theException.what());
+		PvzpLogLn("Unhandled exception: {}", theException.what());
 		throw;
 	}
 #ifndef __EMSCRIPTEN__
 	gLawnApp->Shutdown();
-	if (gLawnApp)
-		delete gLawnApp;
+	delete gLawnApp;
 #endif
 
 	return 0;

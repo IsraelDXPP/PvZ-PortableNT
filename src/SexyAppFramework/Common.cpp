@@ -29,8 +29,8 @@
 #include <cstdlib>
 // filesystem included via Common.h (with ghc::filesystem fallback for iOS 9)
 #include <chrono>
-#include <cstdarg>
-#include <cstdio>
+#include <fstream>
+#include <mutex>
 #include <SDL.h>
 
 #include "misc/PerfTimer.h"
@@ -49,15 +49,6 @@ static inline char ToLowerAscii(char c)
 	return (char)std::tolower((unsigned char)c);
 }
 
-static inline void SexyLogV(SDL_LogPriority thePriority, const char* theFormat, va_list theArgs)
-{
-	std::string aBuffer = Sexy::VFormat(theFormat, theArgs);
-	if (aBuffer.empty())
-		return;
-
-	SDL_LogMessage(SDL_LOG_CATEGORY_APPLICATION, thePriority, "%s", aBuffer.c_str());
-}
-
 static inline bool IsUnicodeSpace(char32_t theChar)
 {
 	switch (theChar)
@@ -74,20 +65,33 @@ static inline bool IsUnicodeSpace(char32_t theChar)
 	}
 }
 
-void Sexy::PrintF(const char *text, ...)
+static std::ofstream gLogFileSink;
+static std::mutex gLogFileSinkMutex;
+
+void Sexy::RegisterLogFileSink(std::string_view thePath)
 {
-	va_list args;
-	va_start(args, text);
-	SexyLogV(SDL_LOG_PRIORITY_INFO, text, args);
-	va_end(args);
+	gLogFileSink.open(PathFromU8(thePath), std::ios::app | std::ios::binary);
+	if (!gLogFileSink)
+		LogErrorLn("Failed to open log file '{}'", thePath);
 }
 
-void Sexy::LogError(const char* theFormat, ...)
+void Sexy::DispatchLogLn(SexyLogPriority thePriority, std::string_view theText)
 {
-	va_list args;
-	va_start(args, theFormat);
-	SexyLogV(SDL_LOG_PRIORITY_ERROR, theFormat, args);
-	va_end(args);
+	if (theText.empty())
+		return;
+
+	SDL_LogMessage(SDL_LOG_CATEGORY_APPLICATION, thePriority == SexyLogPriority::Error ? SDL_LOG_PRIORITY_ERROR : SDL_LOG_PRIORITY_INFO, "%.*s", static_cast<int>(theText.size()), theText.data());
+
+	std::scoped_lock aLock(gLogFileSinkMutex);
+	if (gLogFileSink.is_open())
+	{
+		gLogFileSink << theText << '\n' << std::flush;
+		if (!gLogFileSink)
+		{
+			SDL_LogMessage(SDL_LOG_CATEGORY_APPLICATION, SDL_LOG_PRIORITY_ERROR, "%s", "Failed to write to log file");
+			gLogFileSink.close();
+		}
+	}
 }
 
 int Sexy::Rand()
@@ -383,48 +387,6 @@ std::string Sexy::RemoveTrailingSlash(std::string_view theDirectory)
 		return std::string(theDirectory);
 
 	return PathToU8(PathFromU8(theDirectory).lexically_normal());
-}
-std::string Sexy::VFormat(const char* fmt, va_list argPtr)
-{
-	va_list argsCopy;
-	va_copy(argsCopy, argPtr);
-
-#ifdef _WIN32
-	int required = _vscprintf(fmt, argsCopy);
-#else
-	int required = vsnprintf(nullptr, 0, fmt, argsCopy);
-#endif
-	va_end(argsCopy);
-
-	if (required <= 0)
-		return std::string();
-
-	std::string result;
-	result.resize((size_t)required + 1);
-
-	va_list argsCopy2;
-	va_copy(argsCopy2, argPtr);
-#ifdef _WIN32
-	_vsnprintf(result.data(), (size_t)required + 1, fmt, argsCopy2);
-#else
-	vsnprintf(result.data(), (size_t)required + 1, fmt, argsCopy2);
-#endif
-	va_end(argsCopy2);
-
-	result.resize((size_t)required);
-
-	return result;
-}
-
-//overloaded StrFormat: should only be used by the xml strings
-std::string Sexy::StrFormat(const char* fmt ...)
-{
-	va_list argList;
-	va_start(argList, fmt);
-	std::string result = VFormat(fmt, argList);
-	va_end(argList);
-
-	return result;
 }
 
 std::string Sexy::Evaluate(std::string_view theString, const DefinesMap& theDefinesMap)

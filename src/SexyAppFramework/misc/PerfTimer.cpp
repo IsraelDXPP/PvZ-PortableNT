@@ -23,6 +23,7 @@
  */
 
 #include "PerfTimer.h"
+#include <format>
 #include <map>
 #include <set>
 #include <SDL.h>
@@ -34,13 +35,6 @@ inline int QueryCounters(int64_t *lpPerformanceCount)
 	*lpPerformanceCount = static_cast<int64_t>(SDL_GetPerformanceCounter());
 	return 1;
 }
-
-static int64_t CalcCPUSpeed()
-{
-	return 0;
-}
-
-static int64_t gCPUSpeed = 0;
 
 PerfTimer::PerfTimer()
 {
@@ -83,23 +77,6 @@ double PerfTimer::GetDuration()
 		CalcDuration();
 
 	return mDuration;
-}
-
-int64_t PerfTimer::GetCPUSpeed()
-{
-	if(gCPUSpeed<=0)
-	{
-		gCPUSpeed = CalcCPUSpeed();
-		if (gCPUSpeed<=0)
-			gCPUSpeed = 1;
-	}
-
-	return gCPUSpeed;
-}
-
-int PerfTimer::GetCPUSpeedMHz()
-{
-	return (int)(gCPUSpeed/1000000);
 }
 
 struct PerfInfo
@@ -250,15 +227,12 @@ void SexyPerf::StopTiming(const char *theName)
 std::string SexyPerf::GetResults()
 {
 	std::string aResult;
-	char aBuf[512];
 
-	snprintf(aBuf, sizeof(aBuf), "Total Time: %.2f\n", gDuration);
-	aResult += aBuf;
+	aResult += std::format("Total Time: {:.2f}\n", gDuration);
 	for (PerfInfoSet::iterator anItr = gPerfInfoSet.begin(); anItr != gPerfInfoSet.end(); ++anItr)
 	{
 		const PerfInfo &anInfo = *anItr;
-		snprintf(aBuf, sizeof(aBuf), "%s (%d calls, %%%.2f time): %.2f (%.2f avg, %.2f longest)\n", anInfo.mPerfName, anInfo.mCallCount, anInfo.mMillisecondDuration/gDuration*100, anInfo.mMillisecondDuration, anInfo.mMillisecondDuration/anInfo.mCallCount, anInfo.mLongestCall);
-		aResult += aBuf;
+		aResult += std::format("{} ({} calls, %{:.2f} time): {:.2f} ({:.2f} avg, {:.2f} longest)\n", anInfo.mPerfName, anInfo.mCallCount, anInfo.mMillisecondDuration/gDuration*100, anInfo.mMillisecondDuration, anInfo.mMillisecondDuration/anInfo.mCallCount, anInfo.mLongestCall);
 	}
 
 

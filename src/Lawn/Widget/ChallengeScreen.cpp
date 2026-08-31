@@ -36,6 +36,7 @@
 #include "../../GameConstants.h"
 #include <algorithm>
 #include <cmath>
+#include <format>
 
 const Rect cChallengeRect = Rect(0, 91 + BOARD_OFFSET_Y, BOARD_WIDTH, 480);
 const int cButtonHeight = 118;
@@ -500,7 +501,7 @@ void ChallengeScreen::Draw(Graphics* g)
 
 	int aTrophiesGot = mApp->GetNumTrophies(mPageIndex);
 	int aTrophiesTotal = mApp->GetTotalTrophies(mPageIndex);
-	PvzpDrawString(g, aTrophiesTotal > 0 ? StrFormat("%d/%d", aTrophiesGot, aTrophiesTotal) : PvzpStringTranslate("[TROPHY_NONE]"), 739 + BOARD_ADDITIONAL_WIDTH, 73 + BOARD_OFFSET_Y,
+	PvzpDrawString(g, aTrophiesTotal > 0 ? std::format("{}/{}", aTrophiesGot, aTrophiesTotal) : PvzpStringTranslate("[TROPHY_NONE]"), 739 + BOARD_ADDITIONAL_WIDTH, 73 + BOARD_OFFSET_Y,
 		Sexy::FONT_DWARVENTODCRAFT12, Color(255, 240, 0), DS_ALIGN_CENTER);
 	PvzpDrawImageScaledF(g, Sexy::IMAGE_TROPHY, 718 + BOARD_ADDITIONAL_WIDTH, 26 + BOARD_OFFSET_Y, 0.5f, 0.5f);
 

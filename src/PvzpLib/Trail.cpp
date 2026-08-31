@@ -26,6 +26,7 @@
 #include "../LawnApp.h"
 #include "EffectSystem.h"
 #include <algorithm>
+#include <format>
 #include "graphics/Graphics.h"
 #include "graphics/TriVertex.h"
 
@@ -44,7 +45,7 @@ TrailPoint::TrailPoint()
 
 bool TrailLoadADef(TrailDefinition* theTrailDef, const char* theTrailFileName)
 {
-	PvzpHesitationBracket aHesitation("Load Trail '%s'", theTrailFileName);
+	PvzpHesitationBracket aHesitation("Load Trail '{}'", theTrailFileName);
 
 	if (!DefinitionLoadXML(theTrailFileName, &gTrailDefMap, theTrailDef))
 		return false;
@@ -73,9 +74,7 @@ void TrailLoadDefinitions(TrailParams* theTrailParamArray, int theTrailParamArra
 		PVZP_ASSERT(aTrailParams->mTrailType == static_cast<TrailType>(i));
 		if (!TrailLoadADef(&gTrailDefArray[i], aTrailParams->mTrailFileName))
 		{
-			char aBuf[512];
-			snprintf(aBuf, sizeof(aBuf), "Failed to load trail '%s'", aTrailParams->mTrailFileName);
-			PvzpErrorMessageBox(aBuf, "Error");
+			PvzpErrorMessageBox(std::format("Failed to load trail '{}'", aTrailParams->mTrailFileName), "Error");
 		}
 	}
 }

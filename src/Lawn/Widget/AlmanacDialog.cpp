@@ -19,6 +19,7 @@
  * along with PvZ-Portable. If not, see <https://www.gnu.org/licenses/>.
  */
 
+#include <format>
 #include "../Board.h"
 #include "../Plant.h"
 #include "../Zombie.h"
@@ -419,7 +420,7 @@ void AlmanacDialog::DrawPlants(Graphics* g)
 	g->DrawImage(Sexy::IMAGE_ALMANAC_PLANTCARD, 459 + BOARD_ADDITIONAL_WIDTH, 86 + BOARD_OFFSET_Y);
 	const PlantDefinition& aPlantDef = GetPlantDefinition(mSelectedSeed);
 	std::string aName = Plant::GetNameString(mSelectedSeed, SEED_NONE);
-	std::string aDescriptionName = StrFormat("[%s_DESCRIPTION]", aPlantDef.mPlantName);
+std::string aDescriptionName = std::format("[{}_DESCRIPTION]", aPlantDef.mPlantName);
 	PvzpDrawString(g, aName, 617 + BOARD_ADDITIONAL_WIDTH, 288 + BOARD_OFFSET_Y, Sexy::FONT_DWARVENTODCRAFT18YELLOW, Color::White, DS_ALIGN_CENTER);
 	std::string aDescription(PvzpStringTranslate(aDescriptionName));
 	_Font* aDescriptionFont = Sexy::FONT_BRIANNETOD12;
@@ -466,7 +467,7 @@ void AlmanacDialog::DrawPlants(Graphics* g)
 
 	if (mSelectedSeed != SeedType::SEED_IMITATER)
 	{
-		std::string aCostStr = PvzpReplaceString(StrFormat("{KEYWORD}{COST}:{STAT} %d", aPlantDef.mSeedCost), "{COST}", "[COST]");
+		std::string aCostStr = PvzpReplaceString(std::format("{{KEYWORD}}{{COST}}:{{STAT}} {}", aPlantDef.mSeedCost), "{COST}", "[COST]");
 		PvzpDrawStringWrapped(g, aCostStr, Rect(485 + BOARD_ADDITIONAL_WIDTH, 520 + BOARD_OFFSET_Y, 134, 50), Sexy::FONT_BRIANNETOD12, Color::White, DS_ALIGN_LEFT);
 
 		std::string aRechargeStr = PvzpReplaceString(
@@ -587,7 +588,7 @@ void AlmanacDialog::DrawZombies(Graphics* g)
 	g->DrawImage(Sexy::IMAGE_ALMANAC_ZOMBIECARD, 455 + BOARD_ADDITIONAL_WIDTH, 78 + BOARD_OFFSET_Y);
 
 	const ZombieDefinition& aZombieDef = GetZombieDefinition(mSelectedZombie);
-	std::string aName = ZombieHasSilhouette(mSelectedZombie) ? "???" : StrFormat("[%s]", aZombieDef.mZombieName);
+	std::string aName = ZombieHasSilhouette(mSelectedZombie) ? "???" : std::format("[{}]", aZombieDef.mZombieName);
 	PvzpDrawString(g, aName, 613 + BOARD_ADDITIONAL_WIDTH, 362 + BOARD_OFFSET_Y, Sexy::FONT_DWARVENTODCRAFT18GREENINSET, Color(190, 255, 235, 255), DS_ALIGN_CENTER);
 
 	_Font* aDescriptionFont = Sexy::FONT_BRIANNETOD12;
@@ -613,7 +614,7 @@ void AlmanacDialog::DrawZombies(Graphics* g)
 	if (ZombieHasDescription(mSelectedZombie))
 	{
 		DrawStringJustification aDescriptionJustification = DS_ALIGN_LEFT;
-		std::string aDescription(PvzpStringTranslate(StrFormat("[%s_DESCRIPTION]", aZombieDef.mZombieName)));
+		std::string aDescription(PvzpStringTranslate(std::format("[{}_DESCRIPTION]", aZombieDef.mZombieName)));
 		int aTextSpacing = PvzpDrawStringWrappedHelper(g, aDescription, mDescriptionRect, aDescriptionFont, aDescriptionColor, aDescriptionJustification, false);
 		int aRectHeight;
 		if (mDescriptionRect.mHeight < aTextSpacing)

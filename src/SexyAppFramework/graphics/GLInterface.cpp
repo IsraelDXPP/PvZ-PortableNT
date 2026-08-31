@@ -228,7 +228,7 @@ static GLuint shaderCompile(const char *src, uint32_t srcLen, GLenum type)
 		glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &logLen);
 		char *log = (char*)malloc(logLen);
 		glGetShaderInfoLog(shader, logLen, &logLen, log);
-		Sexy::PrintF("Shader error: %s\n%s%s%s", log, strings[0], strings[1], strings[2]);
+		Sexy::LogInfoLn("Shader error: {}\n{}{}{}", log, strings[0], strings[1], strings[2]);
 		free(log);
 		glDeleteShader(shader);
 		if (gSexyAppBase != nullptr)
@@ -1067,7 +1067,6 @@ GLInterface::GLInterface(SexyAppBase* theApp)
 	mInputSourceRect = Rect(0, 0, mWidth, mHeight);
 	mRefreshRate = 60;
 	mMillisecondsPerFrame = 1000 / mRefreshRate;
-	mScreenImage = nullptr;
 	mNextCursorX = mNextCursorY = 0;
 	mCursorX = mCursorY = 0;
 
@@ -1079,6 +1078,7 @@ GLInterface::GLInterface(SexyAppBase* theApp)
 
 GLInterface::~GLInterface()
 {
+	mScreenImage.reset();
 	Flush();
 	for (auto *img : mImageSet)
 	{
@@ -1118,7 +1118,7 @@ void GLInterface::Remove3DData(MemoryImage* theImage)
 	}
 }
 
-GLImage* GLInterface::GetScreenImage() { return mScreenImage; }
+GLImage* GLInterface::GetScreenImage() { return mScreenImage.get(); }
 
 void GLInterface::UpdateViewport()
 {
@@ -1269,8 +1269,7 @@ bool GLInterface::Redraw(Rect*)
 
 void GLInterface::SetVideoOnlyDraw(bool)
 {
-	delete mScreenImage;
-	mScreenImage = new GLImage(this);
+	mScreenImage = std::make_unique<GLImage>(this);
 	mScreenImage->mWidth  = mWidth;
 	mScreenImage->mHeight = mHeight;
 	mScreenImage->SetImageMode(false, false);

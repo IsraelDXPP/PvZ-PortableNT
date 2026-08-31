@@ -24,6 +24,7 @@
 
 #include <memory>
 #include <cassert>
+#include <format>
 #include "ResourceManager.h"
 #include "XMLParser.h"
 #include "sound/SoundManager.h"
@@ -159,13 +160,10 @@ bool ResourceManager::Fail(const std::string& theErrorText)
 
 		int aLineNum = mXMLParser->GetCurrentLineNum();
 
-		char aLineNumStr[16];
-		snprintf(aLineNumStr, sizeof(aLineNumStr), "%d", aLineNum);
-
 		mError = theErrorText;
 
 		if (aLineNum > 0)
-			mError += std::string(" on Line ") + aLineNumStr;
+			mError += std::format(" on Line {}", aLineNum);
 
 		if (mXMLParser->GetFileName().length() > 0)
 			mError += " in File '" + mXMLParser->GetFileName() + "'";
@@ -698,7 +696,7 @@ bool ResourceManager::LoadAlphaGridImage(ImageRes *theRes, GLImage *theImage)
 {
 	ImageLib::Image* anAlphaImage = ImageLib::GetImage(theRes->mAlphaGridImage,true);
 	if (anAlphaImage==nullptr)
-		return Fail(StrFormat("Failed to load image: %s",theRes->mAlphaGridImage.c_str()));
+		return Fail(std::format("Failed to load image: {}", theRes->mAlphaGridImage));
 
 	std::unique_ptr<ImageLib::Image> aDelAlphaImage(anAlphaImage);
 
@@ -710,7 +708,7 @@ bool ResourceManager::LoadAlphaGridImage(ImageRes *theRes, GLImage *theImage)
 
 
 	if (anAlphaImage->mWidth!=aCelWidth || anAlphaImage->mHeight!=aCelHeight)
-		return Fail(StrFormat("GridAlphaImage size mismatch between %s and %s",theRes->mPath.c_str(),theRes->mAlphaGridImage.c_str()));
+		return Fail(std::format("GridAlphaImage size mismatch between {} and {}", theRes->mPath, theRes->mAlphaGridImage));
 
 	uint32_t *aMasterRowPtr = theImage->mBits.get();
 	for (int i=0; i < aNumRows; i++)
@@ -719,7 +717,7 @@ bool ResourceManager::LoadAlphaGridImage(ImageRes *theRes, GLImage *theImage)
 		for (int j=0; j < aNumCols; j++)
 		{
 			uint32_t* aRowPtr = aMasterColPtr;
-			uint32_t* anAlphaBits = anAlphaImage->mBits;
+			uint32_t* anAlphaBits = anAlphaImage->mBits.get();
 			for (int y=0; y<aCelHeight; y++)
 			{
 				uint32_t *aDestPtr = aRowPtr;
@@ -748,15 +746,15 @@ bool ResourceManager::LoadAlphaImage(ImageRes *theRes, GLImage *theImage)
 	SEXY_PERF_END("ResourceManager::GetImage");
 
 	if (anAlphaImage==nullptr)
-		return Fail(StrFormat("Failed to load image: %s",theRes->mAlphaImage.c_str()));
+		return Fail(std::format("Failed to load image: {}", theRes->mAlphaImage));
 
 	std::unique_ptr<ImageLib::Image> aDelAlphaImage(anAlphaImage);
 
 	if (anAlphaImage->mWidth!=theImage->mWidth || anAlphaImage->mHeight!=theImage->mHeight)
-		return Fail(StrFormat("AlphaImage size mismatch between %s and %s",theRes->mPath.c_str(),theRes->mAlphaImage.c_str()));
+		return Fail(std::format("AlphaImage size mismatch between {} and {}", theRes->mPath, theRes->mAlphaImage));
 
 	uint32_t* aBits1 = theImage->mBits.get();
-	uint32_t* aBits2 = anAlphaImage->mBits;
+	uint32_t* aBits2 = anAlphaImage->mBits.get();
 	int aSize = theImage->mWidth*theImage->mHeight;
 
 	for (int i = 0; i < aSize; i++)
@@ -787,7 +785,7 @@ bool ResourceManager::DoLoadImage(ImageRes *theRes)
 	GLImage* aGLImage = (GLImage*) aSharedImageRef;
 
 	if (aGLImage == nullptr)
-		return Fail(StrFormat("Failed to load image: %s",theRes->mPath.c_str()));
+		return Fail(std::format("Failed to load image: {}", theRes->mPath));
 
 	if (isNew)
 	{
@@ -832,7 +830,7 @@ bool ResourceManager::DoLoadImage(ImageRes *theRes)
 		aGLImage->mRenderFlags |= RenderImageFlag_MinimizeNumSubdivisions;
 
 	if (theRes->mAnimInfo.mAnimType != AnimType_None)
-		aGLImage->mAnimInfo = new AnimInfo(theRes->mAnimInfo);
+		aGLImage->mAnimInfo = std::make_unique<AnimInfo>(theRes->mAnimInfo);
 
 	aGLImage->mNumRows = theRes->mRows;
 	aGLImage->mNumCols = theRes->mCols;
@@ -900,7 +898,7 @@ bool ResourceManager::DoLoadSound(SoundRes* theRes)
 		return Fail("Out of free sound ids");
 
 	if(!mApp->mSoundManager->LoadSound(aSoundId, aRes->mPath))
-		return Fail(StrFormat("Failed to load sound: %s",aRes->mPath.c_str()));
+		return Fail(std::format("Failed to load sound: {}", aRes->mPath));
 	SEXY_PERF_END("ResourceManager:LoadSound");
 
 	if (aRes->mVolume >= 0)
@@ -943,7 +941,7 @@ bool ResourceManager::DoLoadFont(FontRes* theRes)
 	{
 		Image *anImage = mApp->GetImage(theRes->mImagePath);
 		if (anImage==nullptr)
-			return Fail(StrFormat("Failed to load image: %s",theRes->mImagePath.c_str()));
+			return Fail(std::format("Failed to load image: {}", theRes->mImagePath));
 
 		theRes->mImage.reset(anImage);
 		aFont = std::make_unique<ImageFont>(anImage, theRes->mPath);
@@ -953,7 +951,7 @@ bool ResourceManager::DoLoadFont(FontRes* theRes)
 	if (anImageFont!=nullptr)
 	{
 		if (anImageFont->mFontData==nullptr || !anImageFont->mFontData->mInitialized)
-			return Fail(StrFormat("Failed to load font: %s",theRes->mPath.c_str()));
+			return Fail(std::format("Failed to load font: {}", theRes->mPath));
 
 		if (!theRes->mTags.empty())
 		{
@@ -1066,13 +1064,13 @@ void ResourceManager::DumpCurResGroup(std::string& theDestStr)
 {
 	const ResList* rl = &mResGroupMap.find(mCurResGroup)->second;
 	ResList::const_iterator it = rl->begin();
-	theDestStr = StrFormat("About to dump %zu elements from current res group name %s\r\n", rl->size(), mCurResGroup.c_str());
+	theDestStr = std::format("About to dump {} elements from current res group name {}\r\n", rl->size(), mCurResGroup);
 
 	ResList::const_iterator rl_end = rl->end();
 	while (it != rl_end)
 	{
 		BaseRes* br = *it++;
-		std::string prefix = StrFormat("%s: %s\r\n", br->mId.c_str(), br->mPath.c_str());
+		std::string prefix = std::format("{}: {}\r\n", br->mId, br->mPath);
 		theDestStr += prefix;
 		if (br->mFromProgram)
 			theDestStr += std::string("     res is from program\r\n");
@@ -1234,7 +1232,7 @@ SharedImageRef ResourceManager::GetImageThrow(const std::string &theId)
 	if (mAllowMissingProgramResources && aRes != nullptr && aRes->mFromProgram)
 		return NULL;
 
-	Fail(StrFormat("Image resource not found: %s",theId.c_str()));
+	Fail(std::format("Image resource not found: {}", theId));
 	throw ResourceManagerException(GetErrorText());
 }
 
@@ -1252,7 +1250,7 @@ intptr_t	ResourceManager::GetSoundThrow(const std::string &theId)
 	}
 
 
-	Fail(StrFormat("Sound resource not found: %s",theId.c_str()));
+	Fail(std::format("Sound resource not found: {}", theId));
 	throw ResourceManagerException(GetErrorText());
 }
 
@@ -1269,7 +1267,7 @@ _Font* ResourceManager::GetFontThrow(const std::string &theId)
 			return nullptr;
 	}
 
-	Fail(StrFormat("Font resource not found: %s",theId.c_str()));
+	Fail(std::format("Font resource not found: {}", theId));
 	throw ResourceManagerException(GetErrorText());
 }
 

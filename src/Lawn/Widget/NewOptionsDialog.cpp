@@ -35,6 +35,7 @@
 #include "widget/Slider.h"
 #include "widget/Checkbox.h"
 #include "widget/EditWidget.h"
+#include <format>
 #include "../../SexyAppFramework/graphics/Font.h"
 
 using namespace Sexy;
@@ -101,7 +102,7 @@ NewOptionsDialog::NewOptionsDialog(LawnApp* theApp, bool theFromGameSelector, bo
 	mSpeedEditWidget->mMaxChars = 1;
 	mSpeedEditWidget->SetFont(FONT_DWARVENTODCRAFT18GREENINSET);
 	mSpeedEditWidget->AddWidthCheckFont(FONT_DWARVENTODCRAFT18GREENINSET, IMAGE_OPTIONS_CHECKBOX0->mWidth);
-	mSpeedEditWidget->SetText(StrFormat("%d", theApp->mSpeedModifier));
+	mSpeedEditWidget->SetText(std::format("{}", theApp->mSpeedModifier));
 	mSpeedEditWidget->SetColor(ButtonWidget::COLOR_LIGHT_OUTLINE, Color(1, 233, 1));
 	mSpeedEditWidget->SetVisible(false);
 	mSpeedEditPrevText = mSpeedEditWidget->mString;

@@ -33,7 +33,6 @@ static std::vector<ReanimAtlas*> gReanimAtlases;
 
 ReanimAtlas::ReanimAtlas()
 {
-	mMemoryImage = nullptr;
 	gReanimAtlases.push_back(this);
 }
 
@@ -42,7 +41,6 @@ ReanimAtlas::~ReanimAtlas()
 	auto aIt = std::find(gReanimAtlases.begin(), gReanimAtlases.end(), this);
 	if (aIt != gReanimAtlases.end())
 		gReanimAtlases.erase(aIt);
-	delete mMemoryImage;
 }
 
 ReanimAtlasImage* ReanimAtlas::GetEncodedReanimAtlas(Image* theImage)
@@ -250,20 +248,20 @@ void ReanimAtlas::ReanimAtlasCreate(ReanimatorDefinition* theReanimDef)
 		}
 	}
 
-	mMemoryImage = ReanimAtlasMakeBlankMemoryImage(aAtlasWidth, aAtlasHeight);
-	Graphics aMemoryGraphis(mMemoryImage);
+	mMemoryImage.reset(ReanimAtlasMakeBlankMemoryImage(aAtlasWidth, aAtlasHeight));
+	Graphics aMemoryGraphis(mMemoryImage.get());
 	for (int aImageIndex = 0; aImageIndex < static_cast<int>(mImageArray.size()); aImageIndex++)
 	{
 		ReanimAtlasImage* aImage = &mImageArray[aImageIndex];
 		aMemoryGraphis.DrawImage(aImage->mOriginalImage, aImage->mX, aImage->mY);
 	}
-	FixPixelsOnAlphaEdgeForBlending(mMemoryImage);  // set transparent pixels to the average color of their neighbors
+	FixPixelsOnAlphaEdgeForBlending(mMemoryImage.get());  // set transparent pixels to the average color of their neighbors
 }
 
 void ReanimAtlas::ReloadMemoryImage(int theWidth, int theHeight)
 {
-	mMemoryImage = ReanimAtlasMakeBlankMemoryImage(theWidth, theHeight);
-	Graphics aMemoryGraphis(mMemoryImage);
+	mMemoryImage.reset(ReanimAtlasMakeBlankMemoryImage(theWidth, theHeight));
+	Graphics aMemoryGraphis(mMemoryImage.get());
 	for (int aImageIndex = 0; aImageIndex < static_cast<int>(mImageArray.size()); aImageIndex++)
 	{
 		ReanimAtlasImage* aImage = &mImageArray[aImageIndex];
@@ -271,7 +269,7 @@ void ReanimAtlas::ReloadMemoryImage(int theWidth, int theHeight)
 		anImage = PvzpResolveResourcePackImage(anImage);
 		aMemoryGraphis.DrawImage(anImage, aImage->mX, aImage->mY);
 	}
-	FixPixelsOnAlphaEdgeForBlending(mMemoryImage);
+	FixPixelsOnAlphaEdgeForBlending(mMemoryImage.get());
 }
 
 void ReloadReanimationAtlases()
@@ -279,11 +277,7 @@ void ReloadReanimationAtlases()
 	for (auto aIt = gReanimAtlases.begin(); aIt != gReanimAtlases.end(); ++aIt)
 	{
 		ReanimAtlas* aReanimAtlas = *aIt;
-		if (aReanimAtlas->mMemoryImage)
-		{
-			delete aReanimAtlas->mMemoryImage;
-			aReanimAtlas->mMemoryImage = nullptr;
-		}
+		aReanimAtlas->mMemoryImage.reset();
 		int aAtlasWidth, aAtlasHeight;
 		aReanimAtlas->ArrangeImages(aAtlasWidth, aAtlasHeight);
 		aReanimAtlas->ReloadMemoryImage(aAtlasWidth, aAtlasHeight);

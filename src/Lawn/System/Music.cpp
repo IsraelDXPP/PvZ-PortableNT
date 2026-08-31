@@ -215,12 +215,12 @@ void Music::LoadSong(MusicFile theMusicFile, std::string_view theFileName)
 	PvzpHesitationTrace("preloadsong");
 	if (!PvzpLoadMusic(theMusicFile, theFileName))
 	{
-		PvzpTrace("music failed to load\n");
+		PvzpLogLn("music failed to load");
 		// mMusicDisabled = true; // QEWide: don't disable ALL music just because one file failed
 	}
 	else
 	{
-		PvzpHesitationTrace("song '%.*s'", static_cast<int>(theFileName.size()), theFileName.data());
+		PvzpHesitationTrace("song '{}'", theFileName);
 	}
 }
 
@@ -290,7 +290,7 @@ std::string Music::FindMusicInResourcePack(const char* theBaseName)
 		std::string aFullPath = aMusicPath + theBaseName + aAudioFormats[i];
 		if (mApp->FileExists(aFullPath))
 		{
-			PvzpTrace("Found custom music in resource pack: %s", aFullPath.c_str());
+			PvzpLogLn("Found custom music in resource pack: {}", aFullPath);
 			return aFullPath;
 		}
 	}
@@ -331,7 +331,7 @@ void Music::LoadMusicFromResourcePack(MusicFile theMusicFile, std::string_view t
 	std::string aCustomPath = FindMusicInResourcePack(aMapping->mBaseName);
 	if (!aCustomPath.empty())
 	{
-		PvzpTrace("Loading music from resource pack: %s", aCustomPath.c_str());
+		PvzpLogLn("Loading music from resource pack: {}", aCustomPath);
 		LoadSong(theMusicFile, aCustomPath);
 		return;
 	}
@@ -339,7 +339,7 @@ void Music::LoadMusicFromResourcePack(MusicFile theMusicFile, std::string_view t
 	std::string aLocalPath = FindMusicLocal(aMapping->mBaseName);
 	if (!aLocalPath.empty())
 	{
-		PvzpTrace("Loading music from local: %s", aLocalPath.c_str());
+		PvzpLogLn("Loading music from local: {}", aLocalPath);
 		LoadSong(theMusicFile, aLocalPath);
 		return;
 	}
@@ -388,7 +388,7 @@ void Music::UnloadAllMusic()
 	}
 
 	mMusicDisabled = false;
-	PvzpTrace("Unloaded all music");
+	PvzpLogLn("Unloaded all music");
 }
 
 void Music::RescanMusicFiles()

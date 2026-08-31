@@ -35,6 +35,7 @@
 #include "../../PvzpLib/PvzpStringFile.h"
 #include "graphics/Font.h"
 #include <optional>
+#include <format>
 
 static constexpr float CREDIT_SCREEN_ANIM_RATE = 0.3f;
 
@@ -750,7 +751,7 @@ static int DrawCreditsContent(Graphics* g, int theYPos, bool theDraw)
 
 	for (int aSection = 3; aSection <= 11; aSection++)
 	{
-		std::string aRolesKey = StrFormat("[CREDITS_ROLES%d]", aSection);
+		std::string aRolesKey = std::format("[CREDITS_ROLES{}]", aSection);
 		std::optional<std::string_view> aRolesLookup = PvzpStringTryTranslate(aRolesKey);
 		if (!aRolesLookup)
 			continue;
@@ -769,7 +770,7 @@ static int DrawCreditsContent(Graphics* g, int theYPos, bool theDraw)
 			continue;
 		}
 
-		std::string aNamesKey = StrFormat("[CREDITS_NAMES%d]", aSection);
+		std::string aNamesKey = std::format("[CREDITS_NAMES{}]", aSection);
 		std::string_view aNames = PvzpStringTryTranslate(aNamesKey).value_or("");
 
 		// Split roles and names by newline, draw side by side
@@ -1169,11 +1170,11 @@ void CreditScreen::Update()
 			int aUnsyncedFrames = (aUnsyncedDuration + 5) / 10;
 			if (aUnsyncedFrames < 0)
 			{
-				PvzpTrace("Movie playing too fast %d frames", 1 - aUnsyncedFrames);
+				PvzpLogLn("Movie playing too fast {} frames", 1 - aUnsyncedFrames);
 			}
 			else if (aUnsyncedFrames > 2)
 			{
-				PvzpTrace("Movie playing too slow %d frames", aUnsyncedFrames - 1);
+				PvzpLogLn("Movie playing too slow {} frames", aUnsyncedFrames - 1);
 			}
 
 			if (aUnsyncedDuration > 10000)

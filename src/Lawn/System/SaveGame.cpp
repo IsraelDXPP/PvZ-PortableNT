@@ -2735,7 +2735,7 @@ static void SyncBoard(SaveGameContext& theContext, Board* theBoard)
 	theContext.SyncBytes(theBoard->mAdvice.get(), sizeof(MessageWidget));
 	theContext.SyncBytes(theBoard->mSeedBank.get(), sizeof(SeedBank));
 	theContext.SyncBytes(theBoard->mChallenge.get(), sizeof(Challenge));
-	theContext.SyncBytes(theBoard->mApp->mMusic, sizeof(Music));
+	theContext.SyncBytes(theBoard->mApp->mMusic.get(), sizeof(Music));
 
 	if (theContext.mReading)
 	{
@@ -2759,7 +2759,7 @@ bool LawnLoadGame(Board* theBoard, const std::string& theFilePath)
 {
 	if (LawnLoadGameV4(theBoard, theFilePath))
 	{
-		PvzpTrace("Loaded save game (v4)");
+		PvzpLogLn("Loaded save game (v4)");
 		return true;
 	}
 
@@ -2784,7 +2784,7 @@ bool LawnLoadGame(Board* theBoard, const std::string& theFilePath)
 		return false;
 	}
 
-	PvzpTrace("Loaded save game (legacy)");
+	PvzpLogLn("Loaded save game (legacy)");
 	FixBoardAfterLoad(theBoard);
 	theBoard->mApp->mGameScene = GameScenes::SCENE_PLAYING;
 	return true;

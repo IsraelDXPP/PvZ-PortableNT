@@ -25,6 +25,7 @@
 #include "ConstEnums.h"
 #include "SexyAppFramework/SexyApp.h"
 #include "PvzpLib/PvzpFoley.h"
+#include <memory>
 
 class Board;
 class GameSelector;
@@ -72,13 +73,13 @@ class LawnApp : public SexyApp
 {
 public:
 	Board*							mBoard;
-	TitleScreen*					mTitleScreen;
-	GameSelector*					mGameSelector;
-	SeedChooserScreen*				mSeedChooserScreen;
-	AwardScreen*					mAwardScreen;
-	CreditScreen*					mCreditScreen;
-	ChallengeScreen*				mChallengeScreen;
-	PvzpFoley*						mSoundSystem;
+	std::unique_ptr<TitleScreen>	mTitleScreen;
+	std::unique_ptr<GameSelector>	mGameSelector;
+	std::unique_ptr<SeedChooserScreen>	mSeedChooserScreen;
+	std::unique_ptr<AwardScreen>	mAwardScreen;
+	std::unique_ptr<CreditScreen>	mCreditScreen;
+	std::unique_ptr<ChallengeScreen>	mChallengeScreen;
+	std::unique_ptr<PvzpFoley>		mSoundSystem;
 	std::string						mReferId;
 	std::string						mRegisterLink;
 	std::string						mMod;
@@ -98,16 +99,16 @@ public:
 	int								mMaxPlays;
 	int								mMaxTime;
 	bool							mEasyPlantingCheat;
-	PoolEffect*						mPoolEffect;
-	ZenGarden*						mZenGarden;
-	EffectSystem*					mEffectSystem;
-	ReanimatorCache*				mReanimatorCache;
-	ProfileMgr*						mProfileMgr;
+	std::unique_ptr<PoolEffect>		mPoolEffect;
+	std::unique_ptr<ZenGarden>		mZenGarden;
+	std::unique_ptr<EffectSystem>	mEffectSystem;
+	std::unique_ptr<ReanimatorCache>	mReanimatorCache;
+	std::unique_ptr<ProfileMgr>		mProfileMgr;
 	PlayerInfo*						mPlayerInfo;
-	LevelStats*						mLastLevelStats;
+	std::unique_ptr<LevelStats>		mLastLevelStats;
 	std::atomic<bool>					mCloseRequest;
 	uint32_t						mAppCounter;
-	Music*							mMusic;
+	std::unique_ptr<Music>			mMusic;
 	ReanimationID					mCrazyDaveReanimID;
 	CrazyDaveState					mCrazyDaveState;
 	int								mCrazyDaveBlinkCounter;
@@ -120,16 +121,16 @@ public:
 	int								mPlayTimeInactiveSession;
 	BoardResult						mBoardResult;
 	bool							mSawYeti;
-	TypingCheck*					mKonamiCheck;
-	TypingCheck*					mMustacheCheck;
-	TypingCheck*					mMoustacheCheck;
-	TypingCheck*					mSuperMowerCheck;
-	TypingCheck*					mSuperMowerCheck2;
-	TypingCheck*					mFutureCheck;
-	TypingCheck*					mPinataCheck;
-	TypingCheck*					mDanceCheck;
-	TypingCheck*					mDaisyCheck;
-	TypingCheck*					mSukhbirCheck;
+	std::unique_ptr<TypingCheck>	mKonamiCheck;
+	std::unique_ptr<TypingCheck>	mMustacheCheck;
+	std::unique_ptr<TypingCheck>	mMoustacheCheck;
+	std::unique_ptr<TypingCheck>	mSuperMowerCheck;
+	std::unique_ptr<TypingCheck>	mSuperMowerCheck2;
+	std::unique_ptr<TypingCheck>	mFutureCheck;
+	std::unique_ptr<TypingCheck>	mPinataCheck;
+	std::unique_ptr<TypingCheck>	mDanceCheck;
+	std::unique_ptr<TypingCheck>	mDaisyCheck;
+	std::unique_ptr<TypingCheck>	mSukhbirCheck;
 	bool							mMustacheMode;
 	bool							mSuperMowerMode;
 	bool							mFutureMode;
@@ -168,6 +169,7 @@ public:
 	void							DoCheatDialog();
 	void							FinishCheatDialog(bool isYes);
 	void							FinishCreateUserDialog(bool isYes);
+	std::string						GetFormattedString(std::string_view theComponentId, std::string_view theDefault, ...);
 	void							DoConfirmDeleteUserDialog(const std::string& theName);
 	void							FinishConfirmDeleteUserDialog(bool isYes);
 	void							DoRenameUserDialog(const std::string& theName);

@@ -1546,5 +1546,5 @@ void ZombatarWidget::BackToSelector()
 	ResetDraft();
 	mGameSelector->SlideTo(0, 0);
 	if (mWidgetManager)
-		mWidgetManager->SetFocus(mGameSelector.get());
+		mWidgetManager->SetFocus(mGameSelector);
 }

@@ -87,6 +87,11 @@ public:
 	// Board::Update -- so no separate pause-adjustment is needed) instead of GetTickCount;
 	// see IsMPSuddenDeath's comment for the tick-rate math.
 	int32_t                 mMPSuddenDeathStartTick = -1;
+	bool                    mMPSuddenDeathMessageShown = false;
+	// Versus mode auto-spawns a Bobsled Zombie team periodically regardless of player
+	// placement (Challenge::Update's GameMode::GAMEMODE_VERSUS branch in the decompiled
+	// build) -- see UpdateMPBobsled's comment for the ported behavior.
+	int32_t                 mMPBobsledCounter = 6000;
 	int32_t                 mSurvivalStage;
 	int32_t                 mSlotMachineRollCount;
 	ReanimationID           mReanimChallenge;
@@ -160,6 +165,7 @@ public:
 	void                    UpdateConveyorBelt();
 	void                    UpdateMPZombieBank();
 	bool                    IsMPSuddenDeath();
+	void                    UpdateMPBobsled();
 	void                    PortalStart();
 	void                    UpdatePortalCombat();
 	GridItem*               GetOtherPortal(GridItem* thePortal);

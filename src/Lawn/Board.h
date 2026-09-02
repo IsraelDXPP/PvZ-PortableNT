@@ -491,21 +491,21 @@ public:
 	GridItem*			AddALadder(int theGridX, int theGridY);
 	GridItem*			AddACrater(int theGridX, int theGridY);
 	// Versus mode (console/Android TV Board::AddMPTarget/GetMPTargetCount): a destructible
-	// marker the zombie side plants on the lawn for the plant side to shoot down. Ported:
-	// spawning the GridItem + its Reanimation, and counting how many are still alive. Not
-	// yet wired up (needs a caller to place them, a plant-projectile-vs-GridItem damage
-	// path -- this port's GridItem has no generic TakeDamage yet -- and the Versus win
-	// condition checking GetMPTargetCount()).
+	// marker the zombie side plants on the lawn for the plant side to shoot down. One is
+	// placed per row at match start (CutScene::PlaceLawnItems); GetMPTargetCount reaching 0
+	// is the plants' win condition (GridItem::TakeDamage).
 	GridItem*			AddMPTarget(int theGridX, int theGridY);
 	int					GetMPTargetCount();
-	// Versus mode's zombie-side "mound" seed (SEED_ZOMBIE_MOUND): a delayed, random zombie
-	// instead of an immediate one. Ported from the decompiled Board::AddAMound (spawning the
+	// Versus mode's zombie-side "mound" seed (SEED_ZOMBIE_MOUND): a delayed zombie instead
+	// of an immediate one. Ported from the decompiled Board::AddAMound (spawning the
 	// GridItem, maturing it in UpdateGridItems, and rising the zombie once mature -- the
 	// decompiled build does the maturing in Challenge::UpdateMPGraveStones instead of Board,
 	// but this port's AddMPTarget/GetMPTargetCount are already Board methods, so this stays
 	// consistent with them) and Board::PickGraveRisingZombieTypeMP (see its own comment for
-	// why the tiers use this port's own zombie types instead of the original's).
-	GridItem*			AddAMound(int theGridX, int theGridY, int theRiseCount);
+	// why the tiers use this port's own zombie types instead of the original's). theTier
+	// only affects which zombie type rises; a mound always rises exactly one zombie -- see
+	// AddAMound's comment for how that's confirmed from the decompiled UpdateMPGraveStones.
+	GridItem*			AddAMound(int theGridX, int theGridY, int theTier);
 	ZombieType			PickGraveRisingZombieTypeMP(int theTier);
 	// Player two's keyboard controls in Versus -- see mPlayer2CursorGridX's comment.
 	void				Player2KeyDown(KeyCode theKey);

@@ -531,13 +531,16 @@ int Board::GetMPTargetCount()
 	return aCount;
 }
 
-GridItem* Board::AddAMound(int theGridX, int theGridY, int theRiseCount)
+GridItem* Board::AddAMound(int theGridX, int theGridY, int theTier)
 {
 	GridItem* aMound = mGridItems.DataArrayAlloc();
 	aMound->mGridItemType = GridItemType::GRIDITEM_MP_MOUND;
 	aMound->mGridX = theGridX;
 	aMound->mGridY = theGridY;
-	aMound->mSunCount = std::max(theRiseCount, 1);
+	// mSunCount reuses the field as the rising zombie's tier/strength (see the
+	// PickGraveRisingZombieTypeMP call in UpdateGridItems) -- not a spawn count. One mound
+	// always rises exactly one zombie.
+	aMound->mSunCount = std::max(theTier, 1);
 	// Matches the decompiled Board::AddAMound's counter start; UpdateGridItems() ticks it
 	// up once a frame and matures the mound at > 499, so it takes ~1000 ticks (roughly
 	// 16-17 seconds) to rise.
@@ -5422,9 +5425,12 @@ void Board::UpdateZombieSpawning()
 	if (mApp->mGameMode == GameMode::GAMEMODE_UPSELL || mApp->mGameMode == GameMode::GAMEMODE_INTRO)
 		return;
 
-	// Versus mode's zombies are entirely player-placed (SEED_ZOMBIE_*/SEED_ZOMBIE_MOUND via
-	// Challenge::IZombieMouseDownWithZombie), not AI-driven waves; nothing in the decompiled
-	// source suggests the two coexist.
+	// Versus mode's zombies are almost entirely player-placed (SEED_ZOMBIE_*/SEED_ZOMBIE_MOUND
+	// via Challenge::IZombieMouseDownWithZombie/Board::Player2KeyDown), not AI-driven wave
+	// content, so this function's wave logic doesn't apply. The one exception -- a Bobsled
+	// Zombie team that spawns on its own over time regardless of player placement -- is
+	// ported as Challenge::UpdateMPBobsled instead, called from Challenge::Update alongside
+	// this port's other periodic Versus-only logic (UpdateMPZombieBank).
 	if (mApp->IsVersusMode())
 		return;
 
@@ -9861,21 +9867,24 @@ void Board::UpdateGridItems()
 
 		// Ported from Challenge::UpdateMPGraveStones in the decompiled build (moved here to
 		// sit next to the GRIDITEM_GRAVESTONE/GRIDITEM_CRATER counters above, which this
-		// port already updates in Board rather than Challenge).
+		// port already updates in Board rather than Challenge). The decompiled function
+		// reads a per-mound "tier" field (set from Board::AddAMound's 3rd argument) only to
+		// pick the rising zombie's type/strength -- a second, separate field controls how
+		// many zombies rise, and every AddAMound call site leaves that field at its
+		// zero-initialized default, which makes the rise loop run exactly once. So each
+		// mound (each SEED_ZOMBIE_MOUND placement) rises exactly one zombie -- consistent
+		// with a mound being one placed "seed" -- and mSunCount here is that tier, not a
+		// spawn count.
 		if (aGridItem->mGridItemType == GridItemType::GRIDITEM_MP_MOUND && mApp->mGameScene == GameScenes::SCENE_PLAYING)
 		{
 			aGridItem->mGridItemCounter++;
 			if (aGridItem->mGridItemCounter > 499)
 			{
-				int aRiseCount = aGridItem->mSunCount;
-				for (int i = 0; i < aRiseCount; i++)
+				ZombieType aZombieType = PickGraveRisingZombieTypeMP(aGridItem->mSunCount);
+				Zombie* aZombie = AddZombie(aZombieType, -5);
+				if (aZombie)
 				{
-					ZombieType aZombieType = PickGraveRisingZombieTypeMP(aRiseCount);
-					Zombie* aZombie = AddZombie(aZombieType, -5);
-					if (aZombie)
-					{
-						aZombie->RiseFromGrave(aGridItem->mGridX, aGridItem->mGridY);
-					}
+					aZombie->RiseFromGrave(aGridItem->mGridX, aGridItem->mGridY);
 				}
 				aGridItem->GridItemDie();
 			}

@@ -438,6 +438,8 @@ void Challenge::InitLevel()
 	if (mApp->IsVersusMode())
 	{
 		mMPSuddenDeathStartTick = mBoard->mMainCounter;
+		mMPSuddenDeathMessageShown = false;
+		mMPBobsledCounter = 6000;
 	}
 }
 
@@ -2012,6 +2014,33 @@ bool Challenge::IsMPSuddenDeath()
 	return (mBoard->mMainCounter - mMPSuddenDeathStartTick) > 18000;
 }
 
+void Challenge::UpdateMPBobsled()
+{
+	// Ported from the decompiled Challenge::Update's GameMode::GAMEMODE_VERSUS branch:
+	// unlike every other Versus zombie (all player-placed via seeds -- see
+	// UpdateMPZombieBank), a Bobsled Zombie team spawns on its own over time, the same way
+	// it does as AI-driven single-player wave content, as long as one isn't already riding
+	// (Zombie::IsBobsledTeamWithSled) and a lane is free (Board::CanAddBobSledMP, which the
+	// decompiled build shows is byte-identical to the already-ported Board::CanAddBobSled).
+	if (!mApp->IsVersusMode())
+		return;
+
+	for (Zombie* aZombie : mBoard->mZombies)
+	{
+		if (!aZombie->mDead && aZombie->IsBobsledTeamWithSled())
+			return;
+	}
+
+	if (!mBoard->CanAddBobSled())
+		return;
+
+	if (--mMPBobsledCounter > 0)
+		return;
+
+	mMPBobsledCounter = 6000;
+	mBoard->AddZombie(ZombieType::ZOMBIE_BOBSLED, Zombie::ZOMBIE_WAVE_DEBUG);
+}
+
 void Challenge::UpdateRainingSeeds()
 {
 	if (mBoard->HasLevelAwardDropped() || --mChallengeStateCounter != 0)
@@ -2247,6 +2276,16 @@ void Challenge::Update()
 		UpdateConveyorBelt();
 	}
 	UpdateMPZombieBank();
+	UpdateMPBobsled();
+	if (mApp->IsVersusMode() && !mMPSuddenDeathMessageShown && IsMPSuddenDeath())
+	{
+		// Ported from the decompiled Challenge::Update's GameMode::GAMEMODE_VERSUS branch
+		// (its own one-shot "already shown" byte is what mMPSuddenDeathMessageShown mirrors
+		// here); AdviceType::ADVICE_NONE because that dedup is handled by this flag instead
+		// of the mHelpDisplayed[] array DisplayAdvice otherwise uses for tutorial-style hints.
+		mMPSuddenDeathMessageShown = true;
+		mBoard->DisplayAdvice("[SUDDEN_DEATH]", MessageStyle::MESSAGE_STYLE_HUGE_WAVE, AdviceType::ADVICE_NONE);
+	}
 	if (mApp->mGameMode == GAMEMODE_CHALLENGE_BEGHOULED || mApp->mGameMode == GAMEMODE_CHALLENGE_BEGHOULED_TWIST)
 	{
 		UpdateBeghouled();

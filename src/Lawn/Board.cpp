@@ -8895,7 +8895,7 @@ void Board::DrawPlayer2Cursor(Graphics* g)
 	// Not from the decompiled build -- see mPlayer2CursorGridX's comment in Board.h. No
 	// art exists for a second cursor, so this is a plain outline plus text, same idiom
 	// Board::DrawDebugText already uses elsewhere in this file for non-player-facing info.
-	if (!mSecondPlayerActive || !mApp->IsVersusMode() || mApp->mGameScene != GameScenes::SCENE_PLAYING)
+	if (!mSecondPlayerActive || !mApp->IsMultiplayerMode() || mApp->mGameScene != GameScenes::SCENE_PLAYING)
 		return;
 
 	int aCellWidth = GridToPixelX(1, 0) - GridToPixelX(0, 0);
@@ -8906,19 +8906,24 @@ void Board::DrawPlayer2Cursor(Graphics* g)
 	g->SetColor(Color(255, 0, 0));
 	g->DrawRect(Rect(aPosX, aPosY, aCellWidth, aCellHeight));
 
+	// Co-op reads the shared mSeedBank (matches Player2KeyDown); Versus reads the zombie
+	// side's own belt, mSeedBank2.
+	SeedBank* aBank = mApp->IsCoopMode() ? mSeedBank.get() : mSeedBank2.get();
 	std::string aSeedName = "?";
-	if (mPlayer2SelectedSeedIndex >= 0 && mPlayer2SelectedSeedIndex < mSeedBank2->mNumPackets)
+	if (mPlayer2SelectedSeedIndex >= 0 && mPlayer2SelectedSeedIndex < aBank->mNumPackets)
 	{
-		SeedType aSeedType = mSeedBank2->mSeedPackets[mPlayer2SelectedSeedIndex].mPacketType;
+		SeedType aSeedType = aBank->mSeedPackets[mPlayer2SelectedSeedIndex].mPacketType;
 		aSeedName = Plant::GetNameString(aSeedType, SeedType::SEED_NONE);
 	}
-	std::string aLabel = std::format("P2: {} ({}/{})", aSeedName, mPlayer2SelectedSeedIndex + 1, mSeedBank2->GetNumSeedsOnConveyorBelt());
+	std::string aLabel = mApp->IsCoopMode()
+		? std::format("P2: {} ({})", aSeedName, mPlayer2SelectedSeedIndex + 1)
+		: std::format("P2: {} ({}/{})", aSeedName, mPlayer2SelectedSeedIndex + 1, aBank->GetNumSeedsOnConveyorBelt());
 	PvzpDrawString(g, aLabel, aPosX + aCellWidth / 2, aPosY - 4, Sexy::FONT_DWARVENTODCRAFT12, Color(255, 0, 0), DrawStringJustification::DS_ALIGN_CENTER);
 }
 
 void Board::Player2KeyDown(KeyCode theKey)
 {
-	if (!mSecondPlayerActive || !mApp->IsVersusMode() || mApp->mGameScene != GameScenes::SCENE_PLAYING)
+	if (!mSecondPlayerActive || !mApp->IsMultiplayerMode() || mApp->mGameScene != GameScenes::SCENE_PLAYING)
 		return;
 
 	switch (theKey)
@@ -8936,11 +8941,58 @@ void Board::Player2KeyDown(KeyCode theKey)
 		mPlayer2CursorGridX = std::min(mPlayer2CursorGridX + 1, MAX_GRID_SIZE_X - 1);
 		return;
 	case KeyCode::KEYCODE_TAB:
-		if (mSeedBank2->mNumPackets > 0)
+		// Co-op has no zombie-side conveyor belt -- both players pick from the one shared
+		// mSeedBank (LawnApp::IsTwinSunbankMode's comment: co-op defaults to a shared pool,
+		// same idea as splitting seed slots on a single lawn), unlike Versus's per-side
+		// mSeedBank2.
+		if (mApp->IsCoopMode())
+		{
+			if (mSeedBank->mNumPackets > 0)
+				mPlayer2SelectedSeedIndex = (mPlayer2SelectedSeedIndex + 1) % mSeedBank->mNumPackets;
+		}
+		else if (mSeedBank2->mNumPackets > 0)
+		{
 			mPlayer2SelectedSeedIndex = (mPlayer2SelectedSeedIndex + 1) % mSeedBank2->mNumPackets;
+		}
 		return;
 	case KeyCode::KEYCODE_CONTROL:
 	{
+		if (mApp->IsCoopMode())
+		{
+			if (mPlayer2SelectedSeedIndex < 0 || mPlayer2SelectedSeedIndex >= mSeedBank->mNumPackets)
+				return;
+			SeedPacket& aSeedPacket = mSeedBank->mSeedPackets[mPlayer2SelectedSeedIndex];
+			if (aSeedPacket.mPacketType == SeedType::SEED_NONE || !aSeedPacket.mActive)
+				return;
+			// Same imitater resolution as SeedPacket::MouseDown's aUseSeedType.
+			SeedType aUseSeedType = aSeedPacket.mPacketType == SeedType::SEED_IMITATER && aSeedPacket.mImitaterType != SeedType::SEED_NONE
+				? aSeedPacket.mImitaterType
+				: aSeedPacket.mPacketType;
+			if (CanPlantAt(mPlayer2CursorGridX, mPlayer2CursorGridY, aUseSeedType) != PlantingReason::PLANTING_OK)
+				return;
+			if (!PlantingRequirementsMet(aUseSeedType))
+			{
+				mApp->PlaySample(Sexy::SOUND_BUZZER);
+				return;
+			}
+			if (!mApp->mEasyPlantingCheat && !HasConveyorBeltSeedBank())
+			{
+				if (!TakeSunMoney(GetCurrentPlantCost(aSeedPacket.mPacketType, aSeedPacket.mImitaterType)))
+					return;
+			}
+
+			// Simplified relative to the mouse-driven planting path (Board's big
+			// CURSOR_TYPE_PLANT_FROM_BANK handler): this skips that path's plant-upgrade
+			// edge cases (replacing an existing Wall-nut/Tall-nut/Pumpkin, Gloomshroom's
+			// sleep-state carry-over, Cob Cannon clearing the plant to its right, Cattail
+			// eating a Lily Pad underneath) since player 2 has no mouse/cursor-pickup flow
+			// to route through that shared logic safely. Places directly instead.
+			AddPlant(mPlayer2CursorGridX, mPlayer2CursorGridY, aSeedPacket.mPacketType, aSeedPacket.mImitaterType);
+			aSeedPacket.WasPlanted();
+			mApp->PlayFoley(FoleyType::FOLEY_PLANT);
+			return;
+		}
+
 		if (mPlayer2SelectedSeedIndex < 0 || mPlayer2SelectedSeedIndex >= mSeedBank2->mNumPackets)
 			return;
 		SeedType aSeedType = mSeedBank2->mSeedPackets[mPlayer2SelectedSeedIndex].mPacketType;
@@ -9012,8 +9064,11 @@ void Board::AddSecondPlayer(int theControllerIndex)
 			mSeedBank2->mSeedPackets[i].mPacketType = SeedType::SEED_NONE;
 			mSeedBank2->mSeedPackets[i].mIndex = i;
 		}
-		mPlayer2SelectedSeedIndex = 0;
 	}
+	// Co-op has no separate second bank to populate here -- Player2KeyDown reads straight
+	// from the shared mSeedBank (see its comment). mSeedBank2 for co-op just stays the
+	// empty object allocated above, unused.
+	mPlayer2SelectedSeedIndex = 0;
 
 	// NOT calling PvzpLoadResources("DelayLoad_Multiplayer") here: none of that group's
 	// images/sounds are declared in this port's resource manifest (no art shipped for this

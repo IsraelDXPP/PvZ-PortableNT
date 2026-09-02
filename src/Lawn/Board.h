@@ -269,12 +269,13 @@ public:
 	std::unique_ptr<SeedBank>			mSeedBank2;
 	std::unique_ptr<CursorObject>		mCursorObject2;
 	std::unique_ptr<CursorPreview>		mCursorPreview2;
-	// Player two's keyboard cursor in Versus (player one keeps the mouse). Not from the
-	// decompiled build -- it assumes a second controller/mouse this port doesn't have any
-	// way to detect yet (see the SetSecondPlayer/StartMultiplayerGame comments) -- this is
-	// the explicitly-approved stand-in control scheme, everything it triggers otherwise
-	// goes through the same Challenge::IZombiePlaceZombie/Board::AddAMound as the
-	// decompiled zombie-seed placement.
+	// Player two's keyboard cursor in Versus and Co-op (player one keeps the mouse). Not
+	// from the decompiled build -- it assumes a second controller/mouse this port doesn't
+	// have any way to detect yet (see the SetSecondPlayer/StartMultiplayerGame comments) --
+	// this is the explicitly-approved stand-in control scheme. In Versus everything it
+	// triggers goes through the same Challenge::IZombiePlaceZombie/Board::AddAMound as the
+	// decompiled zombie-seed placement; in Co-op it plants from the shared mSeedBank (see
+	// Player2KeyDown's comment).
 	int32_t							mPlayer2CursorGridX = MAX_GRID_SIZE_X / 2;
 	int32_t							mPlayer2CursorGridY = MAX_GRID_SIZE_Y / 2;
 	int32_t							mPlayer2SelectedSeedIndex = 0;
@@ -507,7 +508,9 @@ public:
 	// AddAMound's comment for how that's confirmed from the decompiled UpdateMPGraveStones.
 	GridItem*			AddAMound(int theGridX, int theGridY, int theTier);
 	ZombieType			PickGraveRisingZombieTypeMP(int theTier);
-	// Player two's keyboard controls in Versus -- see mPlayer2CursorGridX's comment.
+	// Player two's keyboard controls in Versus and Co-op -- see mPlayer2CursorGridX's
+	// comment. Co-op places plants from the shared mSeedBank (LawnApp::IsTwinSunbankMode's
+	// comment); Versus places zombies from the per-side conveyor belt, mSeedBank2.
 	void				Player2KeyDown(KeyCode theKey);
 	void				DrawPlayer2Cursor(Graphics* g);
 	void							InitLawnMowers();

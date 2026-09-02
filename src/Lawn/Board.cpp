@@ -8973,11 +8973,16 @@ void Board::AddSecondPlayer(int theControllerIndex)
 		mPlayer2SelectedSeedIndex = 0;
 	}
 
-	// Loaded on demand -- see the "DelayLoad_Multiplayer" comment in Resources.h. Failure
-	// here (no art shipped for this feature yet) only leaves the new images/sounds null;
-	// it does not affect the rest of the board.
-	mLoadedResourceNames.push_back("DelayLoad_Multiplayer");
-	PvzpLoadResources("DelayLoad_Multiplayer");
+	// NOT calling PvzpLoadResources("DelayLoad_Multiplayer") here: none of that group's
+	// images/sounds are declared in this port's resource manifest (no art shipped for this
+	// feature), so ResourceManager::GetImageThrow fails the very first lookup and
+	// PvzpLoadResources responds by calling SexyAppBase::ShowResourceError(true) -- which
+	// exits the game. That's not a graceful per-asset fallback the way a missing
+	// mAllowMissingProgramResources asset is; it's a fatal error path shared by every
+	// DelayLoad_* group in this codebase. Until real art/audio exists for this group, it
+	// must stay declared (see Resources.h) but never triggered -- see the IMAGE_REANIM_
+	// ZOMBIE_TRASHCAN1/2/3 null-check in Zombie.cpp for how callers already tolerate it
+	// never having loaded.
 }
 
 void Board::ProcessDeleteQueue()

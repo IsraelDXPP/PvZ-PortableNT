@@ -266,8 +266,8 @@ GridItem* Projectile::FindMPTargetCollisionTarget()
 	// Versus mode's MP Target (GRIDITEM_MP_TARGET) doesn't have a real hitbox yet -- no art
 	// ships for it (see the DelayLoad_Multiplayer/REANIM_MP_TARGET comments), so this is a
 	// fixed-size approximation around its spawn position rather than an image-sized rect
-	// like FindCollisionTarget() uses for zombies. Only reachable once something actually
-	// calls Board::AddMPTarget, which nothing does yet.
+	// like FindCollisionTarget() uses for zombies. One is placed per row at match start --
+	// see CutScene::PlaceLawnItems.
 	Rect aProjectileRect = GetProjectileRect();
 	for (GridItem* aGridItem : mBoard->mGridItems)
 	{

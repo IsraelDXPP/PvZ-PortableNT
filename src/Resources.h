@@ -1308,10 +1308,14 @@ namespace Sexy
 
 	// DelayLoad_Multiplayer: local co-op/versus art, named after the resource strings found
 	// in the console/Android TV build's resource table. These are NOT part of the original
-	// PC resource pack this project ships against, so ExtractDelayLoad_MultiplayerResources
-	// will fail (like any other DelayLoad group would for a missing asset) until real art is
-	// supplied for them; only loaded on demand, from Board::AddSecondPlayer, so their absence
-	// cannot affect single-player games.
+	// PC resource pack this project ships against and aren't declared in this port's resource
+	// manifest at all, so ExtractDelayLoad_MultiplayerResources always fails its very first
+	// GetImageThrow lookup -- and PvzpLoadResources treats that as fatal (SexyAppBase::
+	// ShowResourceError(true), which exits the game), the same as it would for any other
+	// DelayLoad group. So nothing calls PvzpLoadResources("DelayLoad_Multiplayer") anywhere
+	// -- see the comment where Board::AddSecondPlayer deliberately doesn't. These stay
+	// declared, permanently null, for whenever real art/audio is supplied; every reader of
+	// them (e.g. Zombie.cpp's IMAGE_REANIM_ZOMBIE_TRASHCAN1/2/3 usage) null-checks first.
 	extern Image* IMAGE_COOP_SUN_HIGHLIGHT_1;
 	extern Image* IMAGE_COOP_SUN_HIGHLIGHT_2;
 	extern Image* IMAGE_SEEDBANK_COOP;

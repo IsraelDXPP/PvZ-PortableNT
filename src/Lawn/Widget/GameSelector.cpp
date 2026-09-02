@@ -196,6 +196,12 @@ GameSelector::GameSelector(LawnApp* theApp)
 	mQuickPlayButton->SetDisabled(!mApp->HasFinishedAdventure());
 	mQuickPlayButton->mVisible = mApp->HasFinishedAdventure();
 
+	mVersusButton = MakeButton(GameSelector::GameSelector_Versus, this, "Versus").release();
+	mVersusButton->Resize(20, 20, 120, 33);
+
+	mCoopButton = MakeButton(GameSelector::GameSelector_Coop, this, "Co-op").release();
+	mCoopButton->Resize(150, 20, 120, 33);
+
 	mZenGardenButton = MakeNewButton(
 		GameSelector::GameSelector_ZenGarden,
 		this,
@@ -372,6 +378,8 @@ GameSelector::GameSelector(LawnApp* theApp)
 	AddWidget(mAchievementsButton);
 	AddWidget(mZombatarButton);
 	AddWidget(mQuickPlayButton);
+	AddWidget(mVersusButton);
+	AddWidget(mCoopButton);
 	AddWidget(mChangeUserButton);
 	AddWidget(mSurvivalButton);
 	AddWidget(mZenGardenButton);
@@ -1017,12 +1025,6 @@ void GameSelector::KeyDown(KeyCode theKey)
 		mApp->PlayFoley(FoleyType::FOLEY_DROP);
 		return;
 	}
-	if (mApp->mMultiplayerCheck->Check(theKey))
-	{
-		mApp->PlayFoley(FoleyType::FOLEY_DROP);
-		mApp->DoMultiplayerSetupDialog();
-		return;
-	}
 	if (mApp->mMustacheCheck->Check(theKey) || mApp->mMoustacheCheck->Check(theKey))
 	{
 		mApp->PlayFoley(FoleyType::FOLEY_POLEVAULT);
@@ -1203,6 +1205,8 @@ void GameSelector::ClickedAdventure()
 	mZombatarButton->SetDisabled(true);
 	mAchievementsButton->SetDisabled(true);
 	mQuickPlayButton->SetDisabled(true);
+	mVersusButton->SetDisabled(true);
+	mCoopButton->SetDisabled(true);
 
 	Reanimation* aHandReanim = mApp->AddReanimation(-70.0f + BOARD_ADDITIONAL_WIDTH, 10.0f + BOARD_OFFSET_Y, 0, ReanimationType::REANIM_ZOMBIE_HAND);
 	aHandReanim->mLoopType = ReanimLoopType::REANIM_PLAY_ONCE_AND_HOLD;
@@ -1255,6 +1259,12 @@ void GameSelector::ButtonDepress(int theId)
 	case GameSelector::GameSelector_Survival:
 		mApp->KillGameSelector();
 		mApp->ShowChallengeScreen(ChallengePage::CHALLENGE_PAGE_SURVIVAL);
+		break;
+	case GameSelector::GameSelector_Versus:
+		mApp->DoVersusSetupDialog();
+		break;
+	case GameSelector::GameSelector_Coop:
+		mApp->DoCoopSetupDialog();
 		break;
 	case GameSelector::GameSelector_Quit:
 		mApp->ConfirmQuit();

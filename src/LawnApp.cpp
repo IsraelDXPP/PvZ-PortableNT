@@ -1315,7 +1315,6 @@ void LawnApp::Init()
 	mDanceCheck = std::make_unique<TypingCheck>("dance");
 	mDaisyCheck = std::make_unique<TypingCheck>("daisies");
 	mSukhbirCheck = std::make_unique<TypingCheck>("sukhbir");
-	mMultiplayerCheck = std::make_unique<TypingCheck>("versus");
 
 #ifdef PVZ_DEBUG
 	aDuration = mTimer.GetDuration();
@@ -1979,11 +1978,11 @@ void LawnApp::ButtonDepress(int theId)
 			return;
 
 		case Dialogs::DIALOG_MULTIPLAYER_COOP:
-			FinishMultiplayerCoopDialog(true);
+			FinishCoopSetupDialog(true);
 			return;
 
 		case Dialogs::DIALOG_MULTIPLAYER_VERSUS:
-			FinishMultiplayerVersusDialog(true);
+			FinishVersusSetupDialog(true);
 			return;
 
 		case 20008:
@@ -2035,11 +2034,11 @@ void LawnApp::ButtonDepress(int theId)
 			return;
 
 		case Dialogs::DIALOG_MULTIPLAYER_COOP:
-			FinishMultiplayerCoopDialog(false);
+			FinishCoopSetupDialog(false);
 			return;
 
 		case Dialogs::DIALOG_MULTIPLAYER_VERSUS:
-			FinishMultiplayerVersusDialog(false);
+			FinishVersusSetupDialog(false);
 			return;
 
 		case 10008:
@@ -2146,39 +2145,44 @@ void LawnApp::SetSecondPlayer(int theControllerIndex)
 		mPlayer2Info = new PlayerInfo();
 }
 
-// Provisional entry point for local co-op/versus (VSSetupMenu in the console/Android TV
-// build). GameSelector doesn't have a dedicated button for it yet -- that needs a real
-// layout/art pass on GameSelector's hand-placed, image-tracked buttons -- so for now it's
-// reached the same way the game's other hidden toggles are (mMustacheCheck, mSukhbirCheck,
-// ...): type "versus" on the mode-select screen. This asks Yes/No twice with the engine's
-// existing generic dialog (no new art needed) rather than a bespoke setup screen, since the
-// real VSSetupMenu is a large, tightly-coupled state machine (side assignment, per-player
-// seed choosers, controller detection) that doesn't have the prerequisite infrastructure in
-// this port yet -- see StartMultiplayerGame's comment.
-void LawnApp::DoMultiplayerSetupDialog()
+// Entry points for local versus/co-op, reached from GameSelector's real "Versus" and
+// "Co-op" buttons (GameSelector::GameSelector_Versus/Coop -- the console/Android TV
+// build's MainMenu.menu.txt has separate top-level VS_BUTTON and VS_COOP_BUTTON entries,
+// peers of MINI_GAMES_BUTTON, not nested inside it or each other). Each asks a single
+// Yes/No with the engine's existing generic dialog rather than the real VSSetupMenu ->
+// VSSetupSides -> VSSetupControllers screens (confirmed real, extracted .txt files for
+// the engine's MenuWidget/MenuParser system, which doesn't exist in this port): those
+// pick things (Quick/Custom/Random play, which lawn, which side, which controller) this
+// port has no menu-file interpreter, no second seed chooser, and no per-controller
+// input to back yet, so building it now would mean fabricating choices with nothing
+// real behind them. A plain confirmation that starts the match is the honest subset.
+void LawnApp::DoVersusSetupDialog()
+{
+	DoDialog(Dialogs::DIALOG_MULTIPLAYER_VERSUS, true, "[MULTIPLAYER_VERSUS_HEADER]", "[MULTIPLAYER_VERSUS_LINES]", "", Dialog::BUTTONS_YES_NO);
+}
+
+void LawnApp::DoCoopSetupDialog()
 {
 	DoDialog(Dialogs::DIALOG_MULTIPLAYER_COOP, true, "[MULTIPLAYER_COOP_HEADER]", "[MULTIPLAYER_COOP_LINES]", "", Dialog::BUTTONS_YES_NO);
 }
 
-void LawnApp::FinishMultiplayerCoopDialog(bool isYes)
+void LawnApp::FinishVersusSetupDialog(bool isYes)
+{
+	KillDialog(Dialogs::DIALOG_MULTIPLAYER_VERSUS);
+	if (isYes)
+		StartMultiplayerGame(GameMode::GAMEMODE_VERSUS);
+}
+
+void LawnApp::FinishCoopSetupDialog(bool isYes)
 {
 	KillDialog(Dialogs::DIALOG_MULTIPLAYER_COOP);
 	if (isYes)
 	{
 		// STAGE_2 (Night) rather than STAGE_1 (Day): it's the only one of the five co-op
 		// lawns with gravestones (Board::StageHasGraveStones()), and picking a lawn is part
-		// of the still-missing VSSetupMenu UI (see StartMultiplayerGame's comment).
+		// of the still-missing VSSetupMenu UI.
 		StartMultiplayerGame(GameMode::GAMEMODE_COOP_SURVIVAL_NORMAL_STAGE_2);
-		return;
 	}
-	DoDialog(Dialogs::DIALOG_MULTIPLAYER_VERSUS, true, "[MULTIPLAYER_VERSUS_HEADER]", "[MULTIPLAYER_VERSUS_LINES]", "", Dialog::BUTTONS_YES_NO);
-}
-
-void LawnApp::FinishMultiplayerVersusDialog(bool isYes)
-{
-	KillDialog(Dialogs::DIALOG_MULTIPLAYER_VERSUS);
-	if (isYes)
-		StartMultiplayerGame(GameMode::GAMEMODE_VERSUS);
 }
 
 void LawnApp::StartMultiplayerGame(GameMode theGameMode)
@@ -2187,11 +2191,12 @@ void LawnApp::StartMultiplayerGame(GameMode theGameMode)
 	PreNewGame(theGameMode, false);
 	NewGame();
 
-	// No second controller/mouse detection exists in this port yet (SexyAppFramework's
-	// gamepad support -- see platform/default/Input.cpp -- currently maps every connected
-	// controller into a single shared virtual cursor, there is no per-device routing). Index
-	// 1 is a placeholder identifying "player two" to LawnApp/Board's new co-op/versus state
-	// until that input work lands; it does not yet grant player two an independent cursor.
+	// Player two's actual input (SexyAppFramework's gamepad support merges every connected
+	// controller into one shared virtual cursor -- see platform/default/Input.cpp -- there
+	// is no per-device routing to assign a real second controller to) is the keyboard
+	// stand-in in Board::Player2KeyDown, not a second mouse/controller. Index 1 is just an
+	// identifier marking "player two exists" for LawnApp/Board's state; SetSecondPlayer
+	// doesn't read it as a real device index.
 	constexpr int kSecondPlayerPlaceholderControllerIndex = 1;
 	SetSecondPlayer(kSecondPlayerPlaceholderControllerIndex);
 }

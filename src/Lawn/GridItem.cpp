@@ -71,6 +71,18 @@ void GridItem::TakeDamage(int theDamage)
 	if (mGridItemCounter <= 0)
 	{
 		GridItemDie();
+
+		// Ported from the decompiled build's GridItem::TakeDamage: once the plant side has
+		// destroyed every MP Target, they win. The decompiled version also has a
+		// Challenge::gVSWinMode == 1 variant that ends the match at <= 2 remaining rather
+		// than 0 -- that and its sibling gVSWinMode/gVSMowerCount values (2 and 3) turned
+		// out to be debug/playtesting toggles for which lawn rows get mowers (cycled by a
+		// debug key, per the decompiled source), not a shipped rule, so only the
+		// zero-remaining condition -- true regardless of gVSWinMode -- is ported here.
+		if (mApp->IsVersusMode() && mBoard->GetMPTargetCount() == 0)
+		{
+			mBoard->FadeOutLevel();
+		}
 	}
 }
 

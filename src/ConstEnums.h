@@ -456,15 +456,30 @@ enum GameMode : int32_t
 	GAMEMODE_INTRO,
 	// Console/Android TV local-multiplayer modes (LawnApp::IsCoopMode / VSSetupMenu in
 	// later PvZ builds). The original build packs these as a contiguous run of GameMode
-	// values gated by LawnApp::IsCoopMode(); the exact sub-stage count could not be
-	// recovered byte-exact (their display names live in the external LawnStrings.txt,
-	// which isn't part of the decompiled binary), so they are reconstructed here as the
-	// smallest faithful set that reproduces the confirmed mechanics: two players sharing
-	// one lawn in Survival (co-op), and one player's plants against another player's
-	// zombies (versus).
-	GAMEMODE_COOP_SURVIVAL_NORMAL,
-	GAMEMODE_COOP_SURVIVAL_HARD,
-	GAMEMODE_COOP_SURVIVAL_ENDLESS,
+	// values gated by LawnApp::IsCoopMode() (13 of them); the exact count and which of the
+	// 15 single-player Survival lawns co-op offers couldn't be recovered byte-exact (their
+	// display names live in the external LawnStrings.txt, not part of the decompiled
+	// binary). Mirrored here as the same Normal/Hard/Endless x Day/Night/Pool/Fog/Roof grid
+	// regular Survival has (see Board::PickBackground) rather than collapsing it, since
+	// each background carries its own mechanics (e.g. Night is what makes gravestones
+	// appear at all -- collapsing to one fixed lawn would have silently dropped that).
+	GAMEMODE_COOP_SURVIVAL_NORMAL_STAGE_1,
+	GAMEMODE_COOP_SURVIVAL_NORMAL_STAGE_2,
+	GAMEMODE_COOP_SURVIVAL_NORMAL_STAGE_3,
+	GAMEMODE_COOP_SURVIVAL_NORMAL_STAGE_4,
+	GAMEMODE_COOP_SURVIVAL_NORMAL_STAGE_5,
+	GAMEMODE_COOP_SURVIVAL_HARD_STAGE_1,
+	GAMEMODE_COOP_SURVIVAL_HARD_STAGE_2,
+	GAMEMODE_COOP_SURVIVAL_HARD_STAGE_3,
+	GAMEMODE_COOP_SURVIVAL_HARD_STAGE_4,
+	GAMEMODE_COOP_SURVIVAL_HARD_STAGE_5,
+	GAMEMODE_COOP_SURVIVAL_ENDLESS_STAGE_1,
+	GAMEMODE_COOP_SURVIVAL_ENDLESS_STAGE_2,
+	GAMEMODE_COOP_SURVIVAL_ENDLESS_STAGE_3,
+	GAMEMODE_COOP_SURVIVAL_ENDLESS_STAGE_4,
+	GAMEMODE_COOP_SURVIVAL_ENDLESS_STAGE_5,
+	// One player's plants against another player's zombies (spent from the existing
+	// SEED_ZOMBIE_* seed bank), on the plain day lawn.
 	GAMEMODE_VERSUS,
 	NUM_GAME_MODES
 };

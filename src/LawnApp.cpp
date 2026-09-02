@@ -2110,7 +2110,7 @@ bool LawnApp::IsChallengeMode()
 
 bool LawnApp::IsCoopMode()
 {
-	return mGameMode >= GameMode::GAMEMODE_COOP_SURVIVAL_NORMAL && mGameMode <= GameMode::GAMEMODE_COOP_SURVIVAL_ENDLESS;
+	return mGameMode >= GameMode::GAMEMODE_COOP_SURVIVAL_NORMAL_STAGE_1 && mGameMode <= GameMode::GAMEMODE_COOP_SURVIVAL_ENDLESS_STAGE_5;
 }
 
 bool LawnApp::IsVersusMode()
@@ -2165,7 +2165,10 @@ void LawnApp::FinishMultiplayerCoopDialog(bool isYes)
 	KillDialog(Dialogs::DIALOG_MULTIPLAYER_COOP);
 	if (isYes)
 	{
-		StartMultiplayerGame(GameMode::GAMEMODE_COOP_SURVIVAL_NORMAL);
+		// STAGE_2 (Night) rather than STAGE_1 (Day): it's the only one of the five co-op
+		// lawns with gravestones (Board::StageHasGraveStones()), and picking a lawn is part
+		// of the still-missing VSSetupMenu UI (see StartMultiplayerGame's comment).
+		StartMultiplayerGame(GameMode::GAMEMODE_COOP_SURVIVAL_NORMAL_STAGE_2);
 		return;
 	}
 	DoDialog(Dialogs::DIALOG_MULTIPLAYER_VERSUS, true, "[MULTIPLAYER_VERSUS_HEADER]", "[MULTIPLAYER_VERSUS_LINES]", "", Dialog::BUTTONS_YES_NO);
@@ -2196,19 +2199,22 @@ void LawnApp::StartMultiplayerGame(GameMode theGameMode)
 bool LawnApp::IsSurvivalNormal(GameMode theGameMode)
 {
 	int aLevel = theGameMode - GameMode::GAMEMODE_SURVIVAL_NORMAL_STAGE_1;
-	return (aLevel >= 0 && aLevel <= 4) || theGameMode == GameMode::GAMEMODE_COOP_SURVIVAL_NORMAL;
+	int aCoopLevel = theGameMode - GameMode::GAMEMODE_COOP_SURVIVAL_NORMAL_STAGE_1;
+	return (aLevel >= 0 && aLevel <= 4) || (aCoopLevel >= 0 && aCoopLevel <= 4);
 }
 
 bool LawnApp::IsSurvivalHard(GameMode theGameMode)
 {
 	int aLevel = theGameMode - GameMode::GAMEMODE_SURVIVAL_HARD_STAGE_1;
-	return (aLevel >= 0 && aLevel <= 4) || theGameMode == GameMode::GAMEMODE_COOP_SURVIVAL_HARD;
+	int aCoopLevel = theGameMode - GameMode::GAMEMODE_COOP_SURVIVAL_HARD_STAGE_1;
+	return (aLevel >= 0 && aLevel <= 4) || (aCoopLevel >= 0 && aCoopLevel <= 4);
 }
 
 bool LawnApp::IsSurvivalEndless(GameMode theGameMode)
 {
 	int aLevel = theGameMode - GameMode::GAMEMODE_SURVIVAL_ENDLESS_STAGE_1;
-	return (aLevel >= 0 && aLevel <= 4) || theGameMode == GameMode::GAMEMODE_COOP_SURVIVAL_ENDLESS;
+	int aCoopLevel = theGameMode - GameMode::GAMEMODE_COOP_SURVIVAL_ENDLESS_STAGE_1;
+	return (aLevel >= 0 && aLevel <= 4) || (aCoopLevel >= 0 && aCoopLevel <= 4);
 }
 
 bool LawnApp::IsEndlessScaryPotter(GameMode theGameMode)

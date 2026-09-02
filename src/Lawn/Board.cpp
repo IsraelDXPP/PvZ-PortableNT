@@ -5399,6 +5399,12 @@ void Board::UpdateZombieSpawning()
 	if (mApp->mGameMode == GameMode::GAMEMODE_UPSELL || mApp->mGameMode == GameMode::GAMEMODE_INTRO)
 		return;
 
+	// Versus mode's zombies are entirely player-placed (SEED_ZOMBIE_*/SEED_ZOMBIE_MOUND via
+	// Challenge::IZombieMouseDownWithZombie), not AI-driven waves; nothing in the decompiled
+	// source suggests the two coexist.
+	if (mApp->IsVersusMode())
+		return;
+
 	if (mFinalWaveSoundCounter > 0)
 	{
 		mFinalWaveSoundCounter--;

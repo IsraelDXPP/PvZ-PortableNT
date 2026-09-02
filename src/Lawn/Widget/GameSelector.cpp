@@ -1017,6 +1017,12 @@ void GameSelector::KeyDown(KeyCode theKey)
 		mApp->PlayFoley(FoleyType::FOLEY_DROP);
 		return;
 	}
+	if (mApp->mMultiplayerCheck->Check(theKey))
+	{
+		mApp->PlayFoley(FoleyType::FOLEY_DROP);
+		mApp->DoMultiplayerSetupDialog();
+		return;
+	}
 	if (mApp->mMustacheCheck->Check(theKey) || mApp->mMoustacheCheck->Check(theKey))
 	{
 		mApp->PlayFoley(FoleyType::FOLEY_POLEVAULT);

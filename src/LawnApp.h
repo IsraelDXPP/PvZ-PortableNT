@@ -138,6 +138,10 @@ public:
 	std::unique_ptr<TypingCheck>	mDanceCheck;
 	std::unique_ptr<TypingCheck>	mDaisyCheck;
 	std::unique_ptr<TypingCheck>	mSukhbirCheck;
+	// Typed on the GameSelector screen, same as the other TypingCheck cheats above, until
+	// local multiplayer has its own GameSelector button (needs a layout/art pass -- see
+	// GameSelector.cpp's TrackButton-based positioning).
+	std::unique_ptr<TypingCheck>	mMultiplayerCheck;
 	bool							mMustacheMode;
 	bool							mSuperMowerMode;
 	bool							mFutureMode;
@@ -246,6 +250,10 @@ public:
 	// True when each co-op player keeps their own sun bank instead of sharing one pool.
 	bool					IsTwinSunbankMode();
 	void							SetSecondPlayer(int theControllerIndex);
+	void							DoMultiplayerSetupDialog();
+	void							FinishMultiplayerCoopDialog(bool isYes);
+	void							FinishMultiplayerVersusDialog(bool isYes);
+	void							StartMultiplayerGame(GameMode theGameMode);
 	bool							IsContinuousChallenge();
 	bool					IsArtChallenge();
 	bool							NeedPauseGame();

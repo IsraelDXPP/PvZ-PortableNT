@@ -321,6 +321,8 @@ enum Dialogs : int32_t
 	DIALOG_ZOMBATAR_TOS,                        // 51: terms of service
 	DIALOG_ZOMBATAR_DELETE,                     // 52
 	DIALOG_CHALLENGE_PAGES,                     // 53: page selection overlay for the challenge screen
+	DIALOG_MULTIPLAYER_COOP,                    // 54: "play co-op?" (VSSetupMenu entry point, provisional)
+	DIALOG_MULTIPLAYER_VERSUS,                  // 55: "play versus?" (VSSetupMenu entry point, provisional)
 	NUM_DIALOGS
 };
 enum DebugTextMode : int32_t

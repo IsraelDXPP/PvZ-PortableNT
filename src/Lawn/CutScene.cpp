@@ -622,6 +622,19 @@ void CutScene::PlaceLawnItems()
 	{
 		mBoard->PlaceRake();
 	}
+
+	// Ported from the decompiled build's Versus match setup: one MP Target in the last
+	// column of every row (the default Challenge::gVSWinMode == 1 case -- its 2/3 variants
+	// skip specific rows and turned out to be debug/playtesting toggles, per the
+	// GridItem::TakeDamage comment on the win condition they gate).
+	if (mApp->IsVersusMode())
+	{
+		int aNumRows = mBoard->StageHas6Rows() ? MAX_GRID_SIZE_Y : MAX_GRID_SIZE_Y - 1;
+		for (int aRow = 0; aRow < aNumRows; aRow++)
+		{
+			mBoard->AddMPTarget(MAX_GRID_SIZE_X - 1, aRow);
+		}
+	}
 }
 
 bool CutScene::IsSurvivalRepick()

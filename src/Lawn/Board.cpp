@@ -479,6 +479,44 @@ GridItem* Board::AddACrater(int theGridX, int theGridY)
 	return aCrater;
 }
 
+GridItem* Board::AddMPTarget(int theGridX, int theGridY)
+{
+	// Ported from the decompiled Board::AddMPTarget (Versus mode). GRIDITEM_MP_TARGET's HP
+	// reuses mGridItemCounter (like GRIDITEM_GRAVESTONE reuses it above for its rise delay);
+	// nothing calls this yet -- it needs the plant-projectile-vs-GridItem damage path and the
+	// Versus win condition (Board::GetMPTargetCount reaching 0), both still open. See the
+	// GRIDITEM_MP_TARGET comment in ConstEnums.h.
+	GridItem* aTarget = mGridItems.DataArrayAlloc();
+	aTarget->mGridItemType = GridItemType::GRIDITEM_MP_TARGET;
+	aTarget->mGridX = theGridX;
+	aTarget->mGridY = theGridY;
+	aTarget->mGridItemCounter = MP_TARGET_HEALTH;
+	aTarget->mRenderOrder = theGridY == 0
+		? MakeRenderOrder(RenderLayer::RENDER_LAYER_GROUND, 0, 0)
+		: MakeRenderOrder(RenderLayer::RENDER_LAYER_PLANT, theGridY, 1);
+	int aPixelX = GridToPixelX(theGridX, theGridY);
+	int aPixelY = GridToPixelY(theGridX, theGridY);
+	Reanimation* aReanim = mApp->AddReanimation(
+		aPixelX + 20.0f / (5 - theGridY) + 26.0f,
+		aPixelY - 54.0f,
+		aTarget->mRenderOrder,
+		ReanimationType::REANIM_MP_TARGET);
+	aReanim->mIsAttachment = true;
+	aTarget->mGridItemReanimID = mApp->ReanimationGetID(aReanim);
+	return aTarget;
+}
+
+int Board::GetMPTargetCount()
+{
+	int aCount = 0;
+	for (GridItem* aGridItem : mGridItems)
+	{
+		if (!aGridItem->mDead && aGridItem->mGridItemType == GridItemType::GRIDITEM_MP_TARGET)
+			++aCount;
+	}
+	return aCount;
+}
+
 GridItem* Board::AddAGraveStone(int theGridX, int theGridY)
 {
 	GridItem* aGraveStone = mGridItems.DataArrayAlloc();
@@ -3501,6 +3539,10 @@ void Board::UpdateToolTip()
 	else if (aUseSeedType == SeedType::SEED_ZOMBIE_IMP)
 	{
 		mToolTip->SetLabel("[IMP]");
+	}
+	else if (aUseSeedType == SeedType::SEED_ZOMBIE_TRASHCAN)
+	{
+		mToolTip->SetLabel("[TRASHCAN_ZOMBIE]");
 	}
 	else
 	{

@@ -545,7 +545,12 @@ enum GridItemType : int32_t
 	GRIDITEM_ZEN_TOOL = 9,
 	GRIDITEM_STINKY = 10,
 	GRIDITEM_RAKE = 11,
-	GRIDITEM_IZOMBIE_BRAIN = 12
+	GRIDITEM_IZOMBIE_BRAIN = 12,
+	// Versus mode (console/Android TV Board::AddMPTarget/GetMPTargetCount/GridItem::DrawMPTarget):
+	// a destructible marker the zombie side plants on the lawn; the plant side must destroy it
+	// (shooting it damages mGridItemCounter, reused here as its hit points) to win. See the
+	// AddMPTarget/GetMPTargetCount comment in Board.h for what's ported vs. still open.
+	GRIDITEM_MP_TARGET = 13
 };
 enum GridItemState : int32_t
 {
@@ -1002,6 +1007,9 @@ enum ReanimationType : uint32_t {
 	REANIM_BUSH3_NIGHT,
 	REANIM_BUSH4_NIGHT,
 	REANIM_BUSH5_NIGHT,
+	// Versus mode's destructible target marker (GRIDITEM_MP_TARGET / Board::AddMPTarget).
+	// No .reanim asset ships with this port for it yet (see the Reanimator.cpp entry).
+	REANIM_MP_TARGET,
 	NUM_REANIMS
 };
 enum ReanimLoopType : int32_t
@@ -1154,6 +1162,7 @@ enum SeedType : int32_t
 	SEED_ZOMBIE_DANCER,
 	SEED_ZOMBIE_GARGANTUAR,
 	SEED_ZOMBIE_IMP,
+	SEED_ZOMBIE_TRASHCAN,
 	NUM_SEEDS_IN_CHOOSER = 49,
 	SEED_NONE = -1
 };
@@ -1418,6 +1427,11 @@ enum ZombieType : int32_t
 	ZOMBIE_SQUASH_HEAD,
 	ZOMBIE_TALLNUT_HEAD,
 	ZOMBIE_REDEYE_GARGANTUAR,
+	// Console/Android TV local multiplayer (Versus mode zombie seed bank). Mechanically a
+	// Screen Door Zombie (ShieldType::SHIELDTYPE_DOOR, same shield health/arms/track) with
+	// its shield image swapped to a trash-can lid via Reanimation::SetImageOverride, exactly
+	// as the decompiled build does it (it doesn't use a distinct ShieldType either).
+	ZOMBIE_TRASHCAN,
 	NUM_ZOMBIE_TYPES,
 	ZOMBIE_CACHED_POLEVAULTER_WITH_POLE,
 	NUM_CACHED_ZOMBIE_TYPES

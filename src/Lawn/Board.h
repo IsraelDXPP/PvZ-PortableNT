@@ -48,6 +48,10 @@ constexpr const int MAX_GRAVE_STONES = MAX_GRID_SIZE_X * MAX_GRID_SIZE_Y;
 constexpr const int MAX_POOL_GRID_SIZE = 10;
 constexpr const int MAX_RENDER_ITEMS = 1024;
 constexpr const int PROGRESS_METER_COUNTER = 150;
+// Versus mode's destructible target markers (GRIDITEM_MP_TARGET). Not derived from the
+// decompiled build (its exact value wasn't recovered); a placeholder until real balance
+// data is available -- see the AddMPTarget comment.
+constexpr const int MP_TARGET_HEALTH = 300;
 
 class LawnApp;
 class CursorObject;
@@ -484,6 +488,14 @@ public:
 	GridItem*			GetLadderAt(int theGridX, int theGridY);
 	GridItem*			AddALadder(int theGridX, int theGridY);
 	GridItem*			AddACrater(int theGridX, int theGridY);
+	// Versus mode (console/Android TV Board::AddMPTarget/GetMPTargetCount): a destructible
+	// marker the zombie side plants on the lawn for the plant side to shoot down. Ported:
+	// spawning the GridItem + its Reanimation, and counting how many are still alive. Not
+	// yet wired up (needs a caller to place them, a plant-projectile-vs-GridItem damage
+	// path -- this port's GridItem has no generic TakeDamage yet -- and the Versus win
+	// condition checking GetMPTargetCount()).
+	GridItem*			AddMPTarget(int theGridX, int theGridY);
+	int					GetMPTargetCount();
 	void							InitLawnMowers();
 	bool					IsPlantInCursor();
 	void							HighlightPlantsForMouse(int theMouseX, int theMouseY);

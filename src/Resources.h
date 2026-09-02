@@ -1327,6 +1327,12 @@ namespace Sexy
 	extern Image* IMAGE_HELP_MENU_IMAGE_VS_TARGETS;
 	extern Image* IMAGE_HELP_MENU_IMAGE_COOP_MENU;
 	extern Image* IMAGE_HELP_MENU_IMAGE_COOP_SUN;
+	// Trash Can Zombie shield art (undamaged / first crack / about to break), swapped onto
+	// a Screen Door Zombie's "anim_screendoor" track -- see the ZombieType::ZOMBIE_TRASHCAN
+	// comment in ConstEnums.h.
+	extern Image* IMAGE_REANIM_ZOMBIE_TRASHCAN1;
+	extern Image* IMAGE_REANIM_ZOMBIE_TRASHCAN2;
+	extern Image* IMAGE_REANIM_ZOMBIE_TRASHCAN3;
 	extern intptr_t SOUND_COOP;
 	extern intptr_t SOUND_VS_HEADPOP;
 

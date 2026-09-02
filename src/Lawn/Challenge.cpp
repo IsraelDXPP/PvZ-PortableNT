@@ -4268,6 +4268,7 @@ ZombieType Challenge::IZombieSeedTypeToZombieType(SeedType theSeedType)
 	case SEED_ZOMBIE_DANCER:		return ZOMBIE_DANCER;
 	case SEED_ZOMBIE_GARGANTUAR:	return ZOMBIE_GARGANTUAR;
 	case SEED_ZOMBIE_IMP:			return ZOMBIE_IMP;
+	case SEED_ZOMBIE_TRASHCAN:		return ZOMBIE_TRASHCAN;
 	default:						PVZP_ASSERT(false);
 	}
 

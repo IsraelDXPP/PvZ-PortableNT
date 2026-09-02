@@ -243,6 +243,7 @@ public:
 	uint					mSleepCount;
 	uint					mDrawCount;
 	uint					mUpdateCount;
+	uint32_t				mStartTick;
 	int						mUpdateAppState;
 	int						mUpdateAppDepth;
 	double					mUpdateMultiplier;
@@ -459,6 +460,7 @@ public:
 	virtual void			HandleGameAlreadyRunning();
 
 	virtual void			Start();
+	void					LogPerfStats();
 	virtual void			Init();
 	virtual void			PreGLInterfaceInitHook();
 	virtual void			PostGLInterfaceInitHook();
@@ -538,7 +540,7 @@ public:
 	bool					StartTextInput(std::string& theInput); // set theInput and return true if using soft keyboard capability and user pressed OK (e.g. Switch libnx swkbd)
 	void					StopTextInput();
 	void					SetTextInputRect(const Rect& theRect); // caret rect in logical coords; anchors the IME UI (candidate window, keyboard pan)
-	bool					Is3DAccelerated();
+	bool					Is3DAccelerated() { return true; }
 	bool					Is3DAccelerationSupported();
 	bool					Is3DAccelerationRecommended();
 	void					DemoSyncRefreshRate();

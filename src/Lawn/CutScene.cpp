@@ -894,7 +894,13 @@ void CutScene::StartLevelIntro()
 	std::string aHouseMessage;
 	if (mCrazyDaveTime <= 0 && mApp->mGameMode != GameMode::GAMEMODE_INTRO)
 	{
-		if (mApp->IsSurvivalMode())
+		if (mApp->IsMultiplayerMode())
+		{
+			// GetCurrentChallengeDef() has no entry for these (see the NUM_CHALLENGE_MODES
+			// comment in ChallengeScreen.h); avoid indexing gChallengeDefs out of bounds.
+			aHouseMessage = mApp->IsVersusMode() ? "Versus" : "Co-op Survival";
+		}
+		else if (mApp->IsSurvivalMode())
 		{
 			aHouseMessage = mApp->GetCurrentChallengeDef().mChallengeName;
 		}

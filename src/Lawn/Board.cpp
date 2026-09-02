@@ -6825,7 +6825,13 @@ void Board::DrawLevel(Graphics* g)
 	}
 	else
 	{
-		aLevelStr = mApp->GetCurrentChallengeDef().mChallengeName;
+		// GetCurrentChallengeDef() indexes gChallengeDefs by (mGameMode - GAMEMODE_SURVIVAL_NORMAL_STAGE_1),
+		// which is out of bounds for the local co-op/versus modes appended after GAMEMODE_INTRO
+		// (they have no entry in that table -- see the NUM_CHALLENGE_MODES comment in
+		// ChallengeScreen.h). They aren't trophy challenges, so they don't need one.
+		aLevelStr = mApp->IsMultiplayerMode()
+			? std::string(PvzpStringTranslate(mApp->IsVersusMode() ? "[VERSUS_MODE_NAME]" : "[COOP_MODE_NAME]"))
+			: mApp->GetCurrentChallengeDef().mChallengeName;
 		if (mApp->IsSurvivalMode() || mApp->mGameMode == GameMode::GAMEMODE_CHALLENGE_LAST_STAND)
 		{
 			int aFlags = GetSurvivalFlagsCompleted();

@@ -2394,6 +2394,24 @@ int LawnApp::GetCurrentChallengeIndex()
 
 const ChallengeDefinition& LawnApp::GetCurrentChallengeDef()
 {
+	// GetChallengeDefinition()/GetCurrentChallengeIndex() index gChallengeDefs by
+	// (mGameMode - GAMEMODE_SURVIVAL_NORMAL_STAGE_1), which only covers the modes gChallengeDefs
+	// was built for (see the NUM_CHALLENGE_MODES comment in ChallengeScreen.h) -- local
+	// co-op/versus modes are past the end of that table and would read out of bounds. This
+	// is the single choke point every caller (level UI, the intro cutscene's house message,
+	// GameOverDialog, ...) goes through, so guard it here rather than at each call site.
+	if (IsMultiplayerMode())
+	{
+		static ChallengeDefinition sMultiplayerChallengeDef{};
+		sMultiplayerChallengeDef.mChallengeMode = mGameMode;
+		sMultiplayerChallengeDef.mChallengeIconIndex = 0;
+		sMultiplayerChallengeDef.mPage = ChallengePage::CHALLENGE_PAGE_CHALLENGE;
+		sMultiplayerChallengeDef.mRow = 0;
+		sMultiplayerChallengeDef.mCol = 0;
+		sMultiplayerChallengeDef.mChallengeName = IsVersusMode() ? "Versus" : "Co-op Survival";
+		sMultiplayerChallengeDef.mHasTrophy = false;
+		return sMultiplayerChallengeDef;
+	}
 	return GetChallengeDefinition(GetCurrentChallengeIndex());
 }
 
@@ -2637,7 +2655,11 @@ bool LawnApp::HasBeatenChallenge(GameMode theGameMode)
 		return false;
 
 	int aChallengeIndex = theGameMode - GameMode::GAMEMODE_SURVIVAL_NORMAL_STAGE_1;
-	PVZP_ASSERT(aChallengeIndex >= 0 && aChallengeIndex < NUM_CHALLENGE_MODES);
+	// Bounded against mChallengeRecords itself, not NUM_CHALLENGE_MODES (gChallengeDefs'
+	// size): local co-op survival reuses this same "beaten" tracking one slot past where
+	// gChallengeDefs ends (see GetCurrentChallengeDef's comment), which mChallengeRecords
+	// has room for (100 slots vs. NUM_CHALLENGE_MODES's 72).
+	PVZP_ASSERT(aChallengeIndex >= 0 && aChallengeIndex < static_cast<int>(sizeof(mPlayerInfo->mChallengeRecords) / sizeof(mPlayerInfo->mChallengeRecords[0])));
 	if (IsSurvivalNormal(theGameMode))
 	{
 		return mPlayerInfo->mChallengeRecords[aChallengeIndex] >= SURVIVAL_NORMAL_FLAGS;
@@ -3403,6 +3425,13 @@ std::string LawnGetCurrentLevelName()
 	if (gLawnApp->IsAdventureMode())
 	{
 		return std::format("F{}", gLawnApp->GetStageString(gLawnApp->mBoard->mLevel));
+	}
+	// GetCurrentChallengeDef() has no entry for the local co-op/versus modes (see the
+	// NUM_CHALLENGE_MODES comment in ChallengeScreen.h) -- avoid indexing gChallengeDefs
+	// out of bounds for them.
+	if (gLawnApp->IsMultiplayerMode())
+	{
+		return gLawnApp->IsVersusMode() ? "Versus" : "Co-op Survival";
 	}
 
 	return gLawnApp->GetCurrentChallengeDef().mChallengeName;

@@ -54,6 +54,7 @@
 #include "Lawn/Widget/StoreScreen.h"
 #include "Lawn/Widget/CheatDialog.h"
 #include "Lawn/Widget/GameSelector.h"
+#include "Lawn/Widget/VersusSetupMenu.h"
 #include "Lawn/Widget/CreditScreen.h"
 #include "PvzpLib/EffectSystem.h"
 #include "PvzpLib/FilterEffect.h"
@@ -1981,10 +1982,6 @@ void LawnApp::ButtonDepress(int theId)
 			FinishCoopSetupDialog(true);
 			return;
 
-		case Dialogs::DIALOG_MULTIPLAYER_VERSUS:
-			FinishVersusSetupDialog(true);
-			return;
-
 		case 20008:
 			KillDialog(20008);
 			KillDialog(Dialogs::DIALOG_CHECKING_UPDATES);
@@ -2035,10 +2032,6 @@ void LawnApp::ButtonDepress(int theId)
 
 		case Dialogs::DIALOG_MULTIPLAYER_COOP:
 			FinishCoopSetupDialog(false);
-			return;
-
-		case Dialogs::DIALOG_MULTIPLAYER_VERSUS:
-			FinishVersusSetupDialog(false);
 			return;
 
 		case 10008:
@@ -2148,29 +2141,38 @@ void LawnApp::SetSecondPlayer(int theControllerIndex)
 // Entry points for local versus/co-op, reached from GameSelector's real "Versus" and
 // "Co-op" buttons (GameSelector::GameSelector_Versus/Coop -- the console/Android TV
 // build's MainMenu.menu.txt has separate top-level VS_BUTTON and VS_COOP_BUTTON entries,
-// peers of MINI_GAMES_BUTTON, not nested inside it or each other). Each asks a single
-// Yes/No with the engine's existing generic dialog rather than the real VSSetupMenu ->
-// VSSetupSides -> VSSetupControllers screens (confirmed real, extracted .txt files for
-// the engine's MenuWidget/MenuParser system, which doesn't exist in this port): those
-// pick things (Quick/Custom/Random play, which lawn, which side, which controller) this
-// port has no menu-file interpreter, no second seed chooser, and no per-controller
-// input to back yet, so building it now would mean fabricating choices with nothing
-// real behind them. A plain confirmation that starts the match is the honest subset.
+// peers of MINI_GAMES_BUTTON, not nested inside it or each other).
+//
+// Versus shows the real, user-extracted VSSetupMenu.txt through VersusSetupMenu (Sexy::
+// MenuWidget/MenuParser -- see MenuWidget.h). Its Quick Play starts a match now; Custom
+// Battle/Random Battle lead to VSSetupSides.txt -> VSSetupControllers.txt (also real,
+// also extracted), which pick a lawn/side and detect a second controller -- built with
+// widget types and input this port doesn't have, so VersusSetupMenu says so rather than
+// silently running Quick Play's flow for them.
+//
+// Co-op has no equivalent extracted script (VS_COOP_BUTTON's own setup screen wasn't
+// captured), so it keeps a plain Yes/No confirmation with the engine's existing generic
+// dialog.
 void LawnApp::DoVersusSetupDialog()
 {
-	DoDialog(Dialogs::DIALOG_MULTIPLAYER_VERSUS, true, "[MULTIPLAYER_VERSUS_HEADER]", "[MULTIPLAYER_VERSUS_LINES]", "", Dialog::BUTTONS_YES_NO);
+	PVZP_ASSERT(mVersusSetupMenu == nullptr);
+	mVersusSetupMenu = std::make_unique<VersusSetupMenu>(this);
+	mVersusSetupMenu->Resize(0, 0, mWidth, mHeight);
+	mWidgetManager->AddWidget(mVersusSetupMenu.get());
+}
+
+void LawnApp::KillVersusSetupMenu()
+{
+	if (mVersusSetupMenu)
+	{
+		mWidgetManager->RemoveWidget(mVersusSetupMenu.get());
+		SafeDeleteWidget(mVersusSetupMenu.release());
+	}
 }
 
 void LawnApp::DoCoopSetupDialog()
 {
 	DoDialog(Dialogs::DIALOG_MULTIPLAYER_COOP, true, "[MULTIPLAYER_COOP_HEADER]", "[MULTIPLAYER_COOP_LINES]", "", Dialog::BUTTONS_YES_NO);
-}
-
-void LawnApp::FinishVersusSetupDialog(bool isYes)
-{
-	KillDialog(Dialogs::DIALOG_MULTIPLAYER_VERSUS);
-	if (isYes)
-		StartMultiplayerGame(GameMode::GAMEMODE_VERSUS);
 }
 
 void LawnApp::FinishCoopSetupDialog(bool isYes)

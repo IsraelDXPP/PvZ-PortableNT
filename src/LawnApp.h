@@ -47,6 +47,7 @@ class Music;
 class TitleScreen;
 class ChallengeScreen;
 class StoreScreen;
+class VersusSetupMenu;
 class AlmanacDialog;
 class TypingCheck;
 
@@ -79,6 +80,7 @@ public:
 	std::unique_ptr<AwardScreen>	mAwardScreen;
 	std::unique_ptr<CreditScreen>	mCreditScreen;
 	std::unique_ptr<ChallengeScreen>	mChallengeScreen;
+	std::unique_ptr<VersusSetupMenu>	mVersusSetupMenu;
 	std::unique_ptr<PvzpFoley>		mSoundSystem;
 	std::string						mReferId;
 	std::string						mRegisterLink;
@@ -247,8 +249,8 @@ public:
 	bool					IsTwinSunbankMode();
 	void							SetSecondPlayer(int theControllerIndex);
 	void							DoVersusSetupDialog();
+	void							KillVersusSetupMenu();
 	void							DoCoopSetupDialog();
-	void							FinishVersusSetupDialog(bool isYes);
 	void							FinishCoopSetupDialog(bool isYes);
 	void							StartMultiplayerGame(GameMode theGameMode);
 	bool							IsContinuousChallenge();

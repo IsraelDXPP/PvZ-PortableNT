@@ -80,6 +80,13 @@ public:
 	// pool instead of plant seeds -- see UpdateMPZombieBank's comment for what's ported.
 	int32_t                 mMPZombieBankCounter = 0;
 	SeedType                mLastMPZombieSeedType = SeedType::SEED_NONE;
+	// Versus mode's "sudden death": Challenge::IsMPSuddenDeath in the decompiled build
+	// compares elapsed real time against a 300-second (5 minute) threshold, adjusting for
+	// time spent paused. This port has no wall-clock timing anywhere else, so this uses
+	// Board::mMainCounter (which already freezes while Board::mPaused is set -- see
+	// Board::Update -- so no separate pause-adjustment is needed) instead of GetTickCount;
+	// see IsMPSuddenDeath's comment for the tick-rate math.
+	int32_t                 mMPSuddenDeathStartTick = -1;
 	int32_t                 mSurvivalStage;
 	int32_t                 mSlotMachineRollCount;
 	ReanimationID           mReanimChallenge;
@@ -152,6 +159,7 @@ public:
 	void         PlayBossEnter();
 	void                    UpdateConveyorBelt();
 	void                    UpdateMPZombieBank();
+	bool                    IsMPSuddenDeath();
 	void                    PortalStart();
 	void                    UpdatePortalCombat();
 	GridItem*               GetOtherPortal(GridItem* thePortal);

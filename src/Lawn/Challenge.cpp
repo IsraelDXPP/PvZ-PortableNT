@@ -435,6 +435,10 @@ void Challenge::InitLevel()
 	{
 		TreeOfWisdomInit();
 	}
+	if (mApp->IsVersusMode())
+	{
+		mMPSuddenDeathStartTick = mBoard->mMainCounter;
+	}
 }
 
 void Challenge::StartLevel()
@@ -1992,6 +1996,20 @@ void Challenge::UpdateMPZombieBank()
 	aSeedPacket.mRefreshing = false;
 	aSeedPacket.mActive = true;
 	mLastMPZombieSeedType = aSeedType;
+}
+
+bool Challenge::IsMPSuddenDeath()
+{
+	// Ported from the decompiled Challenge::IsMPSuddenDeath: true once 300 seconds (5
+	// minutes) of unpaused match time have passed in Versus. The original measures real
+	// elapsed time (Sexy::GetTickCount) minus time spent paused; this port has no
+	// wall-clock timing elsewhere; instead it counts Board::mMainCounter ticks, which
+	// already stop advancing while Board::mPaused is set (see Board::Update), so it's
+	// equivalent without needing a separate pause adjustment. Board runs its game logic
+	// at 60 ticks/second (see Board::AddAMound's comment), so 300 seconds is 18000 ticks.
+	if (!mApp->IsVersusMode() || mMPSuddenDeathStartTick == -1)
+		return false;
+	return (mBoard->mMainCounter - mMPSuddenDeathStartTick) > 18000;
 }
 
 void Challenge::UpdateRainingSeeds()

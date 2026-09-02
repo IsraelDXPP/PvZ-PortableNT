@@ -5369,6 +5369,15 @@ void Board::UpdateSunSpawning()
 
 	mNumSunsFallen++;
 	mSunCountDown = std::min(SUN_COUNTDOWN_MAX, SUN_COUNTDOWN + mNumSunsFallen * 10) + Rand(SUN_COUNTDOWN_RANGE);
+	// Versus mode's "sudden death" (Challenge::IsMPSuddenDeath) divides the next sun's
+	// countdown by 3 in the decompiled Board::UpdateSunSpawning, once 5 minutes of match
+	// time have passed -- suns start falling 3x as often to push a stalled match to a
+	// finish. Not porting the sibling behavior gated behind Challenge::gVSSuddenDeathMode
+	// == 1 (spawning 2 suns per drop instead of 1): that global was already identified as
+	// a debug/playtesting toggle, off in the shipped build -- see UpdateMPZombieBank's and
+	// PickGraveRisingZombieTypeMP's comments for the same class of debug-only global.
+	if (mApp->IsVersusMode() && mChallenge->IsMPSuddenDeath())
+		mSunCountDown /= 3;
 	CoinType aSunType = mApp->mGameMode == GameMode::GAMEMODE_CHALLENGE_SUNNY_DAY ? CoinType::COIN_LARGESUN : CoinType::COIN_SUN;
 	AddCoin(RandRangeInt(100 + BOARD_ADDITIONAL_WIDTH, 649 + BOARD_ADDITIONAL_WIDTH), 60, aSunType, CoinMotion::COIN_MOTION_FROM_SKY);
 }

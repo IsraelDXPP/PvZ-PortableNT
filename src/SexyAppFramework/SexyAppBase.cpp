@@ -324,6 +324,7 @@ SexyAppBase::SexyAppBase()
 	mDrawCount = 0;
 	mSleepCount = 0;
 	mUpdateCount = 0;
+	mStartTick = 0;
 	mUpdateAppState = 0;
 	mUpdateAppDepth = 0;
 	mPendingUpdatesAcc = 0.0;
@@ -1430,10 +1431,13 @@ void SexyAppBase::ReadFromRegistry()
 	if (RegistryReadInteger("Muted", &anInt))
 		mMuteCount = anInt;
 
-#if !defined(__IPHONEOS__) && (!defined(__ANDROID__) || defined(__TERMUX__)) && !defined(__SWITCH__) && !defined(__EMSCRIPTEN__)
+	// The read must happen on every platform to keep the demo command stream in sync
 	if (RegistryReadInteger("ScreenMode", &anInt))
+	{
+#if !defined(__IPHONEOS__) && (!defined(__ANDROID__) || defined(__TERMUX__)) && !defined(__SWITCH__) && !defined(__EMSCRIPTEN__)
 		mIsWindowed = anInt == 0;
 #endif
+	}
 
 	RegistryReadInteger("PreferredX", &mPreferredX);
 	RegistryReadInteger("PreferredY", &mPreferredY);
@@ -2954,6 +2958,7 @@ void SexyAppBase::EmscriptenMainLoopCallback()
 		emscripten_cancel_main_loop();
 		app->ProcessSafeDeleteList();
 		app->mRunning = false;
+		app->LogPerfStats();
 		EM_ASM(
 			if (typeof FS !== 'undefined' && FS.syncfs) {
 				FS.syncfs(false, function(err) {
@@ -3091,6 +3096,20 @@ void SexyAppBase::PreTerminate()
 {
 }
 
+void SexyAppBase::LogPerfStats()
+{
+	Sexy::LogInfoLn("Seconds       = {:.6g}", (SDL_GetTicks() - mStartTick) / 1000.0);
+	Sexy::LogInfoLn("Sleep Count   = {}", mSleepCount);
+	Sexy::LogInfoLn("Update Count  = {}", mUpdateCount);
+	Sexy::LogInfoLn("Draw Count    = {}", mDrawCount);
+	Sexy::LogInfoLn("Draw Time     = {}", mDrawTime);
+	Sexy::LogInfoLn("Screen Blt    = {}", mScreenBltTime);
+	if (mDrawTime+mScreenBltTime > 0)
+	{
+		Sexy::LogInfoLn("Avg FPS       = {}", static_cast<uint64_t>(mDrawCount) * 1000 / (mDrawTime+mScreenBltTime));
+	}
+}
+
 void SexyAppBase::Start()
 {
 	if (mShutdown)
@@ -3104,6 +3123,7 @@ void SexyAppBase::Start()
 	uint32_t aStartTime = SDL_GetTicks();
 
 	mRunning = true;
+	mStartTick = aStartTime;
 	mLastTime = aStartTime;
 	mLastUserInputTick = aStartTime;
 	mLastTimerTime = aStartTime;
@@ -3116,16 +3136,7 @@ void SexyAppBase::Start()
 
 	WaitForLoadingThread();
 
-	Sexy::LogInfoLn("Seconds       = {:.6g}", (SDL_GetTicks() - aStartTime) / 1000.0);
-	Sexy::LogInfoLn("Sleep Count   = {}", mSleepCount);
-	Sexy::LogInfoLn("Update Count  = {}", mUpdateCount);
-	Sexy::LogInfoLn("Draw Count    = {}", mDrawCount);
-	Sexy::LogInfoLn("Draw Time     = {}", mDrawTime);
-	Sexy::LogInfoLn("Screen Blt    = {}", mScreenBltTime);
-	if (mDrawTime+mScreenBltTime > 0)
-	{
-		Sexy::LogInfoLn("Avg FPS       = {}", static_cast<uint64_t>(mDrawCount) * 1000 / (mDrawTime+mScreenBltTime));
-	}
+	LogPerfStats();
 
 	PreTerminate();
 
@@ -4306,11 +4317,6 @@ void SexyAppBase::Remove3DData(MemoryImage* theMemoryImage)
 		mGLInterface->Remove3DData(theMemoryImage);
 }
 
-
-bool SexyAppBase::Is3DAccelerated()
-{
-	return true;
-}
 
 bool SexyAppBase::Is3DAccelerationSupported()
 {

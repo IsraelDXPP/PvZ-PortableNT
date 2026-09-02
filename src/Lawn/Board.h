@@ -273,6 +273,15 @@ public:
 	// uses it only when the game is started with LawnApp::IsTwinSunbankMode() (each
 	// player keeps their own sun instead of sharing mSunMoney).
 	int32_t							mSunMoney2 = 0;
+	// Player two's keyboard cursor in Versus (player one keeps the mouse). Not from the
+	// decompiled build -- it assumes a second controller/mouse this port doesn't have any
+	// way to detect yet (see the SetSecondPlayer/StartMultiplayerGame comments) -- this is
+	// the explicitly-approved stand-in control scheme, everything it triggers otherwise
+	// goes through the same Challenge::IZombiePlaceZombie/Board::AddAMound as the
+	// decompiled zombie-seed placement.
+	int32_t							mPlayer2CursorGridX = MAX_GRID_SIZE_X / 2;
+	int32_t							mPlayer2CursorGridY = MAX_GRID_SIZE_Y / 2;
+	int32_t							mPlayer2SelectedSeedIndex = 0;
 
 public:
 	Board(LawnApp* theApp);
@@ -505,6 +514,8 @@ public:
 	// why the tiers use this port's own zombie types instead of the original's).
 	GridItem*			AddAMound(int theGridX, int theGridY, int theRiseCount);
 	ZombieType			PickGraveRisingZombieTypeMP(int theTier);
+	// Player two's keyboard controls in Versus -- see mPlayer2CursorGridX's comment.
+	void				Player2KeyDown(KeyCode theKey);
 	void							InitLawnMowers();
 	bool					IsPlantInCursor();
 	void							HighlightPlantsForMouse(int theMouseX, int theMouseY);

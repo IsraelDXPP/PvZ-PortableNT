@@ -7989,6 +7989,7 @@ void Board::DoTypingCheck(KeyCode theKey)
 void Board::KeyDown(KeyCode theKey)
 {
 	DoTypingCheck(theKey);
+	Player2KeyDown(theKey);
 
 	if (mApp->mGameScene == GameScenes::SCENE_LEVEL_INTRO &&
 		mApp->mGameMode != GameMode::GAMEMODE_CHALLENGE_ZEN_GARDEN &&
@@ -8847,6 +8848,61 @@ bool Board::CanTakeSunMoney(int theAmount)
 	return theAmount <= mSunMoney + CountSunBeingCollected();
 }
 
+void Board::Player2KeyDown(KeyCode theKey)
+{
+	if (!mSecondPlayerActive || !mApp->IsVersusMode() || mApp->mGameScene != GameScenes::SCENE_PLAYING)
+		return;
+
+	switch (theKey)
+	{
+	case KeyCode::KEYCODE_UP:
+		mPlayer2CursorGridY = std::max(mPlayer2CursorGridY - 1, 0);
+		return;
+	case KeyCode::KEYCODE_DOWN:
+		mPlayer2CursorGridY = std::min(mPlayer2CursorGridY + 1, StageHas6Rows() ? MAX_GRID_SIZE_Y - 1 : MAX_GRID_SIZE_Y - 2);
+		return;
+	case KeyCode::KEYCODE_LEFT:
+		mPlayer2CursorGridX = std::max(mPlayer2CursorGridX - 1, 0);
+		return;
+	case KeyCode::KEYCODE_RIGHT:
+		mPlayer2CursorGridX = std::min(mPlayer2CursorGridX + 1, MAX_GRID_SIZE_X - 1);
+		return;
+	case KeyCode::KEYCODE_TAB:
+		if (mSeedBank2->mNumPackets > 0)
+			mPlayer2SelectedSeedIndex = (mPlayer2SelectedSeedIndex + 1) % mSeedBank2->mNumPackets;
+		return;
+	case KeyCode::KEYCODE_CONTROL:
+	{
+		if (mPlayer2SelectedSeedIndex < 0 || mPlayer2SelectedSeedIndex >= mSeedBank2->mNumPackets)
+			return;
+		SeedPacket& aSeedPacket = mSeedBank2->mSeedPackets[mPlayer2SelectedSeedIndex];
+		SeedType aSeedType = aSeedPacket.mPacketType;
+		if (aSeedType == SeedType::SEED_NONE)
+			return;
+		if (CanPlantAt(mPlayer2CursorGridX, mPlayer2CursorGridY, aSeedType) != PlantingReason::PLANTING_OK)
+			return;
+		if (!TakeSunMoney2(GetCurrentPlantCost(aSeedType, SeedType::SEED_NONE)))
+			return;
+
+		// Same placement this port's i-Zombie click handler uses -- see the
+		// SEED_ZOMBIE_MOUND comment in Challenge::IZombieMouseDownWithZombie.
+		if (aSeedType == SeedType::SEED_ZOMBIE_MOUND)
+		{
+			AddAMound(mPlayer2CursorGridX, mPlayer2CursorGridY, 1);
+		}
+		else
+		{
+			ZombieType aZombieType = Challenge::IZombieSeedTypeToZombieType(aSeedType);
+			mChallenge->IZombiePlaceZombie(aZombieType, mPlayer2CursorGridX, mPlayer2CursorGridY);
+		}
+		mApp->PlayFoley(FoleyType::FOLEY_PLANT);
+		return;
+	}
+	default:
+		return;
+	}
+}
+
 void Board::AddSecondPlayer(int theControllerIndex)
 {
 	PVZP_ASSERT(theControllerIndex != -1);
@@ -8859,7 +8915,38 @@ void Board::AddSecondPlayer(int theControllerIndex)
 	if (!mCursorPreview2)
 		mCursorPreview2 = std::make_unique<CursorPreview>();
 	if (mApp->IsVersusMode())
+	{
 		mSunMoney2 = 0;
+
+		// The zombie side's seed bank. The decompiled build's roster wasn't recovered (its
+		// SeedType values are from that build's own enum, which numbers seeds differently
+		// -- the same cross-version drift already documented for ZombieType), so this lists
+		// every SEED_ZOMBIE_* this port defines, in the order this port declares them,
+		// truncated to SEEDBANK_MAX. SEED_ZOMBIE_MOUND goes first: it's what the decompiled
+		// SeedChooserScreen::VSAutoPickResourceGen auto-picks for the zombie side if nothing
+		// was chosen in time.
+		static constexpr SeedType kZombieSeedRoster[] = {
+			SeedType::SEED_ZOMBIE_MOUND,
+			SeedType::SEED_ZOMBIE_NORMAL,
+			SeedType::SEED_ZOMBIE_TRAFFIC_CONE,
+			SeedType::SEED_ZOMBIE_POLEVAULTER,
+			SeedType::SEED_ZOMBIE_PAIL,
+			SeedType::SEED_ZOMBIE_LADDER,
+			SeedType::SEED_ZOMBIE_DIGGER,
+			SeedType::SEED_ZOMBIE_BUNGEE,
+			SeedType::SEED_ZOMBIE_FOOTBALL,
+			SeedType::SEED_ZOMBIE_BALLOON,
+		};
+		constexpr int32_t kZombieSeedRosterCount = sizeof(kZombieSeedRoster) / sizeof(kZombieSeedRoster[0]);
+		static_assert(kZombieSeedRosterCount <= SEEDBANK_MAX);
+		mSeedBank2->mNumPackets = kZombieSeedRosterCount;
+		for (int i = 0; i < mSeedBank2->mNumPackets; i++)
+		{
+			mSeedBank2->mSeedPackets[i].SetPacketType(kZombieSeedRoster[i]);
+			mSeedBank2->mSeedPackets[i].mIndex = i;
+		}
+		mPlayer2SelectedSeedIndex = 0;
+	}
 
 	// Loaded on demand -- see the "DelayLoad_Multiplayer" comment in Resources.h. Failure
 	// here (no art shipped for this feature yet) only leaves the new images/sounds null;

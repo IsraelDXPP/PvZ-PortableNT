@@ -7834,6 +7834,7 @@ void Board::Draw(Graphics* g)
 
 	mDrawCount++;
 	DrawGameObjects(g);
+	DrawPlayer2Cursor(g);
 }
 
 void Board::SetMustacheMode(bool theEnableMustache)
@@ -8854,6 +8855,32 @@ bool Board::TakeSunMoney(int theAmount)
 bool Board::CanTakeSunMoney(int theAmount)
 {
 	return theAmount <= mSunMoney + CountSunBeingCollected();
+}
+
+void Board::DrawPlayer2Cursor(Graphics* g)
+{
+	// Not from the decompiled build -- see mPlayer2CursorGridX's comment in Board.h. No
+	// art exists for a second cursor, so this is a plain outline plus text, same idiom
+	// Board::DrawDebugText already uses elsewhere in this file for non-player-facing info.
+	if (!mSecondPlayerActive || !mApp->IsVersusMode() || mApp->mGameScene != GameScenes::SCENE_PLAYING)
+		return;
+
+	int aCellWidth = GridToPixelX(1, 0) - GridToPixelX(0, 0);
+	int aCellHeight = GridToPixelY(0, 1) - GridToPixelY(0, 0);
+	int aPosX = GridToPixelX(mPlayer2CursorGridX, mPlayer2CursorGridY);
+	int aPosY = GridToPixelY(mPlayer2CursorGridX, mPlayer2CursorGridY);
+
+	g->SetColor(Color(255, 0, 0));
+	g->DrawRect(Rect(aPosX, aPosY, aCellWidth, aCellHeight));
+
+	std::string aSeedName = "?";
+	if (mPlayer2SelectedSeedIndex >= 0 && mPlayer2SelectedSeedIndex < mSeedBank2->mNumPackets)
+	{
+		SeedType aSeedType = mSeedBank2->mSeedPackets[mPlayer2SelectedSeedIndex].mPacketType;
+		aSeedName = Plant::GetNameString(aSeedType, SeedType::SEED_NONE);
+	}
+	std::string aLabel = std::format("P2: {} ({})", aSeedName, mSunMoney2);
+	PvzpDrawString(g, aLabel, aPosX + aCellWidth / 2, aPosY - 4, Sexy::FONT_DWARVENTODCRAFT12, Color(255, 0, 0), DrawStringJustification::DS_ALIGN_CENTER);
 }
 
 void Board::Player2KeyDown(KeyCode theKey)

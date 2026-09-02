@@ -516,6 +516,7 @@ public:
 	ZombieType			PickGraveRisingZombieTypeMP(int theTier);
 	// Player two's keyboard controls in Versus -- see mPlayer2CursorGridX's comment.
 	void				Player2KeyDown(KeyCode theKey);
+	void				DrawPlayer2Cursor(Graphics* g);
 	void							InitLawnMowers();
 	bool					IsPlantInCursor();
 	void							HighlightPlantsForMouse(int theMouseX, int theMouseY);

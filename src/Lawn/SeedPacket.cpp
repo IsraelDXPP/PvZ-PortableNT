@@ -521,6 +521,12 @@ void DrawSeedPacket(Graphics* g, float x, float y, SeedType theSeedType, SeedTyp
 		aOffsetY = -4.0f;
 		break;
 
+	case SeedType::SEED_ZOMBIE_MOUND:
+		aScale = 0.3f;
+		aOffsetX = -3.0f;
+		aOffsetY = -4.0f;
+		break;
+
 	case SeedType::SEED_BEGHOULED_BUTTON_SHUFFLE:
 	case SeedType::SEED_BEGHOULED_BUTTON_CRATER:
 	case SeedType::SEED_SLOT_MACHINE_SUN:

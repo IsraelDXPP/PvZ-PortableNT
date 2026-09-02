@@ -2450,8 +2450,10 @@ PlantingReason Challenge::CanPlantAt(int theGridX, int theGridY, SeedType theSee
 	{
 		return theGridX > 2 ? PLANTING_NOT_PASSED_LINE : PLANTING_OK;
 	}
-	else if (mApp->IsIZombieLevel())
+	else if (mApp->IsIZombieLevel() || mApp->IsVersusMode())
 	{
+		// Versus mode reuses i-Zombie's "can only plant zombies right of this column"
+		// rule rather than a rule of its own recovered from the decompiled build.
 		int aLimit = 6;
 		if (mApp->mGameMode == GAMEMODE_PUZZLE_I_ZOMBIE_1 || mApp->mGameMode == GAMEMODE_PUZZLE_I_ZOMBIE_2 || mApp->mGameMode == GAMEMODE_PUZZLE_I_ZOMBIE_3 ||
 			mApp->mGameMode == GAMEMODE_PUZZLE_I_ZOMBIE_4 || mApp->mGameMode == GAMEMODE_PUZZLE_I_ZOMBIE_5)
@@ -4269,6 +4271,11 @@ ZombieType Challenge::IZombieSeedTypeToZombieType(SeedType theSeedType)
 	case SEED_ZOMBIE_GARGANTUAR:	return ZOMBIE_GARGANTUAR;
 	case SEED_ZOMBIE_IMP:			return ZOMBIE_IMP;
 	case SEED_ZOMBIE_TRASHCAN:		return ZOMBIE_TRASHCAN;
+	// SEED_ZOMBIE_MOUND doesn't place a zombie directly (see IZombieMouseDownWithZombie,
+	// which special-cases it to Board::AddAMound before this function would ever be asked
+	// to place one) -- this mapping only matters for the seed packet's icon preview
+	// (Plant::DrawSeedPacket), which draws whatever ZombieType this returns.
+	case SEED_ZOMBIE_MOUND:		return ZOMBIE_NORMAL;
 	default:						PVZP_ASSERT(false);
 	}
 
@@ -4307,8 +4314,18 @@ void Challenge::IZombieMouseDownWithZombie(int theX, int theY, int theClickCount
 				{
 					mBoard->ClearAdvice(ADVICE_I_ZOMBIE_LEFT_OF_LINE);
 					mBoard->ClearAdvice(ADVICE_I_ZOMBIE_NOT_PASSED_LINE);
-					ZombieType aZombieType = IZombieSeedTypeToZombieType(aSeedType);
-					IZombiePlaceZombie(aZombieType, aGridX, aGridY);
+					// Versus mode's SEED_ZOMBIE_MOUND (Board::AddAMound in the decompiled
+					// build): plants a delayed marker instead of an immediate zombie. See
+					// the GRIDITEM_MP_MOUND comment in ConstEnums.h.
+					if (aSeedType == SEED_ZOMBIE_MOUND)
+					{
+						mBoard->AddAMound(aGridX, aGridY, 1);
+					}
+					else
+					{
+						ZombieType aZombieType = IZombieSeedTypeToZombieType(aSeedType);
+						IZombiePlaceZombie(aZombieType, aGridX, aGridY);
+					}
 
 					PVZP_ASSERT(mBoard->mCursorObject->mSeedBankIndex >= 0 && mBoard->mCursorObject->mSeedBankIndex < mBoard->mSeedBank->mNumPackets);
 					mBoard->mSeedBank->mSeedPackets[mBoard->mCursorObject->mSeedBankIndex].WasPlanted();
@@ -4739,7 +4756,9 @@ int Challenge::IsZombieSeedType(SeedType theSeedType)
 		theSeedType == SEED_ZOMBIE_POGO ||
 		theSeedType == SEED_ZOMBIE_DANCER ||
 		theSeedType == SEED_ZOMBIE_GARGANTUAR ||
-		theSeedType == SEED_ZOMBIE_IMP;
+		theSeedType == SEED_ZOMBIE_IMP ||
+		theSeedType == SEED_ZOMBIE_TRASHCAN ||
+		theSeedType == SEED_ZOMBIE_MOUND;
 }
 
 void Challenge::IZombieSetPlantFilterEffect(Plant* thePlant, FilterEffect theFilterEffect)

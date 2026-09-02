@@ -496,6 +496,15 @@ public:
 	// condition checking GetMPTargetCount()).
 	GridItem*			AddMPTarget(int theGridX, int theGridY);
 	int					GetMPTargetCount();
+	// Versus mode's zombie-side "mound" seed (SEED_ZOMBIE_MOUND): a delayed, random zombie
+	// instead of an immediate one. Ported from the decompiled Board::AddAMound (spawning the
+	// GridItem, maturing it in UpdateGridItems, and rising the zombie once mature -- the
+	// decompiled build does the maturing in Challenge::UpdateMPGraveStones instead of Board,
+	// but this port's AddMPTarget/GetMPTargetCount are already Board methods, so this stays
+	// consistent with them) and Board::PickGraveRisingZombieTypeMP (see its own comment for
+	// why the tiers use this port's own zombie types instead of the original's).
+	GridItem*			AddAMound(int theGridX, int theGridY, int theRiseCount);
+	ZombieType			PickGraveRisingZombieTypeMP(int theTier);
 	void							InitLawnMowers();
 	bool					IsPlantInCursor();
 	void							HighlightPlantsForMouse(int theMouseX, int theMouseY);

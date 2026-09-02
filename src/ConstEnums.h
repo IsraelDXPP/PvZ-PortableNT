@@ -565,7 +565,15 @@ enum GridItemType : int32_t
 	// a destructible marker the zombie side plants on the lawn; the plant side must destroy it
 	// (shooting it damages mGridItemCounter, reused here as its hit points) to win. See the
 	// AddMPTarget/GetMPTargetCount comment in Board.h for what's ported vs. still open.
-	GRIDITEM_MP_TARGET = 13
+	GRIDITEM_MP_TARGET = 13,
+	// Versus mode (console/Android TV Board::AddAMound / Challenge::UpdateMPGraveStones /
+	// Board::PickGraveRisingZombieTypeMP): what the zombie side's SEED_ZOMBIE_MOUND seed
+	// plants instead of an immediate zombie -- a one-shot marker that matures after a delay
+	// (mGridItemCounter, reused the same way GRIDITEM_MP_TARGET reuses it) and then rises a
+	// random zombie (mSunCount, reused as the rise count) before dying. Visually an
+	// "IMAGE_MP_TOMBSTONE" in the decompiled resource table, hence the name it's often
+	// described by, but the decompiled function that creates it is Board::AddAMound.
+	GRIDITEM_MP_MOUND = 14
 };
 enum GridItemState : int32_t
 {
@@ -1178,6 +1186,9 @@ enum SeedType : int32_t
 	SEED_ZOMBIE_GARGANTUAR,
 	SEED_ZOMBIE_IMP,
 	SEED_ZOMBIE_TRASHCAN,
+	// Plants a GRIDITEM_MP_MOUND instead of an immediate zombie (see its comment in
+	// GridItemType): a delayed, random zombie for a lower up-front commitment.
+	SEED_ZOMBIE_MOUND,
 	NUM_SEEDS_IN_CHOOSER = 49,
 	SEED_NONE = -1
 };

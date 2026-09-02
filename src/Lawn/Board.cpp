@@ -517,6 +517,74 @@ int Board::GetMPTargetCount()
 	return aCount;
 }
 
+GridItem* Board::AddAMound(int theGridX, int theGridY, int theRiseCount)
+{
+	GridItem* aMound = mGridItems.DataArrayAlloc();
+	aMound->mGridItemType = GridItemType::GRIDITEM_MP_MOUND;
+	aMound->mGridX = theGridX;
+	aMound->mGridY = theGridY;
+	aMound->mSunCount = std::max(theRiseCount, 1);
+	// Matches the decompiled Board::AddAMound's counter start; UpdateGridItems() ticks it
+	// up once a frame and matures the mound at > 499, so it takes ~1000 ticks (roughly
+	// 16-17 seconds) to rise.
+	aMound->mGridItemCounter = -500;
+	aMound->mRenderOrder = MakeRenderOrder(RenderLayer::RENDER_LAYER_GRAVE_STONE, theGridY, 3);
+	return aMound;
+}
+
+ZombieType Board::PickGraveRisingZombieTypeMP(int theTier)
+{
+	// Shaped like the decompiled Board::PickGraveRisingZombieTypeMP (a tier that escalates
+	// to stronger zombies), but built from this port's own ZombieType pool: the original
+	// picks by raw ZombieType value from the console build's enum, which numbers zombies
+	// differently from this port's (e.g. ZombieType::ZOMBIE_PEA_HEAD sits at a different
+	// ordinal here), so those values aren't safely portable 1:1.
+	PvzpWeightedArray aZombieWeightArray[3];
+	int aCount;
+	if (theTier <= 0)
+	{
+		aZombieWeightArray[0].mItem = ZombieType::ZOMBIE_NORMAL;
+		aZombieWeightArray[0].mWeight = GetZombieDefinition(ZombieType::ZOMBIE_NORMAL).mPickWeight;
+		aCount = 1;
+	}
+	else if (theTier == 1)
+	{
+		aZombieWeightArray[0].mItem = ZombieType::ZOMBIE_NORMAL;
+		aZombieWeightArray[0].mWeight = GetZombieDefinition(ZombieType::ZOMBIE_NORMAL).mPickWeight;
+		aZombieWeightArray[1].mItem = ZombieType::ZOMBIE_TRAFFIC_CONE;
+		aZombieWeightArray[1].mWeight = GetZombieDefinition(ZombieType::ZOMBIE_TRAFFIC_CONE).mPickWeight;
+		aCount = 2;
+	}
+	else if (theTier == 2)
+	{
+		aZombieWeightArray[0].mItem = ZombieType::ZOMBIE_TRAFFIC_CONE;
+		aZombieWeightArray[0].mWeight = GetZombieDefinition(ZombieType::ZOMBIE_TRAFFIC_CONE).mPickWeight;
+		aZombieWeightArray[1].mItem = ZombieType::ZOMBIE_PAIL;
+		aZombieWeightArray[1].mWeight = GetZombieDefinition(ZombieType::ZOMBIE_PAIL).mPickWeight;
+		aCount = 2;
+	}
+	else if (theTier == 3)
+	{
+		aZombieWeightArray[0].mItem = ZombieType::ZOMBIE_PAIL;
+		aZombieWeightArray[0].mWeight = GetZombieDefinition(ZombieType::ZOMBIE_PAIL).mPickWeight;
+		aZombieWeightArray[1].mItem = ZombieType::ZOMBIE_FOOTBALL;
+		aZombieWeightArray[1].mWeight = GetZombieDefinition(ZombieType::ZOMBIE_FOOTBALL).mPickWeight;
+		aCount = 2;
+	}
+	else
+	{
+		aZombieWeightArray[0].mItem = ZombieType::ZOMBIE_FOOTBALL;
+		aZombieWeightArray[0].mWeight = GetZombieDefinition(ZombieType::ZOMBIE_FOOTBALL).mPickWeight;
+		aZombieWeightArray[1].mItem = ZombieType::ZOMBIE_NEWSPAPER;
+		aZombieWeightArray[1].mWeight = GetZombieDefinition(ZombieType::ZOMBIE_NEWSPAPER).mPickWeight;
+		aZombieWeightArray[2].mItem = ZombieType::ZOMBIE_LADDER;
+		aZombieWeightArray[2].mWeight = GetZombieDefinition(ZombieType::ZOMBIE_LADDER).mPickWeight;
+		aCount = 3;
+	}
+
+	return (ZombieType)PvzpPickFromWeightedArray(aZombieWeightArray, aCount);
+}
+
 GridItem* Board::AddAGraveStone(int theGridX, int theGridY)
 {
 	GridItem* aGraveStone = mGridItems.DataArrayAlloc();
@@ -3553,6 +3621,10 @@ void Board::UpdateToolTip()
 	else if (aUseSeedType == SeedType::SEED_ZOMBIE_TRASHCAN)
 	{
 		mToolTip->SetLabel("[TRASHCAN_ZOMBIE]");
+	}
+	else if (aUseSeedType == SeedType::SEED_ZOMBIE_MOUND)
+	{
+		mToolTip->SetLabel("[MOUND]");
 	}
 	else
 	{
@@ -9660,6 +9732,28 @@ void Board::UpdateGridItems()
 			}
 			if (aGridItem->mGridItemCounter == 0)
 			{
+				aGridItem->GridItemDie();
+			}
+		}
+
+		// Ported from Challenge::UpdateMPGraveStones in the decompiled build (moved here to
+		// sit next to the GRIDITEM_GRAVESTONE/GRIDITEM_CRATER counters above, which this
+		// port already updates in Board rather than Challenge).
+		if (aGridItem->mGridItemType == GridItemType::GRIDITEM_MP_MOUND && mApp->mGameScene == GameScenes::SCENE_PLAYING)
+		{
+			aGridItem->mGridItemCounter++;
+			if (aGridItem->mGridItemCounter > 499)
+			{
+				int aRiseCount = aGridItem->mSunCount;
+				for (int i = 0; i < aRiseCount; i++)
+				{
+					ZombieType aZombieType = PickGraveRisingZombieTypeMP(aRiseCount);
+					Zombie* aZombie = AddZombie(aZombieType, -5);
+					if (aZombie)
+					{
+						aZombie->RiseFromGrave(aGridItem->mGridX, aGridItem->mGridY);
+					}
+				}
 				aGridItem->GridItemDie();
 			}
 		}

@@ -41,6 +41,7 @@
 #include "Widget/SeedChooserScreen.h"
 #include "../PvzpLib/Attachment.h"
 #include "../PvzpLib/Reanimator.h"
+#include "../PvzpLib/Definition.h"
 #include "widget/Dialog.h"
 #include "misc/MTRand.h"
 #include "../PvzpLib/PvzpParticle.h"
@@ -481,11 +482,10 @@ GridItem* Board::AddACrater(int theGridX, int theGridY)
 
 GridItem* Board::AddMPTarget(int theGridX, int theGridY)
 {
-	// Ported from the decompiled Board::AddMPTarget (Versus mode). GRIDITEM_MP_TARGET's HP
-	// reuses mGridItemCounter (like GRIDITEM_GRAVESTONE reuses it above for its rise delay);
-	// nothing calls this yet -- it needs the plant-projectile-vs-GridItem damage path and the
-	// Versus win condition (Board::GetMPTargetCount reaching 0), both still open. See the
-	// GRIDITEM_MP_TARGET comment in ConstEnums.h.
+	// Ported from the decompiled Board::AddMPTarget (Versus mode); called once per row from
+	// CutScene::PlaceLawnItems at match start. GRIDITEM_MP_TARGET's HP reuses
+	// mGridItemCounter (like GRIDITEM_GRAVESTONE reuses it above for its rise delay). See
+	// the GRIDITEM_MP_TARGET comment in ConstEnums.h for what's ported vs. still open.
 	GridItem* aTarget = mGridItems.DataArrayAlloc();
 	aTarget->mGridItemType = GridItemType::GRIDITEM_MP_TARGET;
 	aTarget->mGridX = theGridX;
@@ -494,15 +494,29 @@ GridItem* Board::AddMPTarget(int theGridX, int theGridY)
 	aTarget->mRenderOrder = theGridY == 0
 		? MakeRenderOrder(RenderLayer::RENDER_LAYER_GROUND, 0, 0)
 		: MakeRenderOrder(RenderLayer::RENDER_LAYER_PLANT, theGridY, 1);
-	int aPixelX = GridToPixelX(theGridX, theGridY);
-	int aPixelY = GridToPixelY(theGridX, theGridY);
-	Reanimation* aReanim = mApp->AddReanimation(
-		aPixelX + 20.0f / (5 - theGridY) + 26.0f,
-		aPixelY - 54.0f,
-		aTarget->mRenderOrder,
-		ReanimationType::REANIM_MP_TARGET);
-	aReanim->mIsAttachment = true;
-	aTarget->mGridItemReanimID = mApp->ReanimationGetID(aReanim);
+	// REANIM_MP_TARGET points at "reanim/MPTarget.reanim" (Reanimator.cpp), which -- like
+	// the rest of this feature's art -- isn't part of this port's shipped resource pack.
+	// Unlike a missing Image (ResourceManager::GetImageThrow just throws, caught by
+	// PvzpLoadResources), a missing reanim definition is fatal a different way:
+	// ReanimatorEnsureDefinitionLoaded calls PvzpErrorMessageBox on failure, which throws
+	// an uncaught std::runtime_error on desktop and takes the whole game down. Since this
+	// runs unconditionally at the start of every Versus match, that made Versus crash
+	// immediately. DefinitionIsCompiled is the same check ReanimatorLoadDefinitions uses to
+	// decide what's safe to preload, so it's used here to skip the reanim (target still has
+	// real HP, a real hitbox via Projectile::FindMPTargetCollisionTarget, and counts toward
+	// the win condition -- it's just invisible until real art exists) instead of crashing.
+	if (DefinitionIsCompiled("reanim/MPTarget.reanim"))
+	{
+		int aPixelX = GridToPixelX(theGridX, theGridY);
+		int aPixelY = GridToPixelY(theGridX, theGridY);
+		Reanimation* aReanim = mApp->AddReanimation(
+			aPixelX + 20.0f / (5 - theGridY) + 26.0f,
+			aPixelY - 54.0f,
+			aTarget->mRenderOrder,
+			ReanimationType::REANIM_MP_TARGET);
+		aReanim->mIsAttachment = true;
+		aTarget->mGridItemReanimID = mApp->ReanimationGetID(aReanim);
+	}
 	return aTarget;
 }
 

@@ -261,6 +261,28 @@ Zombie* Projectile::FindCollisionTarget()
 	return aBestZombie;
 }
 
+GridItem* Projectile::FindMPTargetCollisionTarget()
+{
+	// Versus mode's MP Target (GRIDITEM_MP_TARGET) doesn't have a real hitbox yet -- no art
+	// ships for it (see the DelayLoad_Multiplayer/REANIM_MP_TARGET comments), so this is a
+	// fixed-size approximation around its spawn position rather than an image-sized rect
+	// like FindCollisionTarget() uses for zombies. Only reachable once something actually
+	// calls Board::AddMPTarget, which nothing does yet.
+	Rect aProjectileRect = GetProjectileRect();
+	for (GridItem* aGridItem : mBoard->mGridItems)
+	{
+		if (aGridItem->mDead || aGridItem->mGridItemType != GridItemType::GRIDITEM_MP_TARGET)
+			continue;
+		if (aGridItem->mGridY != mRow)
+			continue;
+
+		Rect aTargetRect(static_cast<int>(aGridItem->mPosX) - 20, static_cast<int>(aGridItem->mPosY) - 20, 40, 40);
+		if (GetRectOverlap(aProjectileRect, aTargetRect) >= 0)
+			return aGridItem;
+	}
+	return nullptr;
+}
+
 void Projectile::CheckForCollision()
 {
 	if (mMotionType == ProjectileMotion::MOTION_PUFF && mProjectileAge >= 75)
@@ -331,6 +353,13 @@ void Projectile::CheckForCollision()
 		}
 
 		DoImpact(aZombie);
+		return;
+	}
+
+	if (GridItem* aTarget = FindMPTargetCollisionTarget())
+	{
+		aTarget->TakeDamage(GetProjectileDef().mDamage);
+		Die();
 	}
 }
 

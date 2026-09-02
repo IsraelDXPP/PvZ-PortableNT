@@ -28,6 +28,7 @@
 
 class Plant;
 class Zombie;
+class GridItem;
 namespace Sexy
 {
 	class Graphics;
@@ -87,6 +88,7 @@ public:
 	void                    UpdateMotion();
 	void                    CheckForCollision();
 	Zombie*                 FindCollisionTarget();
+	GridItem*               FindMPTargetCollisionTarget();
 	void                    UpdateLobMotion();
 	void                    CheckForHighGround();
 	bool                    CantHitHighGround();

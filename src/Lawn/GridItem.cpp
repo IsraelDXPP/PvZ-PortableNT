@@ -62,6 +62,18 @@ GridItem::GridItem()
 	mMotionTrailCount = 0;
 }
 
+void GridItem::TakeDamage(int theDamage)
+{
+	if (mDead || mGridItemType != GridItemType::GRIDITEM_MP_TARGET)
+		return;
+
+	mGridItemCounter -= theDamage;
+	if (mGridItemCounter <= 0)
+	{
+		GridItemDie();
+	}
+}
+
 void GridItem::GridItemDie()
 {
 	mDead = true;

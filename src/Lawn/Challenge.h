@@ -195,6 +195,7 @@ public:
 	void                    ScaryPotterMalletPot(GridItem* theScaryPot);
 	static ZombieType       IZombieSeedTypeToZombieType(SeedType theSeedType);
 	static int  IsZombieSeedType(SeedType theSeedType);
+	static bool             IsMPResourceProducer(SeedType theSeedType);
 	void                    IZombieMouseDownWithZombie(int theX, int theY, int theClickCount);
 	void                    IZombieStart();
 	void                    IZombiePlacePlants(SeedType theSeedType, int theCount, int theGridY = -1);

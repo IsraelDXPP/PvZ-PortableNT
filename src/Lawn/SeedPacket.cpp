@@ -782,6 +782,18 @@ void SeedPacket::MouseDown([[maybe_unused]] int x, [[maybe_unused]] int y, [[may
 			return;
 		}
 
+		// Ported from the decompiled build's GamepadControls seed-selection path (this port
+		// selects plant-side seeds with the mouse instead, so the check moves here):
+		// once Versus mode's sudden death kicks in (Challenge::IsMPSuddenDeath), resource-
+		// producer seeds (Challenge::IsMPResourceProducer -- Sunflower/Sun-shroom/Twin
+		// Sunflower) can no longer be selected, so a stalled match can't keep growing its
+		// economy instead of finishing.
+		if (mApp->IsVersusMode() && mBoard->mChallenge->IsMPSuddenDeath() && Challenge::IsMPResourceProducer(aUseSeedType))
+		{
+			mApp->PlaySample(SOUND_BUZZER);
+			return;
+		}
+
 		if (!mBoard->PlantingRequirementsMet(aUseSeedType))
 		{
 			mApp->PlaySample(SOUND_BUZZER);

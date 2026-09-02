@@ -8934,6 +8934,16 @@ void Board::Player2KeyDown(KeyCode theKey)
 		if (CanPlantAt(mPlayer2CursorGridX, mPlayer2CursorGridY, aSeedType) != PlantingReason::PLANTING_OK)
 			return;
 
+		// Symmetric with the plant side's block in SeedPacket::MouseDown: once sudden death
+		// hits, the zombie side's own "resource producer" seed (SEED_ZOMBIE_MOUND -- see
+		// Challenge::IsMPResourceProducer's comment for why that's the zombie-side match)
+		// can't be selected either.
+		if (mChallenge->IsMPSuddenDeath() && Challenge::IsMPResourceProducer(aSeedType))
+		{
+			mApp->PlaySample(Sexy::SOUND_BUZZER);
+			return;
+		}
+
 		// Same placement this port's i-Zombie click handler uses -- see the
 		// SEED_ZOMBIE_MOUND comment in Challenge::IZombieMouseDownWithZombie.
 		if (aSeedType == SeedType::SEED_ZOMBIE_MOUND)

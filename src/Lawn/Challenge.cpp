@@ -4845,6 +4845,26 @@ int Challenge::IsZombieSeedType(SeedType theSeedType)
 		theSeedType == SEED_ZOMBIE_MOUND;
 }
 
+bool Challenge::IsMPResourceProducer(SeedType theSeedType)
+{
+	// Ported from the decompiled Challenge::IsMPResourceProducer, which checks 4 raw
+	// SeedType values (1, 9, 41, 61) against the console build's own enum. Despite the
+	// cross-version drift documented elsewhere in this file, 3 of those 4 happen to match
+	// this port's own SeedType values exactly -- SEED_SUNFLOWER == 1, SEED_SUNSHROOM == 9,
+	// SEED_TWINSUNFLOWER == 41 (see ConstEnums.h) -- which lines up with what "resource
+	// producer" means for the plant side: the 3 sun-producing plants. The 4th raw value,
+	// 61, is exactly where IsZombieSeedType/IsMPSeedType's zombie-seed range begins in the
+	// decompiled build, i.e. the FIRST zombie seed type -- the zombie side's equivalent
+	// "resource producer" seed, SEED_ZOMBIE_MOUND (Challenge::UpdateMPZombieBank lists it
+	// first in the belt's pool, same as here). So this stays a real 1:1 port, not a content
+	// re-guess: only the raw-to-symbolic mapping used this port's own already-matching enum
+	// values instead of re-deriving them.
+	return theSeedType == SeedType::SEED_SUNFLOWER ||
+		theSeedType == SeedType::SEED_SUNSHROOM ||
+		theSeedType == SeedType::SEED_TWINSUNFLOWER ||
+		theSeedType == SeedType::SEED_ZOMBIE_MOUND;
+}
+
 void Challenge::IZombieSetPlantFilterEffect(Plant* thePlant, FilterEffect theFilterEffect)
 {
 	Reanimation* aBodyReanim = mApp->ReanimationTryToGet(thePlant->mBodyReanimID);

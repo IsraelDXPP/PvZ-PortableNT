@@ -5822,6 +5822,14 @@ void Board::UpdateGame()
 	mMainCounter++;
 	UpdateSunSpawning();
 	UpdateZombieSpawning();
+	// Versus mode's zombie side needs some income to ever afford a seed, but nothing in the
+	// decompiled source pins down its actual rate (the resource-related globals found there,
+	// Challenge::gVSResourceDropMode/gVSResourceDropCount, are debug-cycled bonus coin drops
+	// from destroyed grid items, not a base income). This trickle is a placeholder, not a
+	// recovered value -- see mSunMoney2's initial value in AddSecondPlayer for the same
+	// caveat.
+	if (mApp->IsVersusMode() && mSecondPlayerActive && mMainCounter % 150 == 0)
+		AddSunMoney2(25);
 	UpdateIce();
 	if (mIceTrapCounter > 0)
 	{
@@ -8916,7 +8924,10 @@ void Board::AddSecondPlayer(int theControllerIndex)
 		mCursorPreview2 = std::make_unique<CursorPreview>();
 	if (mApp->IsVersusMode())
 	{
-		mSunMoney2 = 0;
+		// Starting stash, not a recovered value (see the income trickle in Board::Update
+		// for the same caveat) -- enough for a couple of mounds so the zombie side isn't
+		// stuck doing nothing on turn one.
+		mSunMoney2 = 50;
 
 		// The zombie side's seed bank. The decompiled build's roster wasn't recovered (its
 		// SeedType values are from that build's own enum, which numbers seeds differently

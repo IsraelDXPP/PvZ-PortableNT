@@ -2089,7 +2089,11 @@ bool LawnApp::IsAdventureMode()
 
 bool LawnApp::IsSurvivalMode()
 {
-	return mGameMode >= GameMode::GAMEMODE_SURVIVAL_NORMAL_STAGE_1 && mGameMode <= GameMode::GAMEMODE_SURVIVAL_ENDLESS_STAGE_5;
+	// Co-op is a Survival variant (confirmed by the decompiled LawnApp::IsSurvivalMode,
+	// which likewise returns true for part of the co-op GameMode range): it needs the same
+	// wave/flag/potted-plant-chance rules Board.cpp gates on IsSurvivalMode() everywhere,
+	// just with a second player sharing the lawn.
+	return (mGameMode >= GameMode::GAMEMODE_SURVIVAL_NORMAL_STAGE_1 && mGameMode <= GameMode::GAMEMODE_SURVIVAL_ENDLESS_STAGE_5) || IsCoopMode();
 }
 
 bool LawnApp::IsPuzzleMode()
@@ -2192,19 +2196,19 @@ void LawnApp::StartMultiplayerGame(GameMode theGameMode)
 bool LawnApp::IsSurvivalNormal(GameMode theGameMode)
 {
 	int aLevel = theGameMode - GameMode::GAMEMODE_SURVIVAL_NORMAL_STAGE_1;
-	return aLevel >= 0 && aLevel <= 4;
+	return (aLevel >= 0 && aLevel <= 4) || theGameMode == GameMode::GAMEMODE_COOP_SURVIVAL_NORMAL;
 }
 
 bool LawnApp::IsSurvivalHard(GameMode theGameMode)
 {
 	int aLevel = theGameMode - GameMode::GAMEMODE_SURVIVAL_HARD_STAGE_1;
-	return aLevel >= 0 && aLevel <= 4;
+	return (aLevel >= 0 && aLevel <= 4) || theGameMode == GameMode::GAMEMODE_COOP_SURVIVAL_HARD;
 }
 
 bool LawnApp::IsSurvivalEndless(GameMode theGameMode)
 {
 	int aLevel = theGameMode - GameMode::GAMEMODE_SURVIVAL_ENDLESS_STAGE_1;
-	return aLevel >= 0 && aLevel <= 4;
+	return (aLevel >= 0 && aLevel <= 4) || theGameMode == GameMode::GAMEMODE_COOP_SURVIVAL_ENDLESS;
 }
 
 bool LawnApp::IsEndlessScaryPotter(GameMode theGameMode)

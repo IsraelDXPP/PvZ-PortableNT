@@ -75,6 +75,11 @@ public:
 	int32_t                 mChallengeScore;
 	int32_t                mShowBowlingLine;
 	SeedType                mLastConveyorSeedType;
+	// Versus mode's zombie side (Challenge::UpdateMPZombieBank in the decompiled build):
+	// mSeedBank2 is a conveyor belt like mSeedBank's above, just fed from the SEED_ZOMBIE_*
+	// pool instead of plant seeds -- see UpdateMPZombieBank's comment for what's ported.
+	int32_t                 mMPZombieBankCounter = 0;
+	SeedType                mLastMPZombieSeedType = SeedType::SEED_NONE;
 	int32_t                 mSurvivalStage;
 	int32_t                 mSlotMachineRollCount;
 	ReanimationID           mReanimChallenge;
@@ -146,6 +151,7 @@ public:
 	void                    UpdateRainingSeeds();
 	void         PlayBossEnter();
 	void                    UpdateConveyorBelt();
+	void                    UpdateMPZombieBank();
 	void                    PortalStart();
 	void                    UpdatePortalCombat();
 	GridItem*               GetOtherPortal(GridItem* thePortal);

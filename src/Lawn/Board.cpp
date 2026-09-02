@@ -5822,14 +5822,6 @@ void Board::UpdateGame()
 	mMainCounter++;
 	UpdateSunSpawning();
 	UpdateZombieSpawning();
-	// Versus mode's zombie side needs some income to ever afford a seed, but nothing in the
-	// decompiled source pins down its actual rate (the resource-related globals found there,
-	// Challenge::gVSResourceDropMode/gVSResourceDropCount, are debug-cycled bonus coin drops
-	// from destroyed grid items, not a base income). This trickle is a placeholder, not a
-	// recovered value -- see mSunMoney2's initial value in AddSecondPlayer for the same
-	// caveat.
-	if (mApp->IsVersusMode() && mSecondPlayerActive && mMainCounter % 150 == 0)
-		AddSunMoney2(25);
 	UpdateIce();
 	if (mIceTrapCounter > 0)
 	{
@@ -8879,7 +8871,7 @@ void Board::DrawPlayer2Cursor(Graphics* g)
 		SeedType aSeedType = mSeedBank2->mSeedPackets[mPlayer2SelectedSeedIndex].mPacketType;
 		aSeedName = Plant::GetNameString(aSeedType, SeedType::SEED_NONE);
 	}
-	std::string aLabel = std::format("P2: {} ({})", aSeedName, mSunMoney2);
+	std::string aLabel = std::format("P2: {} ({}/{})", aSeedName, mPlayer2SelectedSeedIndex + 1, mSeedBank2->GetNumSeedsOnConveyorBelt());
 	PvzpDrawString(g, aLabel, aPosX + aCellWidth / 2, aPosY - 4, Sexy::FONT_DWARVENTODCRAFT12, Color(255, 0, 0), DrawStringJustification::DS_ALIGN_CENTER);
 }
 
@@ -8910,13 +8902,13 @@ void Board::Player2KeyDown(KeyCode theKey)
 	{
 		if (mPlayer2SelectedSeedIndex < 0 || mPlayer2SelectedSeedIndex >= mSeedBank2->mNumPackets)
 			return;
-		SeedPacket& aSeedPacket = mSeedBank2->mSeedPackets[mPlayer2SelectedSeedIndex];
-		SeedType aSeedType = aSeedPacket.mPacketType;
+		SeedType aSeedType = mSeedBank2->mSeedPackets[mPlayer2SelectedSeedIndex].mPacketType;
+		// No cost check here: the zombie side's bank is a conveyor belt (Challenge::
+		// UpdateMPZombieBank), not a currency the player spends -- see AddSecondPlayer's
+		// comment. Placing a seed just takes it off the belt below.
 		if (aSeedType == SeedType::SEED_NONE)
 			return;
 		if (CanPlantAt(mPlayer2CursorGridX, mPlayer2CursorGridY, aSeedType) != PlantingReason::PLANTING_OK)
-			return;
-		if (!TakeSunMoney2(GetCurrentPlantCost(aSeedType, SeedType::SEED_NONE)))
 			return;
 
 		// Same placement this port's i-Zombie click handler uses -- see the
@@ -8931,6 +8923,13 @@ void Board::Player2KeyDown(KeyCode theKey)
 			mChallenge->IZombiePlaceZombie(aZombieType, mPlayer2CursorGridX, mPlayer2CursorGridY);
 		}
 		mApp->PlayFoley(FoleyType::FOLEY_PLANT);
+
+		// Shift the rest of the belt left, mirroring SeedBank::RemoveSeed's body (not
+		// calling it directly: it asserts Board::HasConveyorBeltSeedBank(), which is
+		// deliberately false here -- see AddSecondPlayer's comment).
+		for (int i = mPlayer2SelectedSeedIndex; i < mSeedBank2->mNumPackets - 1; i++)
+			mSeedBank2->mSeedPackets[i].mPacketType = mSeedBank2->mSeedPackets[i + 1].mPacketType;
+		mSeedBank2->mSeedPackets[mSeedBank2->mNumPackets - 1].mPacketType = SeedType::SEED_NONE;
 		return;
 	}
 	default:
@@ -8951,36 +8950,15 @@ void Board::AddSecondPlayer(int theControllerIndex)
 		mCursorPreview2 = std::make_unique<CursorPreview>();
 	if (mApp->IsVersusMode())
 	{
-		// Starting stash, not a recovered value (see the income trickle in Board::Update
-		// for the same caveat) -- enough for a couple of mounds so the zombie side isn't
-		// stuck doing nothing on turn one.
-		mSunMoney2 = 50;
-
-		// The zombie side's seed bank. The decompiled build's roster wasn't recovered (its
-		// SeedType values are from that build's own enum, which numbers seeds differently
-		// -- the same cross-version drift already documented for ZombieType), so this lists
-		// every SEED_ZOMBIE_* this port defines, in the order this port declares them,
-		// truncated to SEEDBANK_MAX. SEED_ZOMBIE_MOUND goes first: it's what the decompiled
-		// SeedChooserScreen::VSAutoPickResourceGen auto-picks for the zombie side if nothing
-		// was chosen in time.
-		static constexpr SeedType kZombieSeedRoster[] = {
-			SeedType::SEED_ZOMBIE_MOUND,
-			SeedType::SEED_ZOMBIE_NORMAL,
-			SeedType::SEED_ZOMBIE_TRAFFIC_CONE,
-			SeedType::SEED_ZOMBIE_POLEVAULTER,
-			SeedType::SEED_ZOMBIE_PAIL,
-			SeedType::SEED_ZOMBIE_LADDER,
-			SeedType::SEED_ZOMBIE_DIGGER,
-			SeedType::SEED_ZOMBIE_BUNGEE,
-			SeedType::SEED_ZOMBIE_FOOTBALL,
-			SeedType::SEED_ZOMBIE_BALLOON,
-		};
-		constexpr int32_t kZombieSeedRosterCount = sizeof(kZombieSeedRoster) / sizeof(kZombieSeedRoster[0]);
-		static_assert(kZombieSeedRosterCount <= SEEDBANK_MAX);
-		mSeedBank2->mNumPackets = kZombieSeedRosterCount;
+		// The zombie side's seed bank isn't a fixed picked deck (there's no per-match
+		// income/currency for it either -- see Challenge::UpdateMPZombieBank, the
+		// decompiled build's real mechanic): it's a conveyor belt that fills on its own
+		// over time, same idea as the existing Board::HasConveyorBeltSeedBank() modes.
+		// Starts empty; all SEEDBANK_MAX slots are just capacity for the belt to fill.
+		mSeedBank2->mNumPackets = SEEDBANK_MAX;
 		for (int i = 0; i < mSeedBank2->mNumPackets; i++)
 		{
-			mSeedBank2->mSeedPackets[i].SetPacketType(kZombieSeedRoster[i]);
+			mSeedBank2->mSeedPackets[i].mPacketType = SeedType::SEED_NONE;
 			mSeedBank2->mSeedPackets[i].mIndex = i;
 		}
 		mPlayer2SelectedSeedIndex = 0;
@@ -8991,30 +8969,6 @@ void Board::AddSecondPlayer(int theControllerIndex)
 	// it does not affect the rest of the board.
 	mLoadedResourceNames.push_back("DelayLoad_Multiplayer");
 	PvzpLoadResources("DelayLoad_Multiplayer");
-}
-
-void Board::AddSunMoney2(int theAmount)
-{
-	mSunMoney2 += theAmount;
-	mSunMoney2 = std::min(mSunMoney2, 9990);
-}
-
-bool Board::TakeSunMoney2(int theAmount)
-{
-	if (CanTakeSunMoney2(theAmount))
-	{
-		mSunMoney2 -= theAmount;
-		return true;
-	}
-
-	mApp->PlaySample(Sexy::SOUND_BUZZER);
-	mOutOfMoneyCounter = 70;
-	return false;
-}
-
-bool Board::CanTakeSunMoney2(int theAmount)
-{
-	return theAmount <= mSunMoney2;
 }
 
 void Board::ProcessDeleteQueue()

@@ -1929,6 +1929,71 @@ void Challenge::UpdateConveyorBelt()
 	mLastConveyorSeedType = aSeedType;
 }
 
+void Challenge::UpdateMPZombieBank()
+{
+	// Ported from the decompiled Challenge::UpdateMPZombieBank: the zombie side's seed
+	// bank in Versus isn't a fixed picked deck like the plant side's -- it's a conveyor
+	// belt (same idea as Board::HasConveyorBeltSeedBank's modes above), just fed from the
+	// SEED_ZOMBIE_* pool and kept on Board::mSeedBank2 instead of mSeedBank so it doesn't
+	// make the plant side's bank behave like a conveyor belt too. Not reusing
+	// SeedBank::AddSeed/RemoveSeed: both assert Board::HasConveyorBeltSeedBank(), which
+	// this deliberately leaves false (only the zombie side's bank refills this way).
+	if (!mApp->IsVersusMode() || !mBoard->mSecondPlayerActive)
+		return;
+
+	SeedBank& aBank = *mBoard->mSeedBank2;
+	mMPZombieBankCounter--;
+	if (mMPZombieBankCounter > 0)
+		return;
+
+	int aNumSeedsOnBelt = aBank.GetNumSeedsOnConveyorBelt();
+	mMPZombieBankCounter = aNumSeedsOnBelt > 8 ? 1000 : aNumSeedsOnBelt > 6 ? 500 : aNumSeedsOnBelt > 4 ? 425 : 400;
+	if (aNumSeedsOnBelt >= aBank.mNumPackets)
+		return;
+
+	// The decompiled build's weighted pool is built from raw SeedType values in the
+	// console build's own enum, which numbers seeds differently from this port's (the
+	// same cross-version drift already documented for ZombieType and
+	// Board::PickGraveRisingZombieTypeMP), so it isn't safely portable 1:1. This lists
+	// every SEED_ZOMBIE_* this port has (SEED_ZOMBIE_MOUND first, same as the fixed
+	// roster it replaces -- see the AddSecondPlayer comment), each with equal weight
+	// halved for whichever type came up last, matching the shape of the decompiled
+	// weighting (and of this port's own Challenge::UpdateConveyorBelt above) without its
+	// unrecoverable exact values.
+	static constexpr SeedType kZombieSeedPool[] = {
+		SeedType::SEED_ZOMBIE_MOUND,
+		SeedType::SEED_ZOMBIE_NORMAL,
+		SeedType::SEED_ZOMBIE_TRAFFIC_CONE,
+		SeedType::SEED_ZOMBIE_POLEVAULTER,
+		SeedType::SEED_ZOMBIE_PAIL,
+		SeedType::SEED_ZOMBIE_LADDER,
+		SeedType::SEED_ZOMBIE_DIGGER,
+		SeedType::SEED_ZOMBIE_BUNGEE,
+		SeedType::SEED_ZOMBIE_FOOTBALL,
+		SeedType::SEED_ZOMBIE_BALLOON,
+	};
+	constexpr int kZombieSeedPoolCount = sizeof(kZombieSeedPool) / sizeof(kZombieSeedPool[0]);
+	static_assert(kZombieSeedPoolCount <= SEEDBANK_MAX);
+
+	PvzpWeightedArray aSeedPickArray[kZombieSeedPoolCount];
+	for (int i = 0; i < kZombieSeedPoolCount; i++)
+	{
+		aSeedPickArray[i].mItem = kZombieSeedPool[i];
+		aSeedPickArray[i].mWeight = kZombieSeedPool[i] == mLastMPZombieSeedType ? 5 : 10;
+	}
+
+	SeedType aSeedType = (SeedType)PvzpPickFromWeightedArray(aSeedPickArray, kZombieSeedPoolCount);
+	SeedPacket& aSeedPacket = aBank.mSeedPackets[aNumSeedsOnBelt];
+	aSeedPacket.mPacketType = aSeedType;
+	aSeedPacket.mImitaterType = SeedType::SEED_NONE;
+	aSeedPacket.mIndex = aNumSeedsOnBelt;
+	aSeedPacket.mRefreshCounter = 0;
+	aSeedPacket.mRefreshTime = 0;
+	aSeedPacket.mRefreshing = false;
+	aSeedPacket.mActive = true;
+	mLastMPZombieSeedType = aSeedType;
+}
+
 void Challenge::UpdateRainingSeeds()
 {
 	if (mBoard->HasLevelAwardDropped() || --mChallengeStateCounter != 0)
@@ -2163,6 +2228,7 @@ void Challenge::Update()
 	{
 		UpdateConveyorBelt();
 	}
+	UpdateMPZombieBank();
 	if (mApp->mGameMode == GAMEMODE_CHALLENGE_BEGHOULED || mApp->mGameMode == GAMEMODE_CHALLENGE_BEGHOULED_TWIST)
 	{
 		UpdateBeghouled();

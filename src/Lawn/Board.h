@@ -269,10 +269,6 @@ public:
 	std::unique_ptr<SeedBank>			mSeedBank2;
 	std::unique_ptr<CursorObject>		mCursorObject2;
 	std::unique_ptr<CursorPreview>		mCursorPreview2;
-	// Versus mode's zombie side spends from this pool instead of mSunMoney; co-op mode
-	// uses it only when the game is started with LawnApp::IsTwinSunbankMode() (each
-	// player keeps their own sun instead of sharing mSunMoney).
-	int32_t							mSunMoney2 = 0;
 	// Player two's keyboard cursor in Versus (player one keeps the mouse). Not from the
 	// decompiled build -- it assumes a second controller/mouse this port doesn't have any
 	// way to detect yet (see the SetSecondPlayer/StartMultiplayerGame comments) -- this is
@@ -336,9 +332,6 @@ public:
 	// and cursor and is called from LawnApp::SetSecondPlayer once a controller has been
 	// assigned to player two (VSSetupMenu / the co-op "waiting for second player" screen).
 	void							AddSecondPlayer(int theControllerIndex);
-	void					AddSunMoney2(int theAmount);
-	bool							TakeSunMoney2(int theAmount);
-	bool					CanTakeSunMoney2(int theAmount);
 	void					Pause(bool thePause);
 	inline bool						MakeEasyZombieType() { /* not found */return false; }
 	void							TryToSaveGame();

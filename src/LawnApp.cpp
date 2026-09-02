@@ -180,6 +180,9 @@ LawnApp::LawnApp()
 
 LawnApp::~LawnApp()
 {
+	delete mPlayer2Info;
+	mPlayer2Info = nullptr;
+
 	while (!mDialogMap.empty())
 	{
 		KillDialog(mDialogMap.begin()->first);
@@ -2081,7 +2084,45 @@ bool LawnApp::IsPuzzleMode()
 
 bool LawnApp::IsChallengeMode()
 {
-	return !IsAdventureMode() && !IsPuzzleMode() && !IsSurvivalMode();
+	return !IsAdventureMode() && !IsPuzzleMode() && !IsSurvivalMode() && !IsMultiplayerMode();
+}
+
+bool LawnApp::IsCoopMode()
+{
+	return mGameMode >= GameMode::GAMEMODE_COOP_SURVIVAL_NORMAL && mGameMode <= GameMode::GAMEMODE_COOP_SURVIVAL_ENDLESS;
+}
+
+bool LawnApp::IsVersusMode()
+{
+	return mGameMode == GameMode::GAMEMODE_VERSUS;
+}
+
+bool LawnApp::IsMultiplayerMode()
+{
+	return IsCoopMode() || IsVersusMode();
+}
+
+bool LawnApp::IsTwoPlayerGame()
+{
+	return IsMultiplayerMode() && mPlayer2Info != nullptr && mSecondPlayerControllerIndex != -1;
+}
+
+bool LawnApp::IsTwinSunbankMode()
+{
+	// Versus always gives each side its own resource pool (sun for plants, brains for
+	// zombies); co-op defaults to one shared sun pool, same as splitting seed slots on a
+	// single lawn in the original console build.
+	return IsVersusMode();
+}
+
+void LawnApp::SetSecondPlayer(int theControllerIndex)
+{
+	PVZP_ASSERT(theControllerIndex != -1);
+	mSecondPlayerControllerIndex = theControllerIndex;
+	if (mBoard)
+		mBoard->AddSecondPlayer(theControllerIndex);
+	if (!mPlayer2Info)
+		mPlayer2Info = new PlayerInfo();
 }
 
 bool LawnApp::IsSurvivalNormal(GameMode theGameMode)

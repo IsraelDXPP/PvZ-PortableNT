@@ -452,7 +452,39 @@ enum GameMode : int32_t
 	GAMEMODE_PUZZLE_I_ZOMBIE_ENDLESS,
 	GAMEMODE_UPSELL,
 	GAMEMODE_INTRO,
+	// Console/Android TV local-multiplayer modes (LawnApp::IsCoopMode / VSSetupMenu in
+	// later PvZ builds). The original build packs these as a contiguous run of GameMode
+	// values gated by LawnApp::IsCoopMode(); the exact sub-stage count could not be
+	// recovered byte-exact (their display names live in the external LawnStrings.txt,
+	// which isn't part of the decompiled binary), so they are reconstructed here as the
+	// smallest faithful set that reproduces the confirmed mechanics: two players sharing
+	// one lawn in Survival (co-op), and one player's plants against another player's
+	// zombies (versus).
+	GAMEMODE_COOP_SURVIVAL_NORMAL,
+	GAMEMODE_COOP_SURVIVAL_HARD,
+	GAMEMODE_COOP_SURVIVAL_ENDLESS,
+	GAMEMODE_VERSUS,
 	NUM_GAME_MODES
+};
+
+// Which local player slot a piece of per-player UI/state belongs to in a two-player
+// (co-op or versus) game. Mirrors LawnApp::mSides / VSSetupMenu::mSides.
+enum MultiplayerSide : int32_t
+{
+	MP_SIDE_NONE = -1,
+	MP_SIDE_ONE = 0,
+	MP_SIDE_TWO = 1,
+	NUM_MP_SIDES = 2
+};
+
+// In Versus mode the two players are not symmetric: one plants, the other spawns
+// zombies (LawnApp uses the existing SEED_ZOMBIE_* SeedType entries -- shared with
+// i-Zombie -- as the "seed bank" for the zombie side, so no new ZombieType values are
+// needed).
+enum VersusRole : int32_t
+{
+	VERSUS_ROLE_PLANTS = 0,
+	VERSUS_ROLE_ZOMBIES = 1
 };
 enum GameObjectType : int32_t
 {

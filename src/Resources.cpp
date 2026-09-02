@@ -55,6 +55,7 @@ bool Sexy::ExtractResourcesByName(ResourceManager* theResourceManager, const cha
 	if (!strcmp(theName, "DelayLoad_ZombieNote4")) return ExtractDelayLoad_ZombieNote4Resources(theResourceManager);
 	if (!strcmp(theName, "DelayLoad_ZombieNoteHelp")) return ExtractDelayLoad_ZombieNoteHelpResources(theResourceManager);
 	if (!strcmp(theName, "DelayLoad_Zombiquarium")) return ExtractDelayLoad_ZombiquariumResources(theResourceManager);
+	if (!strcmp(theName, "DelayLoad_Multiplayer")) return ExtractDelayLoad_MultiplayerResources(theResourceManager);
 	if (!strcmp(theName, "Init")) return ExtractInitResources(theResourceManager);
 	if (!strcmp(theName, "LoaderBar")) return ExtractLoaderBarResources(theResourceManager);
 	if (!strcmp(theName, "LoadingFonts")) return ExtractLoadingFontsResources(theResourceManager);
@@ -1116,6 +1117,57 @@ bool Sexy::ExtractDelayLoad_ZombiquariumResources(ResourceManager* theManager)
 		IMAGE_AQUARIUM1 = aMgr.GetImageThrow("IMAGE_AQUARIUM1");
 		IMAGE_WAVECENTER = aMgr.GetImageThrow("IMAGE_WAVECENTER");
 		IMAGE_WAVESIDE = aMgr.GetImageThrow("IMAGE_WAVESIDE");
+	}
+	catch (ResourceManagerException&)
+	{
+		return false;
+	}
+	return true;
+}
+
+// DelayLoad_Multiplayer Resources
+Image* Sexy::IMAGE_COOP_SUN_HIGHLIGHT_1;
+Image* Sexy::IMAGE_COOP_SUN_HIGHLIGHT_2;
+Image* Sexy::IMAGE_SEEDBANK_COOP;
+Image* Sexy::IMAGE_CONVEYORBELT_COOP;
+Image* Sexy::IMAGE_CONVEYORBELT_BACKDROP_COOP;
+Image* Sexy::IMAGE_VS_INFO_BOX_PLANTS;
+Image* Sexy::IMAGE_VS_INFO_BOX_PLANTS_OVERLAY;
+Image* Sexy::IMAGE_VS_INFO_BOX_ZOMBIES;
+Image* Sexy::IMAGE_VS_INFO_BOX_ZOMBIES_OVERLAY;
+Image* Sexy::IMAGE_VS_STONE_DIRT;
+Image* Sexy::IMAGE_HELP_MENU_IMAGE_VS_CONTROLLERS;
+Image* Sexy::IMAGE_HELP_MENU_IMAGE_VS_BRAINS;
+Image* Sexy::IMAGE_HELP_MENU_IMAGE_VS_TARGETS;
+Image* Sexy::IMAGE_HELP_MENU_IMAGE_COOP_MENU;
+Image* Sexy::IMAGE_HELP_MENU_IMAGE_COOP_SUN;
+intptr_t Sexy::SOUND_COOP;
+intptr_t Sexy::SOUND_VS_HEADPOP;
+
+bool Sexy::ExtractDelayLoad_MultiplayerResources(ResourceManager* theManager)
+{
+	gNeedRecalcVariableToIdMap = true;
+
+	ResourceManager& aMgr = *theManager;
+	try
+	{
+		IMAGE_COOP_SUN_HIGHLIGHT_1 = aMgr.GetImageThrow("IMAGE_COOP_SUN_HIGHLIGHT_1");
+		IMAGE_COOP_SUN_HIGHLIGHT_2 = aMgr.GetImageThrow("IMAGE_COOP_SUN_HIGHLIGHT_2");
+		IMAGE_SEEDBANK_COOP = aMgr.GetImageThrow("IMAGE_SEEDBANK_COOP");
+		IMAGE_CONVEYORBELT_COOP = aMgr.GetImageThrow("IMAGE_CONVEYORBELT_COOP");
+		IMAGE_CONVEYORBELT_BACKDROP_COOP = aMgr.GetImageThrow("IMAGE_CONVEYORBELT_BACKDROP_COOP");
+		IMAGE_VS_INFO_BOX_PLANTS = aMgr.GetImageThrow("IMAGE_VS_INFO_BOX_PLANTS");
+		IMAGE_VS_INFO_BOX_PLANTS_OVERLAY = aMgr.GetImageThrow("IMAGE_VS_INFO_BOX_PLANTS_OVERLAY");
+		IMAGE_VS_INFO_BOX_ZOMBIES = aMgr.GetImageThrow("IMAGE_VS_INFO_BOX_ZOMBIES");
+		IMAGE_VS_INFO_BOX_ZOMBIES_OVERLAY = aMgr.GetImageThrow("IMAGE_VS_INFO_BOX_ZOMBIES_OVERLAY");
+		IMAGE_VS_STONE_DIRT = aMgr.GetImageThrow("IMAGE_VS_STONE_DIRT");
+		IMAGE_HELP_MENU_IMAGE_VS_CONTROLLERS = aMgr.GetImageThrow("IMAGE_HELP_MENU_IMAGE_VS_CONTROLLERS");
+		IMAGE_HELP_MENU_IMAGE_VS_BRAINS = aMgr.GetImageThrow("IMAGE_HELP_MENU_IMAGE_VS_BRAINS");
+		IMAGE_HELP_MENU_IMAGE_VS_TARGETS = aMgr.GetImageThrow("IMAGE_HELP_MENU_IMAGE_VS_TARGETS");
+		IMAGE_HELP_MENU_IMAGE_COOP_MENU = aMgr.GetImageThrow("IMAGE_HELP_MENU_IMAGE_COOP_MENU");
+		IMAGE_HELP_MENU_IMAGE_COOP_SUN = aMgr.GetImageThrow("IMAGE_HELP_MENU_IMAGE_COOP_SUN");
+		SOUND_COOP = aMgr.GetSoundThrow("SOUND_COOP");
+		SOUND_VS_HEADPOP = aMgr.GetSoundThrow("SOUND_VS_HEADPOP");
 	}
 	catch (ResourceManagerException&)
 	{

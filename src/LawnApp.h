@@ -105,6 +105,10 @@ public:
 	std::unique_ptr<ReanimatorCache>	mReanimatorCache;
 	std::unique_ptr<ProfileMgr>		mProfileMgr;
 	PlayerInfo*						mPlayerInfo;
+	// Local co-op/versus (LawnApp::mPlayer2Info / SetSecondPlayer in the console/Android TV
+	// build). Only used while IsMultiplayerMode() is true; null in single-player games.
+	PlayerInfo*						mPlayer2Info = nullptr;
+	int								mSecondPlayerControllerIndex = -1;
 	std::unique_ptr<LevelStats>		mLastLevelStats;
 	std::atomic<bool>					mCloseRequest;
 	uint32_t						mAppCounter;
@@ -232,6 +236,16 @@ public:
 	bool							UpdateApp() override;
 	bool					IsAdventureMode();
 	bool					IsSurvivalMode();
+	// Local multiplayer (console/Android TV LawnApp::IsCoopMode / VSSetupMenu). Co-op puts
+	// two players on one shared lawn in Survival; Versus pits one player's plants against
+	// a second player's zombies (spent from the existing SEED_ZOMBIE_* seed bank).
+	bool					IsCoopMode();
+	bool					IsVersusMode();
+	bool					IsMultiplayerMode();
+	bool					IsTwoPlayerGame();
+	// True when each co-op player keeps their own sun bank instead of sharing one pool.
+	bool					IsTwinSunbankMode();
+	void							SetSecondPlayer(int theControllerIndex);
 	bool							IsContinuousChallenge();
 	bool					IsArtChallenge();
 	bool							NeedPauseGame();

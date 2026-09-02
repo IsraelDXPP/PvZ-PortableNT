@@ -1306,6 +1306,30 @@ namespace Sexy
 	extern Image* IMAGE_WAVECENTER;
 	extern Image* IMAGE_WAVESIDE;
 
+	// DelayLoad_Multiplayer: local co-op/versus art, named after the resource strings found
+	// in the console/Android TV build's resource table. These are NOT part of the original
+	// PC resource pack this project ships against, so ExtractDelayLoad_MultiplayerResources
+	// will fail (like any other DelayLoad group would for a missing asset) until real art is
+	// supplied for them; only loaded on demand, from Board::AddSecondPlayer, so their absence
+	// cannot affect single-player games.
+	extern Image* IMAGE_COOP_SUN_HIGHLIGHT_1;
+	extern Image* IMAGE_COOP_SUN_HIGHLIGHT_2;
+	extern Image* IMAGE_SEEDBANK_COOP;
+	extern Image* IMAGE_CONVEYORBELT_COOP;
+	extern Image* IMAGE_CONVEYORBELT_BACKDROP_COOP;
+	extern Image* IMAGE_VS_INFO_BOX_PLANTS;
+	extern Image* IMAGE_VS_INFO_BOX_PLANTS_OVERLAY;
+	extern Image* IMAGE_VS_INFO_BOX_ZOMBIES;
+	extern Image* IMAGE_VS_INFO_BOX_ZOMBIES_OVERLAY;
+	extern Image* IMAGE_VS_STONE_DIRT;
+	extern Image* IMAGE_HELP_MENU_IMAGE_VS_CONTROLLERS;
+	extern Image* IMAGE_HELP_MENU_IMAGE_VS_BRAINS;
+	extern Image* IMAGE_HELP_MENU_IMAGE_VS_TARGETS;
+	extern Image* IMAGE_HELP_MENU_IMAGE_COOP_MENU;
+	extern Image* IMAGE_HELP_MENU_IMAGE_COOP_SUN;
+	extern intptr_t SOUND_COOP;
+	extern intptr_t SOUND_VS_HEADPOP;
+
 	// Init Resources
 	extern Image* IMAGE_BLANK;
 	extern Image* IMAGE_PARTNER_LOGO;
@@ -1911,6 +1935,7 @@ namespace Sexy
 	bool                ExtractDelayLoad_ZombieNote4Resources(ResourceManager* theResourceManager);
 	bool                ExtractDelayLoad_ZombieNoteHelpResources(ResourceManager* theResourceManager);
 	bool                ExtractDelayLoad_ZombiquariumResources(ResourceManager* theResourceManager);
+	bool                ExtractDelayLoad_MultiplayerResources(ResourceManager* theResourceManager);
 	bool                ExtractInitResources(ResourceManager* theResourceManager);
 	bool                ExtractLoaderBarResources(ResourceManager* theResourceManager);
 	bool                ExtractLoadingFontsResources(ResourceManager* theResourceManager);

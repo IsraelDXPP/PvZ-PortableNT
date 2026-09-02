@@ -28,7 +28,13 @@
 #include "widget/SliderListener.h"
 using namespace Sexy;
 
-constexpr const int NUM_CHALLENGE_MODES = static_cast<int>(GameMode::NUM_GAME_MODES) - 1;
+// Number of entries in gChallengeDefs (ChallengeScreen.cpp). This used to be derived as
+// GameMode::NUM_GAME_MODES - 1, which happened to match because every GameMode except
+// GAMEMODE_ADVENTURE had a challenge grid entry. That's no longer true once local
+// multiplayer modes (GAMEMODE_COOP_*, GAMEMODE_VERSUS) are appended to GameMode: they
+// aren't trophy challenges and have no entry in gChallengeDefs, so the count is now
+// pinned explicitly. Keep this in sync with the number of entries in gChallengeDefs.
+constexpr const int NUM_CHALLENGE_MODES = 72;
 
 class LawnApp;
 class ToolTipWidget;

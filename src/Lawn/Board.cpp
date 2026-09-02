@@ -987,6 +987,16 @@ void Board::PickBackground()
 		mBackground = BackgroundType::BACKGROUND_TREEOFWISDOM;
 		break;
 
+	// Local co-op/versus. Like Survival, these don't progress through Adventure's day
+	// -> night -> pool -> fog -> roof sequence by level; they simply run on the plain
+	// day lawn.
+	case GameMode::GAMEMODE_COOP_SURVIVAL_NORMAL:
+	case GameMode::GAMEMODE_COOP_SURVIVAL_HARD:
+	case GameMode::GAMEMODE_COOP_SURVIVAL_ENDLESS:
+	case GameMode::GAMEMODE_VERSUS:
+		mBackground = BackgroundType::BACKGROUND_1_DAY;
+		break;
+
 	default:
 		PVZP_ASSERT(false);
 		break;
@@ -8699,6 +8709,51 @@ bool Board::TakeSunMoney(int theAmount)
 bool Board::CanTakeSunMoney(int theAmount)
 {
 	return theAmount <= mSunMoney + CountSunBeingCollected();
+}
+
+void Board::AddSecondPlayer(int theControllerIndex)
+{
+	PVZP_ASSERT(theControllerIndex != -1);
+	mSecondPlayerActive = true;
+	mSecondPlayerControllerIndex = theControllerIndex;
+	if (!mSeedBank2)
+		mSeedBank2 = std::make_unique<SeedBank>();
+	if (!mCursorObject2)
+		mCursorObject2 = std::make_unique<CursorObject>();
+	if (!mCursorPreview2)
+		mCursorPreview2 = std::make_unique<CursorPreview>();
+	if (mApp->IsVersusMode())
+		mSunMoney2 = 0;
+
+	// Loaded on demand -- see the "DelayLoad_Multiplayer" comment in Resources.h. Failure
+	// here (no art shipped for this feature yet) only leaves the new images/sounds null;
+	// it does not affect the rest of the board.
+	mLoadedResourceNames.push_back("DelayLoad_Multiplayer");
+	PvzpLoadResources("DelayLoad_Multiplayer");
+}
+
+void Board::AddSunMoney2(int theAmount)
+{
+	mSunMoney2 += theAmount;
+	mSunMoney2 = std::min(mSunMoney2, 9990);
+}
+
+bool Board::TakeSunMoney2(int theAmount)
+{
+	if (CanTakeSunMoney2(theAmount))
+	{
+		mSunMoney2 -= theAmount;
+		return true;
+	}
+
+	mApp->PlaySample(Sexy::SOUND_BUZZER);
+	mOutOfMoneyCounter = 70;
+	return false;
+}
+
+bool Board::CanTakeSunMoney2(int theAmount)
+{
+	return theAmount <= mSunMoney2;
 }
 
 void Board::ProcessDeleteQueue()

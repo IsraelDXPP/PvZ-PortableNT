@@ -48,6 +48,7 @@ class TitleScreen;
 class ChallengeScreen;
 class StoreScreen;
 class VersusSetupMenu;
+class VersusResultsMenu;
 class AlmanacDialog;
 class TypingCheck;
 
@@ -81,6 +82,7 @@ public:
 	std::unique_ptr<CreditScreen>	mCreditScreen;
 	std::unique_ptr<ChallengeScreen>	mChallengeScreen;
 	std::unique_ptr<VersusSetupMenu>	mVersusSetupMenu;
+	std::unique_ptr<VersusResultsMenu>	mVersusResultsMenu;
 	std::unique_ptr<PvzpFoley>		mSoundSystem;
 	std::string						mReferId;
 	std::string						mRegisterLink;
@@ -253,6 +255,10 @@ public:
 	void							DoCoopSetupDialog();
 	void							FinishCoopSetupDialog(bool isYes);
 	void							StartMultiplayerGame(GameMode theGameMode);
+	// Real VSResultsMenu.txt shown after a Versus match ends -- see GridItem::TakeDamage's
+	// win-condition branch and Board::ZombiesWon's Versus branch for the two call sites.
+	void							ShowVersusResultsMenu();
+	void							KillVersusResultsMenu();
 	bool							IsContinuousChallenge();
 	bool					IsArtChallenge();
 	bool							NeedPauseGame();

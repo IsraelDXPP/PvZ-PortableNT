@@ -5230,6 +5230,18 @@ void Board::ZombiesWon(Zombie* theZombie)
 	if (mApp->mGameScene == GameScenes::SCENE_ZOMBIES_WON)
 		return;
 
+	// Versus mode: a zombie reaching the house is the zombie side's win condition, same
+	// trigger as single-player's loss -- but Versus gets its own real VSResultsMenu.txt
+	// screen (LawnApp::ShowVersusResultsMenu), not the adventure-mode ZombiesWon cutscene or
+	// a challenge-mode GameOverDialog below, neither of which apply to it (no save/reward
+	// progression, no per-mode death message). ShowVersusResultsMenu no-ops if already shown,
+	// so this stays safe if multiple zombies reach the house in the same tick.
+	if (mApp->IsVersusMode())
+	{
+		mApp->ShowVersusResultsMenu();
+		return;
+	}
+
 	ClearAdvice(AdviceType::ADVICE_NONE);
 	mApp->mBoardResult = BoardResult::BOARDRESULT_LOST;
 

@@ -216,10 +216,15 @@ Widget* MenuParser::CreateWidget(const std::string& theType, int theId)
 {
 	// Only the widget types this port's menu scripts actually use to build a working
 	// screen. Types the decompiled build supports that need engine features this port
-	// doesn't have (ImageWidget, LabelWidget, LawnButtonWidget, HelpBarWidget) intentionally
-	// return nullptr: the AddWidget statement still parses (see HandleStatement), so a
-	// script that references one doesn't fail to load, it just adds nothing for it.
-	if (theType == "ButtonWidget")
+	// doesn't have (ImageWidget, LabelWidget, HelpBarWidget) intentionally return nullptr:
+	// the AddWidget statement still parses (see HandleStatement), so a script that
+	// references one doesn't fail to load, it just adds nothing for it. LawnButtonWidget
+	// (the decompiled build's game-skinned button) maps to the same generic ButtonWidget as
+	// plain ButtonWidget -- this file is meant to stay Sexy::-layer generic engine code (see
+	// this session's Lawn::/Sexy:: boundary notes elsewhere), so it doesn't reach for this
+	// port's Lawn-specific button classes (LawnStoneButton, NewLawnButton); a real, clickable,
+	// plainly-skinned button beats silently dropping the widget.
+	if (theType == "ButtonWidget" || theType == "LawnButtonWidget")
 		return new ButtonWidget(theId, mOwner);
 	return nullptr;
 }

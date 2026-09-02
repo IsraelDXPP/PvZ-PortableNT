@@ -81,7 +81,9 @@ void GridItem::TakeDamage(int theDamage)
 		// zero-remaining condition -- true regardless of gVSWinMode -- is ported here.
 		if (mApp->IsVersusMode() && mBoard->GetMPTargetCount() == 0)
 		{
-			mBoard->FadeOutLevel();
+			// The real VSResultsMenu.txt screen, not the generic single-player FadeOutLevel/
+			// reward flow -- see LawnApp::ShowVersusResultsMenu's comment.
+			mApp->ShowVersusResultsMenu();
 		}
 	}
 }

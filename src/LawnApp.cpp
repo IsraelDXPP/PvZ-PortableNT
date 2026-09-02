@@ -55,6 +55,7 @@
 #include "Lawn/Widget/CheatDialog.h"
 #include "Lawn/Widget/GameSelector.h"
 #include "Lawn/Widget/VersusSetupMenu.h"
+#include "Lawn/Widget/VersusResultsMenu.h"
 #include "Lawn/Widget/CreditScreen.h"
 #include "PvzpLib/EffectSystem.h"
 #include "PvzpLib/FilterEffect.h"
@@ -2167,6 +2168,32 @@ void LawnApp::KillVersusSetupMenu()
 	{
 		mWidgetManager->RemoveWidget(mVersusSetupMenu.get());
 		SafeDeleteWidget(mVersusSetupMenu.release());
+	}
+}
+
+void LawnApp::ShowVersusResultsMenu()
+{
+	if (mVersusResultsMenu)
+		return;
+
+	// The match is over but mBoard isn't killed (VersusResultsMenu overlays it, the same way
+	// VersusSetupMenu overlays the game selector underneath it) -- pause so zombies/plants
+	// don't keep acting behind the results screen.
+	if (mBoard)
+		mBoard->Pause(true);
+
+	mVersusResultsMenu = std::make_unique<VersusResultsMenu>(this);
+	mVersusResultsMenu->Resize(0, 0, mWidth, mHeight);
+	mWidgetManager->AddWidget(mVersusResultsMenu.get());
+	mWidgetManager->SetFocus(mVersusResultsMenu.get());
+}
+
+void LawnApp::KillVersusResultsMenu()
+{
+	if (mVersusResultsMenu)
+	{
+		mWidgetManager->RemoveWidget(mVersusResultsMenu.get());
+		SafeDeleteWidget(mVersusResultsMenu.release());
 	}
 }
 

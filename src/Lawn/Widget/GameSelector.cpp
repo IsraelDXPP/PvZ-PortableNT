@@ -1261,7 +1261,12 @@ void GameSelector::ButtonDepress(int theId)
 		mApp->ShowChallengeScreen(ChallengePage::CHALLENGE_PAGE_SURVIVAL);
 		break;
 	case GameSelector::GameSelector_Versus:
-		mApp->DoVersusSetupDialog();
+		// 1:1 with the console: versus starts the level first (NewGame creates the live board
+		// and shows the vs setup screen over it, see LawnApp::NewGame), rather than popping the
+		// setup menu on top of the game selector with no level underneath. This is queued (not
+		// run inline) because StartMultiplayerGame rebuilds the whole widget tree from inside
+		// this button's MouseUp, which use-after-frees a widget in the WidgetManager's walk.
+		mApp->RequestVersusGame();
 		break;
 	case GameSelector::GameSelector_Coop:
 		mApp->DoCoopSetupDialog();

@@ -1765,6 +1765,11 @@ void Board::InitLawnMowers()
 
 bool Board::ChooseSeedsOnCurrentLevel()
 {
+	// Versus Quick/Random pre-fill the plant bank in VSSetupMenu and start without a chooser
+	// (matching the console build); Custom leaves this flag clear so the chooser shows.
+	if (mApp->mVsSkipSeedChooser)
+		return false;
+
 	if (mApp->IsChallengeWithoutSeedBank() || HasConveyorBeltSeedBank())
 		return false;
 

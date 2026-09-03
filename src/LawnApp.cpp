@@ -458,11 +458,26 @@ bool LawnApp::TryLoadGame()
 void LawnApp::NewGame()
 {
 	mFirstTimeGameSelector = false;
+	// Every level starts with the chooser enabled. Versus Quick/Random set this after
+	// NewGame() returns (see VersusSetupMenu::OnMenuButtonDepress), so the skip only ever
+	// applies to those two modes and can never leak into a later single-player level.
+	mVsSkipSeedChooser = false;
 
 	MakeNewBoard();
 	mBoard->InitLevel();
 	mBoardResult = BoardResult::BOARDRESULT_NONE;
 	mGameScene = GameScenes::SCENE_LEVEL_INTRO;
+
+	// Mirrors the decompiled LawnApp::NewGame: a versus game shows the vs setup screen over
+	// the just-created, live level (the board + level intro are already running underneath)
+	// instead of the single-player seed chooser. The player then picks Quick/Custom/Random,
+	// which fills the banks and closes the setup (CutScene::EndSeedChooser) into the match.
+	if (mGameMode == GameMode::GAMEMODE_VERSUS)
+	{
+		DoVersusSetupDialog();
+		mBoard->mCutScene->StartLevelIntro();
+		return;
+	}
 
 	ShowSeedChooserScreen();
 	mBoard->mCutScene->StartLevelIntro();
@@ -2162,6 +2177,17 @@ void LawnApp::DoVersusSetupDialog()
 	mWidgetManager->AddWidget(mVersusSetupMenu.get());
 }
 
+// Versus is entered from GameSelector::ButtonDepress, which runs synchronously inside the
+// Versus button's MouseUp (WidgetManager::MouseUp). StartMultiplayerGame tears the whole
+// widget tree down (KillGameSelector frees the selector we're dispatching from) and re-adds
+// it (MakeNewBoard + DoVersusSetupDialog's AddWidget), and that AddWidget's MarkDirtyFull
+// walk then hits a widget that was freed mid-dispatch -> use-after-free. Defer the boot so
+// it happens in UpdateApp, after the mouse event has fully returned.
+void LawnApp::RequestVersusGame()
+{
+	mPendingVersusBoot = true;
+}
+
 void LawnApp::KillVersusSetupMenu()
 {
 	if (mVersusSetupMenu)
@@ -2477,6 +2503,14 @@ bool LawnApp::UpdateApp()
 	{
 		Shutdown();
 		return false;
+	}
+
+	// Deferred versus entry: run the widget-tree teardown/rebuild here (outside any mouse
+	// event dispatch) so the WidgetManager isn't walking freed widgets. See RequestVersusGame.
+	if (mPendingVersusBoot)
+	{
+		mPendingVersusBoot = false;
+		StartMultiplayerGame(GameMode::GAMEMODE_VERSUS);
 	}
 
 	//if (mLoadingThreadCompleted)

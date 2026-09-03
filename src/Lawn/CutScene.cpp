@@ -701,9 +701,14 @@ void CutScene::StartLevelIntro()
 	mCutsceneTime = 0;
 	mBoard->mSeedBank->Move(SEED_BANK_OFFSET_X, -IMAGE_SEEDBANK->GetHeight());
 	mBoard->mMenuButton->mBtnNoDraw = true;
-	mApp->mSeedChooserScreen->mMouseVisible = false;
-	mApp->mSeedChooserScreen->Move(0, SEED_CHOOSER_OFFSET_Y);
-	mApp->mSeedChooserScreen->mMenuButton->mBtnNoDraw = true;
+	// Console parity: the original null-checks mSeedChooserScreen before poking it. It is
+	// never created in VERSUS Quick/Random (mVsSkipSeedChooser), so guard against null.
+	if (mApp->mSeedChooserScreen)
+	{
+		mApp->mSeedChooserScreen->mMouseVisible = false;
+		mApp->mSeedChooserScreen->Move(0, SEED_CHOOSER_OFFSET_Y);
+		mApp->mSeedChooserScreen->mMenuButton->mBtnNoDraw = true;
+	}
 	mBoard->mShowShovel = false;
 	mBoard->mSeedBank->mCutSceneDarken = 255;
 	mPlacedZombies = false;
@@ -1350,7 +1355,9 @@ void CutScene::AnimateBoard()
 		}
 	}
 
-	mApp->mSeedChooserScreen->mParent->BringToFront(mApp->mSeedChooserScreen.get());
+	// Console parity: mSeedChooserScreen is null in VERSUS Quick/Random (never created).
+	if (mApp->mSeedChooserScreen && mApp->mSeedChooserScreen->mParent)
+		mApp->mSeedChooserScreen->mParent->BringToFront(mApp->mSeedChooserScreen.get());
 }
 
 void CutScene::ShowShovel()

@@ -21,13 +21,17 @@
 
 #include "MenuWidget.h"
 #include "ButtonWidget.h"
+#include "ImageWidget.h"
+#include "LabelWidget.h"
 #include "WidgetManager.h"
 #include "graphics/Font.h"
+#include "graphics/Image.h"
 #include "SexyAppBase.h"
 #include "misc/ResourceManager.h"
 #include <algorithm>
 #include <cctype>
 #include <cstdlib>
+#include <map>
 
 using namespace Sexy;
 
@@ -214,18 +218,16 @@ Widget* MenuParser::GetWidgetById(int theId) const
 
 Widget* MenuParser::CreateWidget(const std::string& theType, int theId)
 {
-	// Only the widget types this port's menu scripts actually use to build a working
-	// screen. Types the decompiled build supports that need engine features this port
-	// doesn't have (ImageWidget, LabelWidget, HelpBarWidget) intentionally return nullptr:
-	// the AddWidget statement still parses (see HandleStatement), so a script that
-	// references one doesn't fail to load, it just adds nothing for it. LawnButtonWidget
-	// (the decompiled build's game-skinned button) maps to the same generic ButtonWidget as
-	// plain ButtonWidget -- this file is meant to stay Sexy::-layer generic engine code (see
-	// this session's Lawn::/Sexy:: boundary notes elsewhere), so it doesn't reach for this
-	// port's Lawn-specific button classes (LawnStoneButton, NewLawnButton); a real, clickable,
-	// plainly-skinned button beats silently dropping the widget.
+	// Widget types used by this port's menu scripts. LawnButtonWidget maps to the generic
+	// ButtonWidget (which already has mButtonImage/mOverImage support). ImageWidget and
+	// LabelWidget are new minimal engine-layer widgets for the decompiled menu-script
+	// grammar's image labels and text labels. HelpBarWidget is still dropped (unused).
 	if (theType == "ButtonWidget" || theType == "LawnButtonWidget")
 		return new ButtonWidget(theId, mOwner);
+	if (theType == "ImageWidget")
+		return new ImageWidget();
+	if (theType == "LabelWidget")
+		return new LabelWidget();
 	return nullptr;
 }
 
@@ -235,14 +237,16 @@ bool MenuParser::HandleStatement(const std::vector<std::string>& theTokens)
 
 	// Commands recognized by the decompiled Sexy::MenuParser::HandleCommand that this port
 	// accepts syntactically but doesn't act on, for the reasons in this file's header
-	// comment: SetBackground, SetVisible, SetDisabled, SetPos, SetColor, SetLabelJustify's
-	// sibling AddAnimator, Layout, SetImage/SetOverImage/SetDownImage/SetDisabledImage,
-	// SetGameLinks, AddHelpButton. Falling through to `return true` for these means "parsed,
-	// no effect" -- distinct from an actually unknown command, which is a load error below.
+	// comment: SetBackground, SetVisible, SetDisabled, SetPos.
+	// SetImage/SetOverImage/SetDownImage/SetDisabledImage are now handled (they resolve the
+	// image name via ResourceManager and set the widget's image pointer). SetColor is now
+	// handled (resolves enum name, parses (r,g,b), calls Widget::SetColor). SetAlign is now
+	// handled (sets LabelWidget::mAlign or ButtonWidget::mLabelJustify). SetFont/SetLabel
+	// are now handled for both ButtonWidget and LabelWidget.
 	static const std::vector<std::string> kRecognizedInertCommands = {
-		"SetBackground", "SetVisible", "SetDisabled", "SetPos", "SetColor",
-		"AddAnimator", "Layout", "SetImage", "SetOverImage", "SetDownImage",
-		"SetDisabledImage", "SetGameLinks", "AddHelpButton",
+		"SetBackground", "SetVisible", "SetDisabled", "SetPos",
+		"AddAnimator", "Layout",
+		"SetGameLinks", "AddHelpButton",
 	};
 
 	if (aCommand == "Define")
@@ -358,19 +362,21 @@ bool MenuParser::HandleStatement(const std::vector<std::string>& theTokens)
 			mLastError = "Invalid Number of Parameters";
 			return false;
 		}
-		ButtonWidget* aButton = dynamic_cast<ButtonWidget*>(mCurrentWidget);
-		if (!aButton)
-		{
-			mLastError = mCurrentWidget ? "Incorrect widget type in parse widget" : "Missing parse widget";
-			return false;
-		}
 		_Font* aFont = gSexyAppBase->mResourceManager->GetFont(theTokens[1]);
 		if (!aFont)
 		{
 			mLastError = "No resource with that name";
 			return false;
 		}
-		aButton->mFont.reset(aFont->Duplicate());
+		if (ButtonWidget* aButton = dynamic_cast<ButtonWidget*>(mCurrentWidget))
+			aButton->mFont.reset(aFont->Duplicate());
+		else if (LabelWidget* aLabel = dynamic_cast<LabelWidget*>(mCurrentWidget))
+			aLabel->mFont.reset(aFont->Duplicate());
+		else
+		{
+			mLastError = mCurrentWidget ? "Incorrect widget type in parse widget" : "Missing parse widget";
+			return false;
+		}
 		return true;
 	}
 
@@ -381,18 +387,20 @@ bool MenuParser::HandleStatement(const std::vector<std::string>& theTokens)
 			mLastError = "Invalid Number of Parameters";
 			return false;
 		}
-		ButtonWidget* aButton = dynamic_cast<ButtonWidget*>(mCurrentWidget);
-		if (!aButton)
-		{
-			mLastError = mCurrentWidget ? "Incorrect widget type in parse widget" : "Missing parse widget";
-			return false;
-		}
 		// Not resolved through this port's PvzpStringTranslate ([BRACKETED] localization
 		// keys): that lives in the game-specific PvzpLib layer, this is a generic
 		// SexyAppFramework widget with no dependency on it. This port's menu scripts happen
 		// to use plain literal text for every SetLabel that reaches a real ButtonWidget
 		// anyway (VSSetupMenu.txt's 'Quick Play' etc.), so the raw token is used as-is.
-		aButton->mLabel = theTokens[1];
+		if (ButtonWidget* aButton = dynamic_cast<ButtonWidget*>(mCurrentWidget))
+			aButton->mLabel = theTokens[1];
+		else if (LabelWidget* aLabel = dynamic_cast<LabelWidget*>(mCurrentWidget))
+			aLabel->mLabel = theTokens[1];
+		else
+		{
+			mLastError = mCurrentWidget ? "Incorrect widget type in parse widget" : "Missing parse widget";
+			return false;
+		}
 		return true;
 	}
 
@@ -416,6 +424,121 @@ bool MenuParser::HandleStatement(const std::vector<std::string>& theTokens)
 			return false;
 		}
 		aButton->mLabelJustify = aJustify;
+		return true;
+	}
+
+	if (aCommand == "SetImage" || aCommand == "SetOverImage" ||
+		aCommand == "SetDownImage" || aCommand == "SetDisabledImage")
+	{
+		if (theTokens.size() != 2)
+		{
+			mLastError = "Invalid Number of Parameters";
+			return false;
+		}
+		if (!mCurrentWidget)
+		{
+			mLastError = "Missing parse widget";
+			return false;
+		}
+		Image* anImage = gSexyAppBase->mResourceManager->GetImage(theTokens[1]);
+		// Non-fatal: the image may not be registered yet, or the path may be invalid.
+		// The widget simply stays transparent for that state.
+		if (ButtonWidget* aButton = dynamic_cast<ButtonWidget*>(mCurrentWidget))
+		{
+			if (aCommand == "SetImage")
+				aButton->mButtonImage = anImage;
+			else if (aCommand == "SetOverImage")
+				aButton->mOverImage = anImage;
+			else if (aCommand == "SetDownImage")
+				aButton->mDownImage = anImage;
+			else if (aCommand == "SetDisabledImage")
+				aButton->mDisabledImage = anImage;
+		}
+		else if (ImageWidget* anImgW = dynamic_cast<ImageWidget*>(mCurrentWidget))
+		{
+			if (aCommand == "SetImage")
+				anImgW->mImage = anImage;
+			else if (aCommand == "SetOverImage")
+				anImgW->mOverImage = anImage;
+		}
+		// LabelWidget has no image support -- silently ignore.
+		return true;
+	}
+
+	if (aCommand == "SetColor")
+	{
+		// SetColor COLOR_LABEL (255,255,255)  or  SetColor COLOR_LABEL_HILITE (r,g,b)
+		if (theTokens.size() != 3)
+		{
+			mLastError = "Invalid Number of Parameters";
+			return false;
+		}
+		if (!mCurrentWidget)
+		{
+			mLastError = "Missing parse widget";
+			return false;
+		}
+		// Resolve the color *name* against the framework's Widget/ButtonWidget color-index
+		// constants (ButtonWidget::COLOR_LABEL=0 .. COLOR_BKG=5), NOT the parser's symbol
+		// table: VSSetupSides.txt's own Enum(COLOR_LABEL, ...) block starts after an earlier
+		// Enum block, so its numeric values (COLOR_LABEL=3) would land in the wrong slot.
+		static const std::map<std::string, int> kColorIndex = {
+			{ "COLOR_LABEL", 0 },
+			{ "COLOR_LABEL_HILITE", 1 },
+			{ "COLOR_DARK_OUTLINE", 2 },
+			{ "COLOR_LIGHT_OUTLINE", 3 },
+			{ "COLOR_MEDIUM_OUTLINE", 4 },
+			{ "COLOR_BKG", 5 },
+		};
+		int aColorIdx = -1;
+		auto aNameItr = kColorIndex.find(theTokens[1]);
+		if (aNameItr != kColorIndex.end())
+			aColorIdx = aNameItr->second;
+		else if (!ResolveInt(theTokens[1], aColorIdx))
+		{
+			mLastError = "Invalid Parameter Type";
+			return false;
+		}
+		// Parse "(r,g,b)" — the group token includes parens.
+		const std::string& aGroup = theTokens[2];
+		if (aGroup.size() < 5 || aGroup.front() != '(' || aGroup.back() != ')')
+		{
+			mLastError = "Invalid Color Format";
+			return false;
+		}
+		std::string aBody = aGroup.substr(1, aGroup.size() - 2);
+		int r = 0, g = 0, b = 0;
+		if (std::sscanf(aBody.c_str(), "%d,%d,%d", &r, &g, &b) != 3)
+		{
+			mLastError = "Invalid Color Format";
+			return false;
+		}
+		// Clamp to valid unsigned char range (the original game writes >255 in places, e.g.
+		// COLOR_LABEL_HILITE (277,225,108), which the render path treats as 255).
+		r = std::max(0, std::min(255, r));
+		g = std::max(0, std::min(255, g));
+		b = std::max(0, std::min(255, b));
+		mCurrentWidget->SetColor(aColorIdx, Color(r, g, b));
+		return true;
+	}
+
+	if (aCommand == "SetAlign")
+	{
+		if (theTokens.size() != 2)
+		{
+			mLastError = "Invalid Number of Parameters";
+			return false;
+		}
+		int anAlign;
+		if (!ResolveInt(theTokens[1], anAlign))
+		{
+			mLastError = "Invalid Parameter Type";
+			return false;
+		}
+		if (LabelWidget* aLabel = dynamic_cast<LabelWidget*>(mCurrentWidget))
+			aLabel->mAlign = anAlign;
+		else if (ButtonWidget* aButton = dynamic_cast<ButtonWidget*>(mCurrentWidget))
+			aButton->mLabelJustify = anAlign;
 		return true;
 	}
 

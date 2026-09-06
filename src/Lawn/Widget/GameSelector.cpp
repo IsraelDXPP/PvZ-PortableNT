@@ -195,6 +195,12 @@ GameSelector::GameSelector(LawnApp* theApp)
 	mQuickPlayButton->SetDisabled(!mApp->HasFinishedAdventure());
 	mQuickPlayButton->mVisible = mApp->HasFinishedAdventure();
 
+	mVersusButton = MakeButton(GameSelector::GameSelector_Versus, this, "Versus").release();
+	mVersusButton->Resize(20, 20, 120, 33);
+
+	mCoopButton = MakeButton(GameSelector::GameSelector_Coop, this, "Co-op").release();
+	mCoopButton->Resize(150, 20, 120, 33);
+
 	mZenGardenButton = MakeNewButton(
 		GameSelector::GameSelector_ZenGarden,
 		this,
@@ -371,6 +377,8 @@ GameSelector::GameSelector(LawnApp* theApp)
 	AddWidget(mAchievementsButton);
 	AddWidget(mZombatarButton);
 	AddWidget(mQuickPlayButton);
+	AddWidget(mVersusButton);
+	AddWidget(mCoopButton);
 	AddWidget(mChangeUserButton);
 	AddWidget(mSurvivalButton);
 	AddWidget(mZenGardenButton);
@@ -1194,6 +1202,8 @@ void GameSelector::ClickedAdventure()
 	mZombatarButton->SetDisabled(true);
 	mAchievementsButton->SetDisabled(true);
 	mQuickPlayButton->SetDisabled(true);
+	mVersusButton->SetDisabled(true);
+	mCoopButton->SetDisabled(true);
 
 	Reanimation* aHandReanim = mApp->AddReanimation(-70.0f + BOARD_ADDITIONAL_WIDTH, 10.0f + BOARD_OFFSET_Y, 0, ReanimationType::REANIM_ZOMBIE_HAND);
 	aHandReanim->mLoopType = ReanimLoopType::REANIM_PLAY_ONCE_AND_HOLD;
@@ -1246,6 +1256,17 @@ void GameSelector::ButtonDepress(int theId)
 	case GameSelector::GameSelector_Survival:
 		mApp->KillGameSelector();
 		mApp->ShowChallengeScreen(ChallengePage::CHALLENGE_PAGE_SURVIVAL);
+		break;
+	case GameSelector::GameSelector_Versus:
+		// 1:1 with the console: versus starts the level first (NewGame creates the live board
+		// and shows the vs setup screen over it, see LawnApp::NewGame), rather than popping the
+		// setup menu on top of the game selector with no level underneath. This is queued (not
+		// run inline) because StartMultiplayerGame rebuilds the whole widget tree from inside
+		// this button's MouseUp, which use-after-frees a widget in the WidgetManager's walk.
+		mApp->RequestVersusGame();
+		break;
+	case GameSelector::GameSelector_Coop:
+		mApp->DoCoopSetupDialog();
 		break;
 	case GameSelector::GameSelector_Quit:
 		mApp->ConfirmQuit();

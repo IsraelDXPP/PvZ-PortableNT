@@ -111,6 +111,11 @@ constinit const ZombieDefinition gZombieDefs[NUM_ZOMBIE_TYPES] = {
 	{ .mZombieType = ZOMBIE_SQUASH_HEAD, .mReanimationType = REANIM_ZOMBIE, .mZombieValue = 3, .mStartingLevel = 99, .mFirstAllowedWave = 10, .mPickWeight = 2000, .mZombieName = "ZOMBIE" },
 	{ .mZombieType = ZOMBIE_TALLNUT_HEAD, .mReanimationType = REANIM_ZOMBIE, .mZombieValue = 4, .mStartingLevel = 99, .mFirstAllowedWave = 10, .mPickWeight = 2000, .mZombieName = "ZOMBIE" },
 	{ .mZombieType = ZOMBIE_REDEYE_GARGANTUAR, .mReanimationType = REANIM_GARGANTUAR, .mZombieValue = 10, .mStartingLevel = 48, .mFirstAllowedWave = 15, .mPickWeight = 6000, .mZombieName = "REDEYED_GARGANTUAR" },
+	// Local co-op/versus only (see the ZombieType comment): not part of any Adventure/Survival
+	// wave pool (mStartingLevel/mFirstAllowedWave/mPickWeight are unused there since it's never
+	// added to Board::mZombieAllowed for those modes), only reachable via SEED_ZOMBIE_TRASHCAN
+	// in the Versus zombie seed bank.
+	{ .mZombieType = ZOMBIE_TRASHCAN, .mReanimationType = REANIM_ZOMBIE, .mZombieValue = 4, .mStartingLevel = 999, .mFirstAllowedWave = 0, .mPickWeight = 0, .mZombieName = "TRASHCAN_ZOMBIE" },
 };
 
 static ZombieType gBossZombieList[] = {
@@ -276,6 +281,17 @@ void Zombie::ZombieInitialize(int theRow, ZombieType theType, bool theVariant, Z
 		mShieldHealth = 1100;
 		LoadPlainZombieReanim();
 		AttachShield();
+		break;
+
+	case ZombieType::ZOMBIE_TRASHCAN:
+		// Same shield as the Screen Door Zombie; only the shield's image differs (see the
+		// ZombieType comment), swapped in below the same way the decompiled build does it.
+		mShieldType = ShieldType::SHIELDTYPE_DOOR;
+		mShieldHealth = 1100;
+		LoadPlainZombieReanim();
+		AttachShield();
+		if (Sexy::IMAGE_REANIM_ZOMBIE_TRASHCAN1)
+			mApp->ReanimationGet(mBodyReanimID)->SetImageOverride("anim_screendoor", Sexy::IMAGE_REANIM_ZOMBIE_TRASHCAN1);
 		break;
 
 	case ZombieType::ZOMBIE_YETI:
@@ -7637,7 +7653,19 @@ int Zombie::TakeShieldDamage(int theDamage, unsigned int theDamageFlags)
 	if (aDamageIndexAfterDamage != aDamageIndexBeforeDamage)
 	{
 		Reanimation* aBodyReanim = mApp->ReanimationTryToGet(mBodyReanimID);
-		if (mShieldType == ShieldType::SHIELDTYPE_DOOR && aDamageIndexAfterDamage == 1)
+		if (mZombieType == ZombieType::ZOMBIE_TRASHCAN && aDamageIndexAfterDamage == 1)
+		{
+			PVZP_ASSERT(aBodyReanim);
+			if (Sexy::IMAGE_REANIM_ZOMBIE_TRASHCAN2)
+				aBodyReanim->SetImageOverride("anim_screendoor", Sexy::IMAGE_REANIM_ZOMBIE_TRASHCAN2);
+		}
+		else if (mZombieType == ZombieType::ZOMBIE_TRASHCAN && aDamageIndexAfterDamage == 2)
+		{
+			PVZP_ASSERT(aBodyReanim);
+			if (Sexy::IMAGE_REANIM_ZOMBIE_TRASHCAN3)
+				aBodyReanim->SetImageOverride("anim_screendoor", Sexy::IMAGE_REANIM_ZOMBIE_TRASHCAN3);
+		}
+		else if (mShieldType == ShieldType::SHIELDTYPE_DOOR && aDamageIndexAfterDamage == 1)
 		{
 			PVZP_ASSERT(aBodyReanim);
 			aBodyReanim->SetImageOverride("anim_screendoor", IMAGE_REANIM_ZOMBIE_SCREENDOOR2);

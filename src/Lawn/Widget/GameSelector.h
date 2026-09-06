@@ -66,7 +66,15 @@ private:
 		GameSelector_Survival,
 		GameSelector_Zombatar,
 		GameSelector_Achievements,
-		GameSelector_QuickPlay
+		GameSelector_QuickPlay,
+		// Real top-level entries in the console/Android TV build's main menu (VS_BUTTON and
+		// VS_COOP_BUTTON, both peers of MINI_GAMES_BUTTON, not nested inside it or each
+		// other -- see MainMenu.menu.txt). No art exists for them in this port's original PC
+		// resource pack, so they're plain LawnStoneButtons (no bespoke image) rather than
+		// the graveyard-tombstone buttons that build uses, placed at a fixed spot instead of
+		// tracked to a background point like this screen's other buttons.
+		GameSelector_Versus,
+		GameSelector_Coop
 	};
 
 public:
@@ -86,6 +94,8 @@ public:
 	NewLawnButton*              mZombatarButton;             //+0xC0
 	NewLawnButton*              mAchievementsButton;        //+0xC4
 	NewLawnButton*              mQuickPlayButton;
+	LawnStoneButton*            mVersusButton;
+	LawnStoneButton*            mCoopButton;
 	Widget*                     mOverlayWidget;
 	bool                        mStartingGame;
 	int                         mStartingGameCounter;

@@ -459,3 +459,9 @@ build-*/
 
 # vcpkg manifest installs
 vcpkg_installed/
+
+# IDA/crash-analysis artifacts (local only)
+/pseudocode/
+/rets.txt
+/rets2.txt
+

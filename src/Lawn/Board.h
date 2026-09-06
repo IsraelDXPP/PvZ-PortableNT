@@ -48,6 +48,10 @@ constexpr const int MAX_GRAVE_STONES = MAX_GRID_SIZE_X * MAX_GRID_SIZE_Y;
 constexpr const int MAX_POOL_GRID_SIZE = 10;
 constexpr const int MAX_RENDER_ITEMS = 1024;
 constexpr const int PROGRESS_METER_COUNTER = 150;
+// Versus mode's destructible target markers (GRIDITEM_MP_TARGET). Not derived from the
+// decompiled build (its exact value wasn't recovered); a placeholder until real balance
+// data is available -- see the AddMPTarget comment.
+constexpr const int MP_TARGET_HEALTH = 300;
 
 class LawnApp;
 class CursorObject;
@@ -257,6 +261,25 @@ public:
 	uint32_t						mPottedPlantsCollected;
 	uint32_t						mChocolateCollected;
 
+	// Local co-op/versus (LawnApp::AddSecondPlayer / VSSetupMenu in the console/Android TV
+	// build). Only allocated once LawnApp::SetSecondPlayer() has been called for the
+	// current game; null in single-player games.
+	bool							mSecondPlayerActive = false;
+	int								mSecondPlayerControllerIndex = -1;
+	std::unique_ptr<SeedBank>			mSeedBank2;
+	std::unique_ptr<CursorObject>		mCursorObject2;
+	std::unique_ptr<CursorPreview>		mCursorPreview2;
+	// Player two's keyboard cursor in Versus and Co-op (player one keeps the mouse). Not
+	// from the decompiled build -- it assumes a second controller/mouse this port doesn't
+	// have any way to detect yet (see the SetSecondPlayer/StartMultiplayerGame comments) --
+	// this is the explicitly-approved stand-in control scheme. In Versus everything it
+	// triggers goes through the same Challenge::IZombiePlaceZombie/Board::AddAMound as the
+	// decompiled zombie-seed placement; in Co-op it plants from the shared mSeedBank (see
+	// Player2KeyDown's comment).
+	int32_t							mPlayer2CursorGridX = MAX_GRID_SIZE_X / 2;
+	int32_t							mPlayer2CursorGridY = MAX_GRID_SIZE_Y / 2;
+	int32_t							mPlayer2SelectedSeedIndex = 0;
+
 public:
 	Board(LawnApp* theApp);
 	~Board() override;
@@ -306,6 +329,10 @@ public:
 	void					AddSunMoney(int theAmount);
 	bool							TakeSunMoney(int theAmount);
 	bool					CanTakeSunMoney(int theAmount);
+	// Local co-op/versus second player. AddSecondPlayer allocates the second seed bank
+	// and cursor and is called from LawnApp::SetSecondPlayer once a controller has been
+	// assigned to player two (VSSetupMenu / the co-op "waiting for second player" screen).
+	void							AddSecondPlayer(int theControllerIndex);
 	void					Pause(bool thePause);
 	inline bool						MakeEasyZombieType() { /* not found */return false; }
 	void							TryToSaveGame();
@@ -464,6 +491,28 @@ public:
 	GridItem*			GetLadderAt(int theGridX, int theGridY);
 	GridItem*			AddALadder(int theGridX, int theGridY);
 	GridItem*			AddACrater(int theGridX, int theGridY);
+	// Versus mode (console/Android TV Board::AddMPTarget/GetMPTargetCount): a destructible
+	// marker the zombie side plants on the lawn for the plant side to shoot down. One is
+	// placed per row at match start (CutScene::PlaceLawnItems); GetMPTargetCount reaching 0
+	// is the plants' win condition (GridItem::TakeDamage).
+	GridItem*			AddMPTarget(int theGridX, int theGridY);
+	int					GetMPTargetCount();
+	// Versus mode's zombie-side "mound" seed (SEED_ZOMBIE_MOUND): a delayed zombie instead
+	// of an immediate one. Ported from the decompiled Board::AddAMound (spawning the
+	// GridItem, maturing it in UpdateGridItems, and rising the zombie once mature -- the
+	// decompiled build does the maturing in Challenge::UpdateMPGraveStones instead of Board,
+	// but this port's AddMPTarget/GetMPTargetCount are already Board methods, so this stays
+	// consistent with them) and Board::PickGraveRisingZombieTypeMP (see its own comment for
+	// why the tiers use this port's own zombie types instead of the original's). theTier
+	// only affects which zombie type rises; a mound always rises exactly one zombie -- see
+	// AddAMound's comment for how that's confirmed from the decompiled UpdateMPGraveStones.
+	GridItem*			AddAMound(int theGridX, int theGridY, int theTier);
+	ZombieType			PickGraveRisingZombieTypeMP(int theTier);
+	// Player two's keyboard controls in Versus and Co-op -- see mPlayer2CursorGridX's
+	// comment. Co-op places plants from the shared mSeedBank (LawnApp::IsTwinSunbankMode's
+	// comment); Versus places zombies from the per-side conveyor belt, mSeedBank2.
+	void				Player2KeyDown(KeyCode theKey);
+	void				DrawPlayer2Cursor(Graphics* g);
 	void							InitLawnMowers();
 	bool					IsPlantInCursor();
 	void							HighlightPlantsForMouse(int theMouseX, int theMouseY, const HitResult* theHitResult);

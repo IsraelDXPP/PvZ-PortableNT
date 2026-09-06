@@ -5018,6 +5018,8 @@ int Plant::GetCost(SeedType theSeedType, SeedType theImitaterType)
 	case SeedType::SEED_ZOMBIE_DANCER:              return 350;
 	case SeedType::SEED_ZOMBIE_GARGANTUAR:          return 300;
 	case SeedType::SEED_ZOMBIE_IMP:                 return 50;
+	case SeedType::SEED_ZOMBIE_TRASHCAN:            return 100;
+	case SeedType::SEED_ZOMBIE_MOUND:               return 25;
 	default:
 	{
 		if (theSeedType == SeedType::SEED_IMITATER && theImitaterType != SeedType::SEED_NONE)

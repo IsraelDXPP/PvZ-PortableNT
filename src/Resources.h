@@ -1306,6 +1306,40 @@ namespace Sexy
 	extern Image* IMAGE_WAVECENTER;
 	extern Image* IMAGE_WAVESIDE;
 
+	// DelayLoad_Multiplayer: local co-op/versus art, named after the resource strings found
+	// in the console/Android TV build's resource table. These are NOT part of the original
+	// PC resource pack this project ships against and aren't declared in this port's resource
+	// manifest at all, so ExtractDelayLoad_MultiplayerResources always fails its very first
+	// GetImageThrow lookup -- and PvzpLoadResources treats that as fatal (SexyAppBase::
+	// ShowResourceError(true), which exits the game), the same as it would for any other
+	// DelayLoad group. So nothing calls PvzpLoadResources("DelayLoad_Multiplayer") anywhere
+	// -- see the comment where Board::AddSecondPlayer deliberately doesn't. These stay
+	// declared, permanently null, for whenever real art/audio is supplied; every reader of
+	// them (e.g. Zombie.cpp's IMAGE_REANIM_ZOMBIE_TRASHCAN1/2/3 usage) null-checks first.
+	extern Image* IMAGE_COOP_SUN_HIGHLIGHT_1;
+	extern Image* IMAGE_COOP_SUN_HIGHLIGHT_2;
+	extern Image* IMAGE_SEEDBANK_COOP;
+	extern Image* IMAGE_CONVEYORBELT_COOP;
+	extern Image* IMAGE_CONVEYORBELT_BACKDROP_COOP;
+	extern Image* IMAGE_VS_INFO_BOX_PLANTS;
+	extern Image* IMAGE_VS_INFO_BOX_PLANTS_OVERLAY;
+	extern Image* IMAGE_VS_INFO_BOX_ZOMBIES;
+	extern Image* IMAGE_VS_INFO_BOX_ZOMBIES_OVERLAY;
+	extern Image* IMAGE_VS_STONE_DIRT;
+	extern Image* IMAGE_HELP_MENU_IMAGE_VS_CONTROLLERS;
+	extern Image* IMAGE_HELP_MENU_IMAGE_VS_BRAINS;
+	extern Image* IMAGE_HELP_MENU_IMAGE_VS_TARGETS;
+	extern Image* IMAGE_HELP_MENU_IMAGE_COOP_MENU;
+	extern Image* IMAGE_HELP_MENU_IMAGE_COOP_SUN;
+	// Trash Can Zombie shield art (undamaged / first crack / about to break), swapped onto
+	// a Screen Door Zombie's "anim_screendoor" track -- see the ZombieType::ZOMBIE_TRASHCAN
+	// comment in ConstEnums.h.
+	extern Image* IMAGE_REANIM_ZOMBIE_TRASHCAN1;
+	extern Image* IMAGE_REANIM_ZOMBIE_TRASHCAN2;
+	extern Image* IMAGE_REANIM_ZOMBIE_TRASHCAN3;
+	extern intptr_t SOUND_COOP;
+	extern intptr_t SOUND_VS_HEADPOP;
+
 	// Init Resources
 	extern Image* IMAGE_BLANK;
 	extern Image* IMAGE_PARTNER_LOGO;
@@ -1911,6 +1945,7 @@ namespace Sexy
 	bool                ExtractDelayLoad_ZombieNote4Resources(ResourceManager* theResourceManager);
 	bool                ExtractDelayLoad_ZombieNoteHelpResources(ResourceManager* theResourceManager);
 	bool                ExtractDelayLoad_ZombiquariumResources(ResourceManager* theResourceManager);
+	bool                ExtractDelayLoad_MultiplayerResources(ResourceManager* theResourceManager);
 	bool                ExtractInitResources(ResourceManager* theResourceManager);
 	bool                ExtractLoaderBarResources(ResourceManager* theResourceManager);
 	bool                ExtractLoadingFontsResources(ResourceManager* theResourceManager);

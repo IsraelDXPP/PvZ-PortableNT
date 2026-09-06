@@ -47,6 +47,8 @@ class Music;
 class TitleScreen;
 class ChallengeScreen;
 class StoreScreen;
+class VersusSetupMenu;
+class VersusResultsMenu;
 class AlmanacDialog;
 class TypingCheck;
 
@@ -79,6 +81,9 @@ public:
 	std::unique_ptr<AwardScreen>	mAwardScreen;
 	std::unique_ptr<CreditScreen>	mCreditScreen;
 	std::unique_ptr<ChallengeScreen>	mChallengeScreen;
+	std::unique_ptr<VersusSetupMenu>	mVersusSetupMenu;
+	std::unique_ptr<VersusResultsMenu>	mVersusResultsMenu;
+	bool							mPendingVersusBoot = false;
 	std::unique_ptr<PvzpFoley>		mSoundSystem;
 	std::string						mReferId;
 	std::string						mRegisterLink;
@@ -105,6 +110,10 @@ public:
 	std::unique_ptr<ReanimatorCache>	mReanimatorCache;
 	std::unique_ptr<ProfileMgr>		mProfileMgr;
 	PlayerInfo*						mPlayerInfo;
+	// Local co-op/versus (LawnApp::mPlayer2Info / SetSecondPlayer in the console/Android TV
+	// build). Only used while IsMultiplayerMode() is true; null in single-player games.
+	PlayerInfo*						mPlayer2Info = nullptr;
+	int								mSecondPlayerControllerIndex = -1;
 	std::unique_ptr<LevelStats>		mLastLevelStats;
 	std::atomic<bool>					mCloseRequest;
 	uint32_t						mAppCounter;
@@ -124,6 +133,12 @@ public:
 	bool							mPlayingQuickplay;
 	int								mQuickLevel;
 	bool							mCrazySeeds;
+	// Set only by the versus Quick/Random setup path: when true, the versus plant seed bank
+	// has already been pre-filled (matching VSSetupMenu::ButtonDepress's quick/random deck
+	// fill) so the level-intro seed chooser must be skipped, exactly as the console build
+	// auto-starts those two modes without a chooser (VSSetupMenu calls CutScene::EndSeedChooser
+	// for them, versus Custom which opens the choosers).
+	bool							mVsSkipSeedChooser = false;
 	std::unique_ptr<TypingCheck>	mKonamiCheck;
 	std::unique_ptr<TypingCheck>	mMustacheCheck;
 	std::unique_ptr<TypingCheck>	mMoustacheCheck;
@@ -232,6 +247,31 @@ public:
 	bool							UpdateApp() override;
 	bool					IsAdventureMode();
 	bool					IsSurvivalMode();
+	// Local multiplayer (console/Android TV LawnApp::IsCoopMode / VSSetupMenu). Co-op puts
+	// two players on one shared lawn in Survival; Versus pits one player's plants against
+	// a second player's zombies (spent from the existing SEED_ZOMBIE_* seed bank).
+	bool					IsCoopMode();
+	bool					IsVersusMode();
+	bool					IsMultiplayerMode();
+	bool					IsTwoPlayerGame();
+	// True when each co-op player keeps their own sun bank instead of sharing one pool.
+	bool					IsTwinSunbankMode();
+	void							SetSecondPlayer(int theControllerIndex);
+	void							DoVersusSetupDialog();
+	// Queues a versus boot to be run later in UpdateApp. Versus is entered from the game
+	// selector's button MouseUp (GameSelector::ButtonDepress); running the full widget-tree
+	// teardown + AddWidget of the setup menu synchronously inside that mouse event walks the
+	// WidgetManager's child list while widgets are being freed, hitting a use-after-free in
+	// MarkDirtyFull. Deferring it one frame lets the mouse dispatch fully settle first.
+	void							RequestVersusGame();
+	void							KillVersusSetupMenu();
+	void							DoCoopSetupDialog();
+	void							FinishCoopSetupDialog(bool isYes);
+	void							StartMultiplayerGame(GameMode theGameMode);
+	// Real VSResultsMenu.txt shown after a Versus match ends -- see GridItem::TakeDamage's
+	// win-condition branch and Board::ZombiesWon's Versus branch for the two call sites.
+	void							ShowVersusResultsMenu();
+	void							KillVersusResultsMenu();
 	bool							IsContinuousChallenge();
 	bool					IsArtChallenge();
 	bool							NeedPauseGame();

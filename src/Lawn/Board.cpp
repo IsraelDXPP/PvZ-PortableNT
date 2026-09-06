@@ -41,6 +41,7 @@
 #include "Widget/SeedChooserScreen.h"
 #include "../PvzpLib/Attachment.h"
 #include "../PvzpLib/Reanimator.h"
+#include "../PvzpLib/Definition.h"
 #include "widget/Dialog.h"
 #include "misc/MTRand.h"
 #include "../PvzpLib/PvzpParticle.h"
@@ -478,6 +479,128 @@ GridItem* Board::AddACrater(int theGridX, int theGridY)
 	return aCrater;
 }
 
+GridItem* Board::AddMPTarget(int theGridX, int theGridY)
+{
+	// Ported from the decompiled Board::AddMPTarget (Versus mode); called once per row from
+	// CutScene::PlaceLawnItems at match start. GRIDITEM_MP_TARGET's HP reuses
+	// mGridItemCounter (like GRIDITEM_GRAVESTONE reuses it above for its rise delay). See
+	// the GRIDITEM_MP_TARGET comment in ConstEnums.h for what's ported vs. still open.
+	GridItem* aTarget = mGridItems.DataArrayAlloc();
+	aTarget->mGridItemType = GridItemType::GRIDITEM_MP_TARGET;
+	aTarget->mGridX = theGridX;
+	aTarget->mGridY = theGridY;
+	aTarget->mGridItemCounter = MP_TARGET_HEALTH;
+	aTarget->mRenderOrder = theGridY == 0
+		? MakeRenderOrder(RenderLayer::RENDER_LAYER_GROUND, 0, 0)
+		: MakeRenderOrder(RenderLayer::RENDER_LAYER_PLANT, theGridY, 1);
+	// REANIM_MP_TARGET points at "reanim/MPTarget.reanim" (Reanimator.cpp), which -- like
+	// the rest of this feature's art -- isn't part of this port's shipped resource pack.
+	// Unlike a missing Image (ResourceManager::GetImageThrow just throws, caught by
+	// PvzpLoadResources), a missing reanim definition is fatal a different way:
+	// ReanimatorEnsureDefinitionLoaded calls PvzpErrorMessageBox on failure, which throws
+	// an uncaught std::runtime_error on desktop and takes the whole game down. Since this
+	// runs unconditionally at the start of every Versus match, that made Versus crash
+	// immediately. DefinitionIsCompiled is the same check ReanimatorLoadDefinitions uses to
+	// decide what's safe to preload, so it's used here to skip the reanim (target still has
+	// real HP, a real hitbox via Projectile::FindMPTargetCollisionTarget, and counts toward
+	// the win condition -- it's just invisible until real art exists) instead of crashing.
+	if (DefinitionIsCompiled("reanim/MPTarget.reanim"))
+	{
+		int aPixelX = GridToPixelX(theGridX, theGridY);
+		int aPixelY = GridToPixelY(theGridX, theGridY);
+		Reanimation* aReanim = mApp->AddReanimation(
+			aPixelX + 20.0f / (5 - theGridY) + 26.0f,
+			aPixelY - 54.0f,
+			aTarget->mRenderOrder,
+			ReanimationType::REANIM_MP_TARGET);
+		aReanim->mIsAttachment = true;
+		aTarget->mGridItemReanimID = mApp->ReanimationGetID(aReanim);
+	}
+	return aTarget;
+}
+
+int Board::GetMPTargetCount()
+{
+	int aCount = 0;
+	for (GridItem* aGridItem : mGridItems)
+	{
+		if (!aGridItem->mDead && aGridItem->mGridItemType == GridItemType::GRIDITEM_MP_TARGET)
+			++aCount;
+	}
+	return aCount;
+}
+
+GridItem* Board::AddAMound(int theGridX, int theGridY, int theTier)
+{
+	GridItem* aMound = mGridItems.DataArrayAlloc();
+	aMound->mGridItemType = GridItemType::GRIDITEM_MP_MOUND;
+	aMound->mGridX = theGridX;
+	aMound->mGridY = theGridY;
+	// mSunCount reuses the field as the rising zombie's tier/strength (see the
+	// PickGraveRisingZombieTypeMP call in UpdateGridItems) -- not a spawn count. One mound
+	// always rises exactly one zombie.
+	aMound->mSunCount = std::max(theTier, 1);
+	// Matches the decompiled Board::AddAMound's counter start; UpdateGridItems() ticks it
+	// up once a frame and matures the mound at > 499, so it takes ~1000 ticks (roughly
+	// 16-17 seconds) to rise.
+	aMound->mGridItemCounter = -500;
+	aMound->mRenderOrder = MakeRenderOrder(RenderLayer::RENDER_LAYER_GRAVE_STONE, theGridY, 3);
+	return aMound;
+}
+
+ZombieType Board::PickGraveRisingZombieTypeMP(int theTier)
+{
+	// Shaped like the decompiled Board::PickGraveRisingZombieTypeMP (a tier that escalates
+	// to stronger zombies), but built from this port's own ZombieType pool: the original
+	// picks by raw ZombieType value from the console build's enum, which numbers zombies
+	// differently from this port's (e.g. ZombieType::ZOMBIE_PEA_HEAD sits at a different
+	// ordinal here), so those values aren't safely portable 1:1.
+	PvzpWeightedArray aZombieWeightArray[3];
+	int aCount;
+	if (theTier <= 0)
+	{
+		aZombieWeightArray[0].mItem = ZombieType::ZOMBIE_NORMAL;
+		aZombieWeightArray[0].mWeight = GetZombieDefinition(ZombieType::ZOMBIE_NORMAL).mPickWeight;
+		aCount = 1;
+	}
+	else if (theTier == 1)
+	{
+		aZombieWeightArray[0].mItem = ZombieType::ZOMBIE_NORMAL;
+		aZombieWeightArray[0].mWeight = GetZombieDefinition(ZombieType::ZOMBIE_NORMAL).mPickWeight;
+		aZombieWeightArray[1].mItem = ZombieType::ZOMBIE_TRAFFIC_CONE;
+		aZombieWeightArray[1].mWeight = GetZombieDefinition(ZombieType::ZOMBIE_TRAFFIC_CONE).mPickWeight;
+		aCount = 2;
+	}
+	else if (theTier == 2)
+	{
+		aZombieWeightArray[0].mItem = ZombieType::ZOMBIE_TRAFFIC_CONE;
+		aZombieWeightArray[0].mWeight = GetZombieDefinition(ZombieType::ZOMBIE_TRAFFIC_CONE).mPickWeight;
+		aZombieWeightArray[1].mItem = ZombieType::ZOMBIE_PAIL;
+		aZombieWeightArray[1].mWeight = GetZombieDefinition(ZombieType::ZOMBIE_PAIL).mPickWeight;
+		aCount = 2;
+	}
+	else if (theTier == 3)
+	{
+		aZombieWeightArray[0].mItem = ZombieType::ZOMBIE_PAIL;
+		aZombieWeightArray[0].mWeight = GetZombieDefinition(ZombieType::ZOMBIE_PAIL).mPickWeight;
+		aZombieWeightArray[1].mItem = ZombieType::ZOMBIE_FOOTBALL;
+		aZombieWeightArray[1].mWeight = GetZombieDefinition(ZombieType::ZOMBIE_FOOTBALL).mPickWeight;
+		aCount = 2;
+	}
+	else
+	{
+		aZombieWeightArray[0].mItem = ZombieType::ZOMBIE_FOOTBALL;
+		aZombieWeightArray[0].mWeight = GetZombieDefinition(ZombieType::ZOMBIE_FOOTBALL).mPickWeight;
+		aZombieWeightArray[1].mItem = ZombieType::ZOMBIE_NEWSPAPER;
+		aZombieWeightArray[1].mWeight = GetZombieDefinition(ZombieType::ZOMBIE_NEWSPAPER).mPickWeight;
+		aZombieWeightArray[2].mItem = ZombieType::ZOMBIE_LADDER;
+		aZombieWeightArray[2].mWeight = GetZombieDefinition(ZombieType::ZOMBIE_LADDER).mPickWeight;
+		aCount = 3;
+	}
+
+	return (ZombieType)PvzpPickFromWeightedArray(aZombieWeightArray, aCount);
+}
+
 GridItem* Board::AddAGraveStone(int theGridX, int theGridY)
 {
 	GridItem* aGraveStone = mGridItems.DataArrayAlloc();
@@ -890,6 +1013,9 @@ void Board::PickBackground()
 	case GameMode::GAMEMODE_SURVIVAL_NORMAL_STAGE_1:
 	case GameMode::GAMEMODE_SURVIVAL_HARD_STAGE_1:
 	case GameMode::GAMEMODE_SURVIVAL_ENDLESS_STAGE_1:
+	case GameMode::GAMEMODE_COOP_SURVIVAL_NORMAL_STAGE_1:
+	case GameMode::GAMEMODE_COOP_SURVIVAL_HARD_STAGE_1:
+	case GameMode::GAMEMODE_COOP_SURVIVAL_ENDLESS_STAGE_1:
 	case GameMode::GAMEMODE_CHALLENGE_WAR_AND_PEAS:
 	case GameMode::GAMEMODE_CHALLENGE_WALLNUT_BOWLING:
 	case GameMode::GAMEMODE_CHALLENGE_SLOT_MACHINE:
@@ -909,6 +1035,9 @@ void Board::PickBackground()
 	case GameMode::GAMEMODE_SURVIVAL_NORMAL_STAGE_2:
 	case GameMode::GAMEMODE_SURVIVAL_HARD_STAGE_2:
 	case GameMode::GAMEMODE_SURVIVAL_ENDLESS_STAGE_2:
+	case GameMode::GAMEMODE_COOP_SURVIVAL_NORMAL_STAGE_2:
+	case GameMode::GAMEMODE_COOP_SURVIVAL_HARD_STAGE_2:
+	case GameMode::GAMEMODE_COOP_SURVIVAL_ENDLESS_STAGE_2:
 	case GameMode::GAMEMODE_CHALLENGE_BEGHOULED:
 	case GameMode::GAMEMODE_CHALLENGE_BEGHOULED_TWIST:
 	case GameMode::GAMEMODE_CHALLENGE_PORTAL_COMBAT:
@@ -940,6 +1069,9 @@ void Board::PickBackground()
 	case GameMode::GAMEMODE_SURVIVAL_NORMAL_STAGE_3:
 	case GameMode::GAMEMODE_SURVIVAL_HARD_STAGE_3:
 	case GameMode::GAMEMODE_SURVIVAL_ENDLESS_STAGE_3:
+	case GameMode::GAMEMODE_COOP_SURVIVAL_NORMAL_STAGE_3:
+	case GameMode::GAMEMODE_COOP_SURVIVAL_HARD_STAGE_3:
+	case GameMode::GAMEMODE_COOP_SURVIVAL_ENDLESS_STAGE_3:
 	case GameMode::GAMEMODE_CHALLENGE_LITTLE_TROUBLE:
 	case GameMode::GAMEMODE_CHALLENGE_BOBSLED_BONANZA:
 	case GameMode::GAMEMODE_CHALLENGE_SPEED:
@@ -953,6 +1085,9 @@ void Board::PickBackground()
 	case GameMode::GAMEMODE_SURVIVAL_NORMAL_STAGE_4:
 	case GameMode::GAMEMODE_SURVIVAL_HARD_STAGE_4:
 	case GameMode::GAMEMODE_SURVIVAL_ENDLESS_STAGE_4:
+	case GameMode::GAMEMODE_COOP_SURVIVAL_NORMAL_STAGE_4:
+	case GameMode::GAMEMODE_COOP_SURVIVAL_HARD_STAGE_4:
+	case GameMode::GAMEMODE_COOP_SURVIVAL_ENDLESS_STAGE_4:
 	case GameMode::GAMEMODE_CHALLENGE_RAINING_SEEDS:
 	case GameMode::GAMEMODE_CHALLENGE_INVISIGHOUL:
 	case GameMode::GAMEMODE_CHALLENGE_AIR_RAID:
@@ -963,6 +1098,9 @@ void Board::PickBackground()
 	case GameMode::GAMEMODE_SURVIVAL_NORMAL_STAGE_5:
 	case GameMode::GAMEMODE_SURVIVAL_HARD_STAGE_5:
 	case GameMode::GAMEMODE_SURVIVAL_ENDLESS_STAGE_5:
+	case GameMode::GAMEMODE_COOP_SURVIVAL_NORMAL_STAGE_5:
+	case GameMode::GAMEMODE_COOP_SURVIVAL_HARD_STAGE_5:
+	case GameMode::GAMEMODE_COOP_SURVIVAL_ENDLESS_STAGE_5:
 	case GameMode::GAMEMODE_CHALLENGE_COLUMN:
 	case GameMode::GAMEMODE_CHALLENGE_POGO_PARTY:
 	case GameMode::GAMEMODE_CHALLENGE_HIGH_GRAVITY:
@@ -984,6 +1122,11 @@ void Board::PickBackground()
 
 	case GameMode::GAMEMODE_TREE_OF_WISDOM:
 		mBackground = BackgroundType::BACKGROUND_TREEOFWISDOM;
+		break;
+
+	// Versus always runs on the plain day lawn.
+	case GameMode::GAMEMODE_VERSUS:
+		mBackground = BackgroundType::BACKGROUND_1_DAY;
 		break;
 
 	default:
@@ -1621,6 +1764,11 @@ void Board::InitLawnMowers()
 
 bool Board::ChooseSeedsOnCurrentLevel()
 {
+	// Versus Quick/Random pre-fill the banks in VSSetupMenu and start without a chooser
+	// (matching the console build); Custom leaves this flag clear so the chooser shows.
+	if (mApp->mVsSkipSeedChooser)
+		return false;
+
 	if (mApp->IsChallengeWithoutSeedBank() || HasConveyorBeltSeedBank())
 		return false;
 
@@ -3239,9 +3387,9 @@ void Board::UpdateToolTip(const HitResult* theHitResult)
 		}
 
 		if (mSeedBank->ContainsPoint(mWidgetManager->mLastMouseX, mWidgetManager->mLastMouseY) ||
-			mApp->mSeedChooserScreen->mAlmanacButton->IsMouseOver() ||
-			mApp->mSeedChooserScreen->mStoreButton->IsMouseOver() ||
-			mApp->mSeedChooserScreen->mImitaterButton->IsMouseOver())
+			(mApp->mSeedChooserScreen && mApp->mSeedChooserScreen->mAlmanacButton->IsMouseOver()) ||
+			(mApp->mSeedChooserScreen && mApp->mSeedChooserScreen->mStoreButton->IsMouseOver()) ||
+			(mApp->mSeedChooserScreen && mApp->mSeedChooserScreen->mImitaterButton->IsMouseOver()))
 		{
 			mToolTip->mVisible = false;
 			return;
@@ -3278,7 +3426,8 @@ void Board::UpdateToolTip(const HitResult* theHitResult)
 		mToolTip->mCenter = true;
 
 		mToolTip->mMinLeft = IMAGE_SEEDCHOOSER_BACKGROUND->GetWidth();
-		if (mApp->mSeedChooserScreen->mAlmanacButton->mBtnNoDraw && mApp->mSeedChooserScreen->mStoreButton->mBtnNoDraw)
+		if (!mApp->mSeedChooserScreen ||
+			(mApp->mSeedChooserScreen->mAlmanacButton->mBtnNoDraw && mApp->mSeedChooserScreen->mStoreButton->mBtnNoDraw))
 		{
 			mToolTip->mMaxBottom = 600;
 		}
@@ -3286,7 +3435,7 @@ void Board::UpdateToolTip(const HitResult* theHitResult)
 		{
 			mToolTip->mMaxBottom = 570;
 		}
-		if (!mApp->mSeedChooserScreen->mImitaterButton->mBtnNoDraw)
+		if (mApp->mSeedChooserScreen && !mApp->mSeedChooserScreen->mImitaterButton->mBtnNoDraw)
 		{
 			mToolTip->CalculateSize();
 			if (mX + mToolTip->mX - mToolTip->mWidth / 2 < 524)
@@ -3496,6 +3645,14 @@ void Board::UpdateToolTip(const HitResult* theHitResult)
 	else if (aUseSeedType == SeedType::SEED_ZOMBIE_IMP)
 	{
 		mToolTip->SetLabel("[IMP]");
+	}
+	else if (aUseSeedType == SeedType::SEED_ZOMBIE_TRASHCAN)
+	{
+		mToolTip->SetLabel("[TRASHCAN_ZOMBIE]");
+	}
+	else if (aUseSeedType == SeedType::SEED_ZOMBIE_MOUND)
+	{
+		mToolTip->SetLabel("[MOUND]");
 	}
 	else
 	{
@@ -5083,6 +5240,18 @@ void Board::ZombiesWon(Zombie* theZombie)
 	if (mApp->mGameScene == GameScenes::SCENE_ZOMBIES_WON)
 		return;
 
+	// Versus mode: a zombie reaching the house is the zombie side's win condition, same
+	// trigger as single-player's loss -- but Versus gets its own real VSResultsMenu.txt
+	// screen (LawnApp::ShowVersusResultsMenu), not the adventure-mode ZombiesWon cutscene or
+	// a challenge-mode GameOverDialog below, neither of which apply to it (no save/reward
+	// progression, no per-mode death message). ShowVersusResultsMenu no-ops if already shown,
+	// so this stays safe if multiple zombies reach the house in the same tick.
+	if (mApp->IsVersusMode())
+	{
+		mApp->ShowVersusResultsMenu();
+		return;
+	}
+
 	ClearAdvice(AdviceType::ADVICE_NONE);
 	mApp->mBoardResult = BoardResult::BOARDRESULT_LOST;
 
@@ -5239,6 +5408,15 @@ void Board::UpdateSunSpawning()
 
 	mNumSunsFallen++;
 	mSunCountDown = std::min(SUN_COUNTDOWN_MAX, SUN_COUNTDOWN + mNumSunsFallen * 10) + Rand(SUN_COUNTDOWN_RANGE);
+	// Versus mode's "sudden death" (Challenge::IsMPSuddenDeath) divides the next sun's
+	// countdown by 3 in the decompiled Board::UpdateSunSpawning, once 5 minutes of match
+	// time have passed -- suns start falling 3x as often to push a stalled match to a
+	// finish. Not porting the sibling behavior gated behind Challenge::gVSSuddenDeathMode
+	// == 1 (spawning 2 suns per drop instead of 1): that global was already identified as
+	// a debug/playtesting toggle, off in the shipped build -- see UpdateMPZombieBank's and
+	// PickGraveRisingZombieTypeMP's comments for the same class of debug-only global.
+	if (mApp->IsVersusMode() && mChallenge->IsMPSuddenDeath())
+		mSunCountDown /= 3;
 	CoinType aSunType = mApp->mGameMode == GameMode::GAMEMODE_CHALLENGE_SUNNY_DAY ? CoinType::COIN_LARGESUN : CoinType::COIN_SUN;
 	AddCoin(RandRangeInt(100 + BOARD_ADDITIONAL_WIDTH, 649 + BOARD_ADDITIONAL_WIDTH), 60, aSunType, CoinMotion::COIN_MOTION_FROM_SKY);
 }
@@ -5267,6 +5445,15 @@ void Board::NextWaveComing()
 void Board::UpdateZombieSpawning()
 {
 	if (mApp->mGameMode == GameMode::GAMEMODE_UPSELL || mApp->mGameMode == GameMode::GAMEMODE_INTRO)
+		return;
+
+	// Versus mode's zombies are almost entirely player-placed (SEED_ZOMBIE_*/SEED_ZOMBIE_MOUND
+	// via Challenge::IZombieMouseDownWithZombie/Board::Player2KeyDown), not AI-driven wave
+	// content, so this function's wave logic doesn't apply. The one exception -- a Bobsled
+	// Zombie team that spawns on its own over time regardless of player placement -- is
+	// ported as Challenge::UpdateMPBobsled instead, called from Challenge::Update alongside
+	// this port's other periodic Versus-only logic (UpdateMPZombieBank).
+	if (mApp->IsVersusMode())
 		return;
 
 	if (mFinalWaveSoundCounter > 0)
@@ -6814,7 +7001,13 @@ void Board::DrawLevel(Graphics* g)
 	}
 	else
 	{
-		aLevelStr = mApp->GetCurrentChallengeDef().mChallengeName;
+		// GetCurrentChallengeDef() indexes gChallengeDefs by (mGameMode - GAMEMODE_SURVIVAL_NORMAL_STAGE_1),
+		// which is out of bounds for the local co-op/versus modes appended after GAMEMODE_INTRO
+		// (they have no entry in that table -- see the NUM_CHALLENGE_MODES comment in
+		// ChallengeScreen.h). They aren't trophy challenges, so they don't need one.
+		aLevelStr = mApp->IsMultiplayerMode()
+			? std::string(PvzpStringTranslate(mApp->IsVersusMode() ? "[VERSUS_MODE_NAME]" : "[COOP_MODE_NAME]"))
+			: mApp->GetCurrentChallengeDef().mChallengeName;
 		if (mApp->IsSurvivalMode() || mApp->mGameMode == GameMode::GAMEMODE_CHALLENGE_LAST_STAND)
 		{
 			int aFlags = GetSurvivalFlagsCompleted();
@@ -7686,6 +7879,7 @@ void Board::Draw(Graphics* g)
 
 	mDrawCount++;
 	DrawGameObjects(g);
+	DrawPlayer2Cursor(g);
 }
 
 void Board::SetMustacheMode(bool theEnableMustache)
@@ -7849,6 +8043,7 @@ void Board::DoTypingCheck(KeyCode theKey)
 void Board::KeyDown(KeyCode theKey)
 {
 	DoTypingCheck(theKey);
+	Player2KeyDown(theKey);
 
 	if (mApp->mGameScene == GameScenes::SCENE_LEVEL_INTRO &&
 		mApp->mGameMode != GameMode::GAMEMODE_CHALLENGE_ZEN_GARDEN &&
@@ -8707,6 +8902,198 @@ bool Board::CanTakeSunMoney(int theAmount)
 	return theAmount <= mSunMoney + CountSunBeingCollected();
 }
 
+void Board::DrawPlayer2Cursor(Graphics* g)
+{
+	// Not from the decompiled build -- see mPlayer2CursorGridX's comment in Board.h. No
+	// art exists for a second cursor, so this is a plain outline plus text, same idiom
+	// Board::DrawDebugText already uses elsewhere in this file for non-player-facing info.
+	if (!mSecondPlayerActive || !mApp->IsMultiplayerMode() || mApp->mGameScene != GameScenes::SCENE_PLAYING)
+		return;
+
+	int aCellWidth = GridToPixelX(1, 0) - GridToPixelX(0, 0);
+	int aCellHeight = GridToPixelY(0, 1) - GridToPixelY(0, 0);
+	int aPosX = GridToPixelX(mPlayer2CursorGridX, mPlayer2CursorGridY);
+	int aPosY = GridToPixelY(mPlayer2CursorGridX, mPlayer2CursorGridY);
+
+	g->SetColor(Color(255, 0, 0));
+	g->DrawRect(Rect(aPosX, aPosY, aCellWidth, aCellHeight));
+
+	// Co-op reads the shared mSeedBank (matches Player2KeyDown); Versus reads the zombie
+	// side's own belt, mSeedBank2.
+	SeedBank* aBank = mApp->IsCoopMode() ? mSeedBank.get() : mSeedBank2.get();
+	std::string aSeedName = "?";
+	if (mPlayer2SelectedSeedIndex >= 0 && mPlayer2SelectedSeedIndex < aBank->mNumPackets)
+	{
+		SeedType aSeedType = aBank->mSeedPackets[mPlayer2SelectedSeedIndex].mPacketType;
+		aSeedName = Plant::GetNameString(aSeedType, SeedType::SEED_NONE);
+	}
+	std::string aLabel = mApp->IsCoopMode()
+		? std::format("P2: {} ({})", aSeedName, mPlayer2SelectedSeedIndex + 1)
+		: std::format("P2: {} ({}/{})", aSeedName, mPlayer2SelectedSeedIndex + 1, aBank->GetNumSeedsOnConveyorBelt());
+	PvzpDrawString(g, aLabel, aPosX + aCellWidth / 2, aPosY - 4, Sexy::FONT_DWARVENTODCRAFT12, Color(255, 0, 0), DrawStringJustification::DS_ALIGN_CENTER);
+}
+
+void Board::Player2KeyDown(KeyCode theKey)
+{
+	if (!mSecondPlayerActive || !mApp->IsMultiplayerMode() || mApp->mGameScene != GameScenes::SCENE_PLAYING)
+		return;
+
+	switch (theKey)
+	{
+	case KeyCode::KEYCODE_UP:
+		mPlayer2CursorGridY = std::max(mPlayer2CursorGridY - 1, 0);
+		return;
+	case KeyCode::KEYCODE_DOWN:
+		mPlayer2CursorGridY = std::min(mPlayer2CursorGridY + 1, StageHas6Rows() ? MAX_GRID_SIZE_Y - 1 : MAX_GRID_SIZE_Y - 2);
+		return;
+	case KeyCode::KEYCODE_LEFT:
+		mPlayer2CursorGridX = std::max(mPlayer2CursorGridX - 1, 0);
+		return;
+	case KeyCode::KEYCODE_RIGHT:
+		mPlayer2CursorGridX = std::min(mPlayer2CursorGridX + 1, MAX_GRID_SIZE_X - 1);
+		return;
+	case KeyCode::KEYCODE_TAB:
+		// Co-op has no zombie-side conveyor belt -- both players pick from the one shared
+		// mSeedBank (LawnApp::IsTwinSunbankMode's comment: co-op defaults to a shared pool,
+		// same idea as splitting seed slots on a single lawn), unlike Versus's per-side
+		// mSeedBank2.
+		if (mApp->IsCoopMode())
+		{
+			if (mSeedBank->mNumPackets > 0)
+				mPlayer2SelectedSeedIndex = (mPlayer2SelectedSeedIndex + 1) % mSeedBank->mNumPackets;
+		}
+		else if (mSeedBank2->mNumPackets > 0)
+		{
+			mPlayer2SelectedSeedIndex = (mPlayer2SelectedSeedIndex + 1) % mSeedBank2->mNumPackets;
+		}
+		return;
+	case KeyCode::KEYCODE_CONTROL:
+	{
+		if (mApp->IsCoopMode())
+		{
+			if (mPlayer2SelectedSeedIndex < 0 || mPlayer2SelectedSeedIndex >= mSeedBank->mNumPackets)
+				return;
+			SeedPacket& aSeedPacket = mSeedBank->mSeedPackets[mPlayer2SelectedSeedIndex];
+			if (aSeedPacket.mPacketType == SeedType::SEED_NONE || !aSeedPacket.mActive)
+				return;
+			// Same imitater resolution as SeedPacket::MouseDown's aUseSeedType.
+			SeedType aUseSeedType = aSeedPacket.mPacketType == SeedType::SEED_IMITATER && aSeedPacket.mImitaterType != SeedType::SEED_NONE
+				? aSeedPacket.mImitaterType
+				: aSeedPacket.mPacketType;
+			if (CanPlantAt(mPlayer2CursorGridX, mPlayer2CursorGridY, aUseSeedType) != PlantingReason::PLANTING_OK)
+				return;
+			if (!PlantingRequirementsMet(aUseSeedType))
+			{
+				mApp->PlaySample(Sexy::SOUND_BUZZER);
+				return;
+			}
+			if (!mApp->mEasyPlantingCheat && !HasConveyorBeltSeedBank())
+			{
+				if (!TakeSunMoney(GetCurrentPlantCost(aSeedPacket.mPacketType, aSeedPacket.mImitaterType)))
+					return;
+			}
+
+			// Simplified relative to the mouse-driven planting path (Board's big
+			// CURSOR_TYPE_PLANT_FROM_BANK handler): this skips that path's plant-upgrade
+			// edge cases (replacing an existing Wall-nut/Tall-nut/Pumpkin, Gloomshroom's
+			// sleep-state carry-over, Cob Cannon clearing the plant to its right, Cattail
+			// eating a Lily Pad underneath) since player 2 has no mouse/cursor-pickup flow
+			// to route through that shared logic safely. Places directly instead.
+			AddPlant(mPlayer2CursorGridX, mPlayer2CursorGridY, aSeedPacket.mPacketType, aSeedPacket.mImitaterType);
+			aSeedPacket.WasPlanted();
+			mApp->PlayFoley(FoleyType::FOLEY_PLANT);
+			return;
+		}
+
+		if (mPlayer2SelectedSeedIndex < 0 || mPlayer2SelectedSeedIndex >= mSeedBank2->mNumPackets)
+			return;
+		SeedType aSeedType = mSeedBank2->mSeedPackets[mPlayer2SelectedSeedIndex].mPacketType;
+		// No cost check here: the zombie side's bank is a conveyor belt (Challenge::
+		// UpdateMPZombieBank), not a currency the player spends -- see AddSecondPlayer's
+		// comment. Placing a seed just takes it off the belt below.
+		if (aSeedType == SeedType::SEED_NONE)
+			return;
+		if (CanPlantAt(mPlayer2CursorGridX, mPlayer2CursorGridY, aSeedType) != PlantingReason::PLANTING_OK)
+			return;
+
+		// Symmetric with the plant side's block in SeedPacket::MouseDown: once sudden death
+		// hits, the zombie side's own "resource producer" seed (SEED_ZOMBIE_MOUND -- see
+		// Challenge::IsMPResourceProducer's comment for why that's the zombie-side match)
+		// can't be selected either.
+		if (mChallenge->IsMPSuddenDeath() && Challenge::IsMPResourceProducer(aSeedType))
+		{
+			mApp->PlaySample(Sexy::SOUND_BUZZER);
+			return;
+		}
+
+		// Same placement this port's i-Zombie click handler uses -- see the
+		// SEED_ZOMBIE_MOUND comment in Challenge::IZombieMouseDownWithZombie.
+		if (aSeedType == SeedType::SEED_ZOMBIE_MOUND)
+		{
+			AddAMound(mPlayer2CursorGridX, mPlayer2CursorGridY, 1);
+		}
+		else
+		{
+			ZombieType aZombieType = Challenge::IZombieSeedTypeToZombieType(aSeedType);
+			mChallenge->IZombiePlaceZombie(aZombieType, mPlayer2CursorGridX, mPlayer2CursorGridY);
+		}
+		mApp->PlayFoley(FoleyType::FOLEY_PLANT);
+
+		// Shift the rest of the belt left, mirroring SeedBank::RemoveSeed's body (not
+		// calling it directly: it asserts Board::HasConveyorBeltSeedBank(), which is
+		// deliberately false here -- see AddSecondPlayer's comment).
+		for (int i = mPlayer2SelectedSeedIndex; i < mSeedBank2->mNumPackets - 1; i++)
+			mSeedBank2->mSeedPackets[i].mPacketType = mSeedBank2->mSeedPackets[i + 1].mPacketType;
+		mSeedBank2->mSeedPackets[mSeedBank2->mNumPackets - 1].mPacketType = SeedType::SEED_NONE;
+		return;
+	}
+	default:
+		return;
+	}
+}
+
+void Board::AddSecondPlayer(int theControllerIndex)
+{
+	PVZP_ASSERT(theControllerIndex != -1);
+	mSecondPlayerActive = true;
+	mSecondPlayerControllerIndex = theControllerIndex;
+	if (!mSeedBank2)
+		mSeedBank2 = std::make_unique<SeedBank>();
+	if (!mCursorObject2)
+		mCursorObject2 = std::make_unique<CursorObject>();
+	if (!mCursorPreview2)
+		mCursorPreview2 = std::make_unique<CursorPreview>();
+	if (mApp->IsVersusMode())
+	{
+		// The zombie side's seed bank isn't a fixed picked deck (there's no per-match
+		// income/currency for it either -- see Challenge::UpdateMPZombieBank, the
+		// decompiled build's real mechanic): it's a conveyor belt that fills on its own
+		// over time, same idea as the existing Board::HasConveyorBeltSeedBank() modes.
+		// Starts empty; all SEEDBANK_MAX slots are just capacity for the belt to fill.
+		mSeedBank2->mNumPackets = SEEDBANK_MAX;
+		for (int i = 0; i < mSeedBank2->mNumPackets; i++)
+		{
+			mSeedBank2->mSeedPackets[i].mPacketType = SeedType::SEED_NONE;
+			mSeedBank2->mSeedPackets[i].mIndex = i;
+		}
+	}
+	// Co-op has no separate second bank to populate here -- Player2KeyDown reads straight
+	// from the shared mSeedBank (see its comment). mSeedBank2 for co-op just stays the
+	// empty object allocated above, unused.
+	mPlayer2SelectedSeedIndex = 0;
+
+	// NOT calling PvzpLoadResources("DelayLoad_Multiplayer") here: none of that group's
+	// images/sounds are declared in this port's resource manifest (no art shipped for this
+	// feature), so ResourceManager::GetImageThrow fails the very first lookup and
+	// PvzpLoadResources responds by calling SexyAppBase::ShowResourceError(true) -- which
+	// exits the game. That's not a graceful per-asset fallback the way a missing
+	// mAllowMissingProgramResources asset is; it's a fatal error path shared by every
+	// DelayLoad_* group in this codebase. Until real art/audio exists for this group, it
+	// must stay declared (see Resources.h) but never triggered -- see the IMAGE_REANIM_
+	// ZOMBIE_TRASHCAN1/2/3 null-check in Zombie.cpp for how callers already tolerate it
+	// never having loaded.
+}
+
 void Board::ProcessDeleteQueue()
 {
 	{
@@ -9553,6 +9940,31 @@ void Board::UpdateGridItems()
 			}
 			if (aGridItem->mGridItemCounter == 0)
 			{
+				aGridItem->GridItemDie();
+			}
+		}
+
+		// Ported from Challenge::UpdateMPGraveStones in the decompiled build (moved here to
+		// sit next to the GRIDITEM_GRAVESTONE/GRIDITEM_CRATER counters above, which this
+		// port already updates in Board rather than Challenge). The decompiled function
+		// reads a per-mound "tier" field (set from Board::AddAMound's 3rd argument) only to
+		// pick the rising zombie's type/strength -- a second, separate field controls how
+		// many zombies rise, and every AddAMound call site leaves that field at its
+		// zero-initialized default, which makes the rise loop run exactly once. So each
+		// mound (each SEED_ZOMBIE_MOUND placement) rises exactly one zombie -- consistent
+		// with a mound being one placed "seed" -- and mSunCount here is that tier, not a
+		// spawn count.
+		if (aGridItem->mGridItemType == GridItemType::GRIDITEM_MP_MOUND && mApp->mGameScene == GameScenes::SCENE_PLAYING)
+		{
+			aGridItem->mGridItemCounter++;
+			if (aGridItem->mGridItemCounter > 499)
+			{
+				ZombieType aZombieType = PickGraveRisingZombieTypeMP(aGridItem->mSunCount);
+				Zombie* aZombie = AddZombie(aZombieType, -5);
+				if (aZombie)
+				{
+					aZombie->RiseFromGrave(aGridItem->mGridX, aGridItem->mGridY);
+				}
 				aGridItem->GridItemDie();
 			}
 		}

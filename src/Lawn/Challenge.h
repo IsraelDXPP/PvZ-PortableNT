@@ -75,6 +75,23 @@ public:
 	int32_t                 mChallengeScore;
 	int32_t                mShowBowlingLine;
 	SeedType                mLastConveyorSeedType;
+	// Versus mode's zombie side (Challenge::UpdateMPZombieBank in the decompiled build):
+	// mSeedBank2 is a conveyor belt like mSeedBank's above, just fed from the SEED_ZOMBIE_*
+	// pool instead of plant seeds -- see UpdateMPZombieBank's comment for what's ported.
+	int32_t                 mMPZombieBankCounter = 0;
+	SeedType                mLastMPZombieSeedType = SeedType::SEED_NONE;
+	// Versus mode's "sudden death": Challenge::IsMPSuddenDeath in the decompiled build
+	// compares elapsed real time against a 300-second (5 minute) threshold, adjusting for
+	// time spent paused. This port has no wall-clock timing anywhere else, so this uses
+	// Board::mMainCounter (which already freezes while Board::mPaused is set -- see
+	// Board::Update -- so no separate pause-adjustment is needed) instead of GetTickCount;
+	// see IsMPSuddenDeath's comment for the tick-rate math.
+	int32_t                 mMPSuddenDeathStartTick = -1;
+	bool                    mMPSuddenDeathMessageShown = false;
+	// Versus mode auto-spawns a Bobsled Zombie team periodically regardless of player
+	// placement (Challenge::Update's GameMode::GAMEMODE_VERSUS branch in the decompiled
+	// build) -- see UpdateMPBobsled's comment for the ported behavior.
+	int32_t                 mMPBobsledCounter = 6000;
 	int32_t                 mSurvivalStage;
 	int32_t                 mSlotMachineRollCount;
 	ReanimationID           mReanimChallenge;
@@ -146,6 +163,9 @@ public:
 	void                    UpdateRainingSeeds();
 	void         PlayBossEnter();
 	void                    UpdateConveyorBelt();
+	void                    UpdateMPZombieBank();
+	bool                    IsMPSuddenDeath();
+	void                    UpdateMPBobsled();
 	void                    PortalStart();
 	void                    UpdatePortalCombat();
 	GridItem*               GetOtherPortal(GridItem* thePortal);
@@ -181,6 +201,7 @@ public:
 	void                    ScaryPotterMalletPot(GridItem* theScaryPot);
 	static ZombieType       IZombieSeedTypeToZombieType(SeedType theSeedType);
 	static int  IsZombieSeedType(SeedType theSeedType);
+	static bool             IsMPResourceProducer(SeedType theSeedType);
 	void                    IZombieMouseDownWithZombie(int theX, int theY, int theClickCount);
 	void                    IZombieStart();
 	void                    IZombiePlacePlants(SeedType theSeedType, int theCount, int theGridY = -1);

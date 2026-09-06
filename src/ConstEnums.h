@@ -321,6 +321,7 @@ enum Dialogs : int32_t
 	DIALOG_ZOMBATAR_TOS,                        // 51: terms of service
 	DIALOG_ZOMBATAR_DELETE,                     // 52
 	DIALOG_CHALLENGE_PAGES,                     // 53: page selection overlay for the challenge screen
+	DIALOG_MULTIPLAYER_COOP,                    // 54: "play co-op?" (LawnApp::DoCoopSetupDialog)
 	NUM_DIALOGS
 };
 enum DebugTextMode : int32_t
@@ -452,7 +453,54 @@ enum GameMode : int32_t
 	GAMEMODE_PUZZLE_I_ZOMBIE_ENDLESS,
 	GAMEMODE_UPSELL,
 	GAMEMODE_INTRO,
+	// Console/Android TV local-multiplayer modes (LawnApp::IsCoopMode / VSSetupMenu in
+	// later PvZ builds). The original build packs these as a contiguous run of GameMode
+	// values gated by LawnApp::IsCoopMode() (13 of them); the exact count and which of the
+	// 15 single-player Survival lawns co-op offers couldn't be recovered byte-exact (their
+	// display names live in the external LawnStrings.txt, not part of the decompiled
+	// binary). Mirrored here as the same Normal/Hard/Endless x Day/Night/Pool/Fog/Roof grid
+	// regular Survival has (see Board::PickBackground) rather than collapsing it, since
+	// each background carries its own mechanics (e.g. Night is what makes gravestones
+	// appear at all -- collapsing to one fixed lawn would have silently dropped that).
+	GAMEMODE_COOP_SURVIVAL_NORMAL_STAGE_1,
+	GAMEMODE_COOP_SURVIVAL_NORMAL_STAGE_2,
+	GAMEMODE_COOP_SURVIVAL_NORMAL_STAGE_3,
+	GAMEMODE_COOP_SURVIVAL_NORMAL_STAGE_4,
+	GAMEMODE_COOP_SURVIVAL_NORMAL_STAGE_5,
+	GAMEMODE_COOP_SURVIVAL_HARD_STAGE_1,
+	GAMEMODE_COOP_SURVIVAL_HARD_STAGE_2,
+	GAMEMODE_COOP_SURVIVAL_HARD_STAGE_3,
+	GAMEMODE_COOP_SURVIVAL_HARD_STAGE_4,
+	GAMEMODE_COOP_SURVIVAL_HARD_STAGE_5,
+	GAMEMODE_COOP_SURVIVAL_ENDLESS_STAGE_1,
+	GAMEMODE_COOP_SURVIVAL_ENDLESS_STAGE_2,
+	GAMEMODE_COOP_SURVIVAL_ENDLESS_STAGE_3,
+	GAMEMODE_COOP_SURVIVAL_ENDLESS_STAGE_4,
+	GAMEMODE_COOP_SURVIVAL_ENDLESS_STAGE_5,
+	// One player's plants against another player's zombies (spent from the existing
+	// SEED_ZOMBIE_* seed bank), on the plain day lawn.
+	GAMEMODE_VERSUS,
 	NUM_GAME_MODES
+};
+
+// Which local player slot a piece of per-player UI/state belongs to in a two-player
+// (co-op or versus) game. Mirrors LawnApp::mSides / VSSetupMenu::mSides.
+enum MultiplayerSide : int32_t
+{
+	MP_SIDE_NONE = -1,
+	MP_SIDE_ONE = 0,
+	MP_SIDE_TWO = 1,
+	NUM_MP_SIDES = 2
+};
+
+// In Versus mode the two players are not symmetric: one plants, the other spawns
+// zombies (LawnApp uses the existing SEED_ZOMBIE_* SeedType entries -- shared with
+// i-Zombie -- as the "seed bank" for the zombie side, so no new ZombieType values are
+// needed).
+enum VersusRole : int32_t
+{
+	VERSUS_ROLE_PLANTS = 0,
+	VERSUS_ROLE_ZOMBIES = 1
 };
 enum GameObjectType : int32_t
 {
@@ -511,7 +559,20 @@ enum GridItemType : int32_t
 	GRIDITEM_ZEN_TOOL = 9,
 	GRIDITEM_STINKY = 10,
 	GRIDITEM_RAKE = 11,
-	GRIDITEM_IZOMBIE_BRAIN = 12
+	GRIDITEM_IZOMBIE_BRAIN = 12,
+	// Versus mode (console/Android TV Board::AddMPTarget/GetMPTargetCount/GridItem::DrawMPTarget):
+	// a destructible marker the zombie side plants on the lawn; the plant side must destroy it
+	// (shooting it damages mGridItemCounter, reused here as its hit points) to win. See the
+	// AddMPTarget/GetMPTargetCount comment in Board.h for what's ported vs. still open.
+	GRIDITEM_MP_TARGET = 13,
+	// Versus mode (console/Android TV Board::AddAMound / Challenge::UpdateMPGraveStones /
+	// Board::PickGraveRisingZombieTypeMP): what the zombie side's SEED_ZOMBIE_MOUND seed
+	// plants instead of an immediate zombie -- a one-shot marker that matures after a delay
+	// (mGridItemCounter, reused the same way GRIDITEM_MP_TARGET reuses it) and then rises a
+	// random zombie (mSunCount, reused as the rise count) before dying. Visually an
+	// "IMAGE_MP_TOMBSTONE" in the decompiled resource table, hence the name it's often
+	// described by, but the decompiled function that creates it is Board::AddAMound.
+	GRIDITEM_MP_MOUND = 14
 };
 enum GridItemState : int32_t
 {
@@ -968,6 +1029,9 @@ enum ReanimationType : uint32_t {
 	REANIM_BUSH3_NIGHT,
 	REANIM_BUSH4_NIGHT,
 	REANIM_BUSH5_NIGHT,
+	// Versus mode's destructible target marker (GRIDITEM_MP_TARGET / Board::AddMPTarget).
+	// No .reanim asset ships with this port for it yet (see the Reanimator.cpp entry).
+	REANIM_MP_TARGET,
 	NUM_REANIMS
 };
 enum ReanimLoopType : int32_t
@@ -1120,6 +1184,10 @@ enum SeedType : int32_t
 	SEED_ZOMBIE_DANCER,
 	SEED_ZOMBIE_GARGANTUAR,
 	SEED_ZOMBIE_IMP,
+	SEED_ZOMBIE_TRASHCAN,
+	// Plants a GRIDITEM_MP_MOUND instead of an immediate zombie (see its comment in
+	// GridItemType): a delayed, random zombie for a lower up-front commitment.
+	SEED_ZOMBIE_MOUND,
 	NUM_SEEDS_IN_CHOOSER = 49,
 	SEED_NONE = -1
 };
@@ -1384,6 +1452,11 @@ enum ZombieType : int32_t
 	ZOMBIE_SQUASH_HEAD,
 	ZOMBIE_TALLNUT_HEAD,
 	ZOMBIE_REDEYE_GARGANTUAR,
+	// Console/Android TV local multiplayer (Versus mode zombie seed bank). Mechanically a
+	// Screen Door Zombie (ShieldType::SHIELDTYPE_DOOR, same shield health/arms/track) with
+	// its shield image swapped to a trash-can lid via Reanimation::SetImageOverride, exactly
+	// as the decompiled build does it (it doesn't use a distinct ShieldType either).
+	ZOMBIE_TRASHCAN,
 	NUM_ZOMBIE_TYPES,
 	ZOMBIE_CACHED_POLEVAULTER_WITH_POLE,
 	NUM_CACHED_ZOMBIE_TYPES

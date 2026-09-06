@@ -54,6 +54,8 @@
 #include "Lawn/Widget/StoreScreen.h"
 #include "Lawn/Widget/CheatDialog.h"
 #include "Lawn/Widget/GameSelector.h"
+#include "Lawn/Widget/VersusSetupMenu.h"
+#include "Lawn/Widget/VersusResultsMenu.h"
 #include "Lawn/Widget/CreditScreen.h"
 #include "PvzpLib/EffectSystem.h"
 #include "PvzpLib/FilterEffect.h"
@@ -180,6 +182,9 @@ LawnApp::LawnApp()
 
 LawnApp::~LawnApp()
 {
+	delete mPlayer2Info;
+	mPlayer2Info = nullptr;
+
 	while (!mDialogMap.empty())
 	{
 		KillDialog(mDialogMap.begin()->first);
@@ -453,11 +458,26 @@ bool LawnApp::TryLoadGame()
 void LawnApp::NewGame()
 {
 	mFirstTimeGameSelector = false;
+	// Every level starts with the chooser enabled. Versus Quick/Random set this after
+	// NewGame() returns (see VersusSetupMenu::OnMenuButtonDepress), so the skip only ever
+	// applies to those two modes and can never leak into a later single-player level.
+	mVsSkipSeedChooser = false;
 
 	MakeNewBoard();
 	mBoard->InitLevel();
 	mBoardResult = BoardResult::BOARDRESULT_NONE;
 	mGameScene = GameScenes::SCENE_LEVEL_INTRO;
+
+	// Mirrors the decompiled LawnApp::NewGame: a versus game shows the vs setup screen over
+	// the just-created, live level (the board + level intro are already running underneath)
+	// instead of the single-player seed chooser. The player then picks Quick/Custom/Random,
+	// which fills the banks and closes the setup (CutScene::EndSeedChooser) into the match.
+	if (mGameMode == GameMode::GAMEMODE_VERSUS)
+	{
+		DoVersusSetupDialog();
+		mBoard->mCutScene->StartLevelIntro();
+		return;
+	}
 
 	ShowSeedChooserScreen();
 	mBoard->mCutScene->StartLevelIntro();
@@ -1970,6 +1990,10 @@ void LawnApp::ButtonDepress(int theId)
 			FinishTimesUpDialog();
 			return;
 
+		case Dialogs::DIALOG_MULTIPLAYER_COOP:
+			FinishCoopSetupDialog(true);
+			return;
+
 		case 20008:
 			KillDialog(20008);
 			KillDialog(Dialogs::DIALOG_CHECKING_UPDATES);
@@ -2016,6 +2040,10 @@ void LawnApp::ButtonDepress(int theId)
 
 		case Dialogs::DIALOG_TIMESUP:
 			FinishTimesUpDialog();
+			return;
+
+		case Dialogs::DIALOG_MULTIPLAYER_COOP:
+			FinishCoopSetupDialog(false);
 			return;
 
 		case 10008:
@@ -2065,7 +2093,11 @@ bool LawnApp::IsAdventureMode()
 
 bool LawnApp::IsSurvivalMode()
 {
-	return mGameMode >= GameMode::GAMEMODE_SURVIVAL_NORMAL_STAGE_1 && mGameMode <= GameMode::GAMEMODE_SURVIVAL_ENDLESS_STAGE_5;
+	// Co-op is a Survival variant (confirmed by the decompiled LawnApp::IsSurvivalMode,
+	// which likewise returns true for part of the co-op GameMode range): it needs the same
+	// wave/flag/potted-plant-chance rules Board.cpp gates on IsSurvivalMode() everywhere,
+	// just with a second player sharing the lawn.
+	return (mGameMode >= GameMode::GAMEMODE_SURVIVAL_NORMAL_STAGE_1 && mGameMode <= GameMode::GAMEMODE_SURVIVAL_ENDLESS_STAGE_5) || IsCoopMode();
 }
 
 bool LawnApp::IsPuzzleMode()
@@ -2077,25 +2109,171 @@ bool LawnApp::IsPuzzleMode()
 
 bool LawnApp::IsChallengeMode()
 {
-	return !IsAdventureMode() && !IsPuzzleMode() && !IsSurvivalMode();
+	return !IsAdventureMode() && !IsPuzzleMode() && !IsSurvivalMode() && !IsMultiplayerMode();
+}
+
+bool LawnApp::IsCoopMode()
+{
+	return mGameMode >= GameMode::GAMEMODE_COOP_SURVIVAL_NORMAL_STAGE_1 && mGameMode <= GameMode::GAMEMODE_COOP_SURVIVAL_ENDLESS_STAGE_5;
+}
+
+bool LawnApp::IsVersusMode()
+{
+	return mGameMode == GameMode::GAMEMODE_VERSUS;
+}
+
+bool LawnApp::IsMultiplayerMode()
+{
+	return IsCoopMode() || IsVersusMode();
+}
+
+bool LawnApp::IsTwoPlayerGame()
+{
+	return IsMultiplayerMode() && mPlayer2Info != nullptr && mSecondPlayerControllerIndex != -1;
+}
+
+bool LawnApp::IsTwinSunbankMode()
+{
+	// Versus always gives each side its own resource pool (sun for plants, brains for
+	// zombies); co-op defaults to one shared sun pool, same as splitting seed slots on a
+	// single lawn in the original console build.
+	return IsVersusMode();
+}
+
+void LawnApp::SetSecondPlayer(int theControllerIndex)
+{
+	PVZP_ASSERT(theControllerIndex != -1);
+	mSecondPlayerControllerIndex = theControllerIndex;
+	if (mBoard)
+		mBoard->AddSecondPlayer(theControllerIndex);
+	if (!mPlayer2Info)
+		mPlayer2Info = new PlayerInfo();
+}
+
+// Entry points for local versus/co-op, reached from GameSelector's real "Versus" and
+// "Co-op" buttons (GameSelector::GameSelector_Versus/Coop -- the console/Android TV
+// build's MainMenu.menu.txt has separate top-level VS_BUTTON and VS_COOP_BUTTON entries,
+// peers of MINI_GAMES_BUTTON, not nested inside it or each other).
+//
+// Versus shows the real, user-extracted VSSetupMenu.txt through VersusSetupMenu (Sexy::
+// MenuWidget/MenuParser -- see MenuWidget.h). Its Quick Play starts a match now; Custom
+// Battle/Random Battle lead to VSSetupSides.txt -> VSSetupControllers.txt (also real,
+// also extracted), which pick a lawn/side and detect a second controller -- built with
+// widget types and input this port doesn't have, so VersusSetupMenu says so rather than
+// silently running Quick Play's flow for them.
+//
+// Co-op has no equivalent extracted script (VS_COOP_BUTTON's own setup screen wasn't
+// captured), so it keeps a plain Yes/No confirmation with the engine's existing generic
+// dialog.
+void LawnApp::DoVersusSetupDialog()
+{
+	PVZP_ASSERT(mVersusSetupMenu == nullptr);
+	mVersusSetupMenu = std::make_unique<VersusSetupMenu>(this);
+	mVersusSetupMenu->Resize(0, 0, mWidth, mHeight);
+	mWidgetManager->AddWidget(mVersusSetupMenu.get());
+	// Keyboard input only routes to the focused widget (WidgetManager::KeyDown), so grab
+	// focus right away -- otherwise the gamepad/arrow navigation never reaches the menu.
+	mWidgetManager->SetFocus(mVersusSetupMenu.get());
+}
+
+// Versus is entered from GameSelector::ButtonDepress, which runs synchronously inside the
+// Versus button's MouseUp (WidgetManager::MouseUp). StartMultiplayerGame tears the whole
+// widget tree down (KillGameSelector frees the selector we're dispatching from) and re-adds
+// it (MakeNewBoard + DoVersusSetupDialog's AddWidget), and that AddWidget's MarkDirtyFull
+// walk then hits a widget that was freed mid-dispatch -> use-after-free. Defer the boot so
+// it happens in UpdateApp, after the mouse event has fully returned.
+void LawnApp::RequestVersusGame()
+{
+	mPendingVersusBoot = true;
+}
+
+void LawnApp::KillVersusSetupMenu()
+{
+	if (mVersusSetupMenu)
+	{
+		mWidgetManager->RemoveWidget(mVersusSetupMenu.get());
+		SafeDeleteWidget(mVersusSetupMenu.release());
+	}
+}
+
+void LawnApp::ShowVersusResultsMenu()
+{
+	if (mVersusResultsMenu)
+		return;
+
+	// The match is over but mBoard isn't killed (VersusResultsMenu overlays it, the same way
+	// VersusSetupMenu overlays the game selector underneath it) -- pause so zombies/plants
+	// don't keep acting behind the results screen.
+	if (mBoard)
+		mBoard->Pause(true);
+
+	mVersusResultsMenu = std::make_unique<VersusResultsMenu>(this);
+	mVersusResultsMenu->Resize(0, 0, mWidth, mHeight);
+	mWidgetManager->AddWidget(mVersusResultsMenu.get());
+	mWidgetManager->SetFocus(mVersusResultsMenu.get());
+}
+
+void LawnApp::KillVersusResultsMenu()
+{
+	if (mVersusResultsMenu)
+	{
+		mWidgetManager->RemoveWidget(mVersusResultsMenu.get());
+		SafeDeleteWidget(mVersusResultsMenu.release());
+	}
+}
+
+void LawnApp::DoCoopSetupDialog()
+{
+	DoDialog(Dialogs::DIALOG_MULTIPLAYER_COOP, true, "[MULTIPLAYER_COOP_HEADER]", "[MULTIPLAYER_COOP_LINES]", "", Dialog::BUTTONS_YES_NO);
+}
+
+void LawnApp::FinishCoopSetupDialog(bool isYes)
+{
+	KillDialog(Dialogs::DIALOG_MULTIPLAYER_COOP);
+	if (isYes)
+	{
+		// STAGE_2 (Night) rather than STAGE_1 (Day): it's the only one of the five co-op
+		// lawns with gravestones (Board::StageHasGraveStones()), and picking a lawn is part
+		// of the still-missing VSSetupMenu UI.
+		StartMultiplayerGame(GameMode::GAMEMODE_COOP_SURVIVAL_NORMAL_STAGE_2);
+	}
+}
+
+void LawnApp::StartMultiplayerGame(GameMode theGameMode)
+{
+	KillGameSelector();
+	PreNewGame(theGameMode, false); // PreNewGame already calls NewGame() (which for versus
+	                                // creates the setup menu); do not boot the level twice.
+
+	// Player two's actual input (SexyAppFramework's gamepad support merges every connected
+	// controller into one shared virtual cursor -- see platform/default/Input.cpp -- there
+	// is no per-device routing to assign a real second controller to) is the keyboard
+	// stand-in in Board::Player2KeyDown, not a second mouse/controller. Index 1 is just an
+	// identifier marking "player two exists" for LawnApp/Board's state; SetSecondPlayer
+	// doesn't read it as a real device index.
+	constexpr int kSecondPlayerPlaceholderControllerIndex = 1;
+	SetSecondPlayer(kSecondPlayerPlaceholderControllerIndex);
 }
 
 bool LawnApp::IsSurvivalNormal(GameMode theGameMode)
 {
 	int aLevel = theGameMode - GameMode::GAMEMODE_SURVIVAL_NORMAL_STAGE_1;
-	return aLevel >= 0 && aLevel <= 4;
+	int aCoopLevel = theGameMode - GameMode::GAMEMODE_COOP_SURVIVAL_NORMAL_STAGE_1;
+	return (aLevel >= 0 && aLevel <= 4) || (aCoopLevel >= 0 && aCoopLevel <= 4);
 }
 
 bool LawnApp::IsSurvivalHard(GameMode theGameMode)
 {
 	int aLevel = theGameMode - GameMode::GAMEMODE_SURVIVAL_HARD_STAGE_1;
-	return aLevel >= 0 && aLevel <= 4;
+	int aCoopLevel = theGameMode - GameMode::GAMEMODE_COOP_SURVIVAL_HARD_STAGE_1;
+	return (aLevel >= 0 && aLevel <= 4) || (aCoopLevel >= 0 && aCoopLevel <= 4);
 }
 
 bool LawnApp::IsSurvivalEndless(GameMode theGameMode)
 {
 	int aLevel = theGameMode - GameMode::GAMEMODE_SURVIVAL_ENDLESS_STAGE_1;
-	return aLevel >= 0 && aLevel <= 4;
+	int aCoopLevel = theGameMode - GameMode::GAMEMODE_COOP_SURVIVAL_ENDLESS_STAGE_1;
+	return (aLevel >= 0 && aLevel <= 4) || (aCoopLevel >= 0 && aCoopLevel <= 4);
 }
 
 bool LawnApp::IsEndlessScaryPotter(GameMode theGameMode)
@@ -2281,6 +2459,24 @@ int LawnApp::GetCurrentChallengeIndex()
 
 const ChallengeDefinition& LawnApp::GetCurrentChallengeDef()
 {
+	// GetChallengeDefinition()/GetCurrentChallengeIndex() index gChallengeDefs by
+	// (mGameMode - GAMEMODE_SURVIVAL_NORMAL_STAGE_1), which only covers the modes gChallengeDefs
+	// was built for (see the NUM_CHALLENGE_MODES comment in ChallengeScreen.h) -- local
+	// co-op/versus modes are past the end of that table and would read out of bounds. This
+	// is the single choke point every caller (level UI, the intro cutscene's house message,
+	// GameOverDialog, ...) goes through, so guard it here rather than at each call site.
+	if (IsMultiplayerMode())
+	{
+		static ChallengeDefinition sMultiplayerChallengeDef{};
+		sMultiplayerChallengeDef.mChallengeMode = mGameMode;
+		sMultiplayerChallengeDef.mChallengeIconIndex = 0;
+		sMultiplayerChallengeDef.mPage = ChallengePage::CHALLENGE_PAGE_CHALLENGE;
+		sMultiplayerChallengeDef.mRow = 0;
+		sMultiplayerChallengeDef.mCol = 0;
+		sMultiplayerChallengeDef.mChallengeName = IsVersusMode() ? "Versus" : "Co-op Survival";
+		sMultiplayerChallengeDef.mHasTrophy = false;
+		return sMultiplayerChallengeDef;
+	}
 	return GetChallengeDefinition(GetCurrentChallengeIndex());
 }
 
@@ -2306,6 +2502,14 @@ bool LawnApp::UpdateApp()
 	{
 		Shutdown();
 		return false;
+	}
+
+	// Deferred versus entry: run the widget-tree teardown/rebuild here (outside any mouse
+	// event dispatch) so the WidgetManager isn't walking freed widgets. See RequestVersusGame.
+	if (mPendingVersusBoot)
+	{
+		mPendingVersusBoot = false;
+		StartMultiplayerGame(GameMode::GAMEMODE_VERSUS);
 	}
 
 	//if (mLoadingThreadCompleted)
@@ -2524,7 +2728,11 @@ bool LawnApp::HasBeatenChallenge(GameMode theGameMode)
 		return false;
 
 	int aChallengeIndex = theGameMode - GameMode::GAMEMODE_SURVIVAL_NORMAL_STAGE_1;
-	PVZP_ASSERT(aChallengeIndex >= 0 && aChallengeIndex < NUM_CHALLENGE_MODES);
+	// Bounded against mChallengeRecords itself, not NUM_CHALLENGE_MODES (gChallengeDefs'
+	// size): local co-op survival reuses this same "beaten" tracking one slot past where
+	// gChallengeDefs ends (see GetCurrentChallengeDef's comment), which mChallengeRecords
+	// has room for (100 slots vs. NUM_CHALLENGE_MODES's 72).
+	PVZP_ASSERT(aChallengeIndex >= 0 && aChallengeIndex < static_cast<int>(sizeof(mPlayerInfo->mChallengeRecords) / sizeof(mPlayerInfo->mChallengeRecords[0])));
 	if (IsSurvivalNormal(theGameMode))
 	{
 		return mPlayerInfo->mChallengeRecords[aChallengeIndex] >= SURVIVAL_NORMAL_FLAGS;
@@ -3290,6 +3498,13 @@ std::string LawnGetCurrentLevelName()
 	if (gLawnApp->IsAdventureMode())
 	{
 		return std::format("F{}", gLawnApp->GetStageString(gLawnApp->mBoard->mLevel));
+	}
+	// GetCurrentChallengeDef() has no entry for the local co-op/versus modes (see the
+	// NUM_CHALLENGE_MODES comment in ChallengeScreen.h) -- avoid indexing gChallengeDefs
+	// out of bounds for them.
+	if (gLawnApp->IsMultiplayerMode())
+	{
+		return gLawnApp->IsVersusMode() ? "Versus" : "Co-op Survival";
 	}
 
 	return gLawnApp->GetCurrentChallengeDef().mChallengeName;

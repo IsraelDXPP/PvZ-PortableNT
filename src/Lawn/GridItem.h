@@ -92,6 +92,10 @@ public:
 	void					UpdateBrain();
 	void					DrawStinky(Sexy::Graphics* g);
 	bool			IsOpenPortal();
+	// Versus mode's MP Target (GRIDITEM_MP_TARGET / Board::AddMPTarget) so far: nothing
+	// else on the lawn takes projectile damage. mGridItemCounter is reused as hit points,
+	// same as Board::AddMPTarget initializes it to MP_TARGET_HEALTH.
+	void					TakeDamage(int theDamage);
 };
 
 #endif

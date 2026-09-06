@@ -28,6 +28,7 @@
 #include "LawnMower.h"
 #include "SeedPacket.h"
 #include "../LawnApp.h"
+#include "Widget/VersusSetupMenu.h"
 #include "System/Music.h"
 #include "../Resources.h"
 #include "MessageWidget.h"
@@ -619,6 +620,19 @@ void CutScene::PlaceLawnItems()
 	{
 		mBoard->PlaceRake();
 	}
+
+	// Ported from the decompiled build's Versus match setup: one MP Target in the last
+	// column of every row (the default Challenge::gVSWinMode == 1 case -- its 2/3 variants
+	// skip specific rows and turned out to be debug/playtesting toggles, per the
+	// GridItem::TakeDamage comment on the win condition they gate).
+	if (mApp->IsVersusMode())
+	{
+		int aNumRows = mBoard->StageHas6Rows() ? MAX_GRID_SIZE_Y : MAX_GRID_SIZE_Y - 1;
+		for (int aRow = 0; aRow < aNumRows; aRow++)
+		{
+			mBoard->AddMPTarget(MAX_GRID_SIZE_X - 1, aRow);
+		}
+	}
 }
 
 bool CutScene::IsSurvivalRepick()
@@ -639,7 +653,8 @@ bool CutScene::IsNonScrollingCutscene()
 		mApp->IsWhackAZombieLevel() ||
 		mApp->IsShovelLevel() ||
 		mApp->IsSquirrelLevel() ||
-		mApp->IsWallnutBowlingLevel();
+		mApp->IsWallnutBowlingLevel() ||
+		mApp->IsVersusMode();
 }
 
 bool CutScene::IsScrolledLeftAtStart()
@@ -685,9 +700,14 @@ void CutScene::StartLevelIntro()
 	mCutsceneTime = 0;
 	mBoard->mSeedBank->Move(SEED_BANK_OFFSET_X, -IMAGE_SEEDBANK->GetHeight());
 	mBoard->mMenuButton->mBtnNoDraw = true;
-	mApp->mSeedChooserScreen->mMouseVisible = false;
-	mApp->mSeedChooserScreen->Move(0, SEED_CHOOSER_OFFSET_Y);
-	mApp->mSeedChooserScreen->mMenuButton->mBtnNoDraw = true;
+	// Console parity: the original null-checks mSeedChooserScreen before poking it. It is
+	// never created in VERSUS Quick/Random (mVsSkipSeedChooser), so guard against null.
+	if (mApp->mSeedChooserScreen)
+	{
+		mApp->mSeedChooserScreen->mMouseVisible = false;
+		mApp->mSeedChooserScreen->Move(0, SEED_CHOOSER_OFFSET_Y);
+		mApp->mSeedChooserScreen->mMenuButton->mBtnNoDraw = true;
+	}
 	mBoard->mShowShovel = false;
 	mBoard->mSeedBank->mCutSceneDarken = 255;
 	mPlacedZombies = false;
@@ -891,7 +911,13 @@ void CutScene::StartLevelIntro()
 	std::string aHouseMessage;
 	if (mCrazyDaveTime <= 0 && mApp->mGameMode != GameMode::GAMEMODE_INTRO)
 	{
-		if (mApp->IsSurvivalMode())
+		if (mApp->IsMultiplayerMode())
+		{
+			// GetCurrentChallengeDef() has no entry for these (see the NUM_CHALLENGE_MODES
+			// comment in ChallengeScreen.h); avoid indexing gChallengeDefs out of bounds.
+			aHouseMessage = mApp->IsVersusMode() ? "Versus" : "Co-op Survival";
+		}
+		else if (mApp->IsSurvivalMode())
 		{
 			aHouseMessage = mApp->GetCurrentChallengeDef().mChallengeName;
 		}
@@ -1145,26 +1171,37 @@ void CutScene::AnimateBoard()
 		mBoard->Move(-aPanOffset, 0);
 	}
 
-	// Seed chooser animation
+	// Seed chooser animation (binary null-checks all three screens)
 	if (mBoard->ChooseSeedsOnCurrentLevel())
 	{
 		int aTimeSeedChoserSlideOnStart = TimeSeedChoserSlideOnStart + mCrazyDaveTime;
 		int aTimeSeedChoserSlideOnEnd = TimeSeedChoserSlideOnEnd + mCrazyDaveTime;
-		SeedChooserScreen* aSeedChoser = mApp->mSeedChooserScreen.get();
 		// Seed chooser slides on
 		if (mCutsceneTime > aTimeSeedChoserSlideOnStart && mCutsceneTime <= aTimeSeedChoserSlideOnEnd)
 		{
-			aSeedChoser->Move(0, CalcPosition(aTimeSeedChoserSlideOnStart, aTimeSeedChoserSlideOnEnd, SEED_CHOOSER_OFFSET_Y, 0));
-			aSeedChoser->mMenuButton->mY = CalcPosition(aTimeSeedChoserSlideOnStart, aTimeSeedChoserSlideOnEnd, -50, -10);
-			aSeedChoser->mMenuButton->mBtnNoDraw = false;
+			int aY = CalcPosition(aTimeSeedChoserSlideOnStart, aTimeSeedChoserSlideOnEnd, SEED_CHOOSER_OFFSET_Y, 0);
+			if (mApp->mSeedChooserScreen)
+			{
+				mApp->mSeedChooserScreen->Move(0, aY);
+				mApp->mSeedChooserScreen->mMenuButton->mY = CalcPosition(aTimeSeedChoserSlideOnStart, aTimeSeedChoserSlideOnEnd, -50, -10);
+				mApp->mSeedChooserScreen->mMenuButton->mBtnNoDraw = false;
+			}
+			if (mApp->mVersusSetupMenu)
+				mApp->mVersusSetupMenu->Move(0, aY);
 		}
 		// Seed chooser slides off
 		int aTimeSeedChoserSlideOffStart = TimeSeedChoserSlideOffStart + mCrazyDaveTime;
 		int aTimeSeedChoserSlideOffEnd = TimeSeedChoserSlideOffEnd + mCrazyDaveTime;
 		if (mCutsceneTime > aTimeSeedChoserSlideOffStart && mCutsceneTime <= aTimeSeedChoserSlideOffEnd)
 		{
-			aSeedChoser->Move(0, CalcPosition(aTimeSeedChoserSlideOffStart, aTimeSeedChoserSlideOffEnd, 0, SEED_CHOOSER_OFFSET_Y));
-			aSeedChoser->mMenuButton->mDisabled = true;
+			int aY = CalcPosition(aTimeSeedChoserSlideOffStart, aTimeSeedChoserSlideOffEnd, 0, SEED_CHOOSER_OFFSET_Y);
+			if (mApp->mSeedChooserScreen)
+			{
+				mApp->mSeedChooserScreen->Move(0, aY);
+				mApp->mSeedChooserScreen->mMenuButton->mDisabled = true;
+			}
+			if (mApp->mVersusSetupMenu)
+				mApp->mVersusSetupMenu->Move(0, aY);
 		}
 	}
 
@@ -1328,7 +1365,9 @@ void CutScene::AnimateBoard()
 		}
 	}
 
-	mApp->mSeedChooserScreen->mParent->BringToFront(mApp->mSeedChooserScreen.get());
+	// Console parity: mSeedChooserScreen is null in VERSUS Quick/Random (never created).
+	if (mApp->mSeedChooserScreen && mApp->mSeedChooserScreen->mParent)
+		mApp->mSeedChooserScreen->mParent->BringToFront(mApp->mSeedChooserScreen.get());
 }
 
 void CutScene::ShowShovel()
@@ -1359,17 +1398,29 @@ bool CutScene::IsInShovelTutorial()
 
 void CutScene::StartSeedChooser()
 {
-	mApp->mSeedChooserScreen->mMouseVisible = true;
 	mSeedChoosing = true;
-	mApp->mWidgetManager->SetFocus(mApp->mSeedChooserScreen.get());
+	if (mApp->mSeedChooserScreen)
+		mApp->mSeedChooserScreen->mMouseVisible = true;
+	if (mApp->mVersusSetupMenu)
+		mApp->mVersusSetupMenu->mMouseVisible = true;
+	if (mApp->mSeedChooserScreen || mApp->mVersusSetupMenu)
+		mApp->mWidgetManager->SetFocus(mApp->mSeedChooserScreen ?
+			static_cast<Widget*>(mApp->mSeedChooserScreen.get()) :
+			static_cast<Widget*>(mApp->mVersusSetupMenu.get()));
 }
 
 void CutScene::EndSeedChooser()
 {
-	mApp->mSeedChooserScreen->mMouseVisible = false;
+	if (mApp->mSeedChooserScreen)
+		mApp->mSeedChooserScreen->mMouseVisible = false;
 	mSeedChoosing = false;
-	mCutsceneTime = mCrazyDaveTime + TimeSeedChoserSlideOnEnd + 10;
+	if (IsNonScrollingCutscene())
+		mCutsceneTime = TimePanLeftEnd + mCrazyDaveTime;
+	else
+		mCutsceneTime = mCrazyDaveTime + TimeSeedChoserSlideOnEnd + 10;
 	mApp->mWidgetManager->SetFocus(mBoard);
+	if (mApp->IsVersusMode())
+		mBoard->mEnableGraveStones = true;
 }
 
 bool CutScene::IsShowingCrazyDave()

@@ -515,6 +515,18 @@ void DrawSeedPacket(Graphics* g, float x, float y, SeedType theSeedType, SeedTyp
 		aOffsetY = 3.0f;
 		break;
 
+	case SeedType::SEED_ZOMBIE_TRASHCAN:
+		aScale = 0.3f;
+		aOffsetX = -3.0f;
+		aOffsetY = -4.0f;
+		break;
+
+	case SeedType::SEED_ZOMBIE_MOUND:
+		aScale = 0.3f;
+		aOffsetX = -3.0f;
+		aOffsetY = -4.0f;
+		break;
+
 	case SeedType::SEED_BEGHOULED_BUTTON_SHUFFLE:
 	case SeedType::SEED_BEGHOULED_BUTTON_CRATER:
 	case SeedType::SEED_SLOT_MACHINE_SUN:
@@ -767,6 +779,18 @@ void SeedPacket::MouseDown([[maybe_unused]] int x, [[maybe_unused]] int y, [[may
 			{
 				mBoard->DisplayAdvice("[ADVICE_CANT_AFFORD_PLANT]", MessageStyle::MESSAGE_STYLE_TUTORIAL_LEVEL1, AdviceType::ADVICE_CANT_AFFORD_PLANT);
 			}
+			return;
+		}
+
+		// Ported from the decompiled build's GamepadControls seed-selection path (this port
+		// selects plant-side seeds with the mouse instead, so the check moves here):
+		// once Versus mode's sudden death kicks in (Challenge::IsMPSuddenDeath), resource-
+		// producer seeds (Challenge::IsMPResourceProducer -- Sunflower/Sun-shroom/Twin
+		// Sunflower) can no longer be selected, so a stalled match can't keep growing its
+		// economy instead of finishing.
+		if (mApp->IsVersusMode() && mBoard->mChallenge->IsMPSuddenDeath() && Challenge::IsMPResourceProducer(aUseSeedType))
+		{
+			mApp->PlaySample(SOUND_BUZZER);
 			return;
 		}
 

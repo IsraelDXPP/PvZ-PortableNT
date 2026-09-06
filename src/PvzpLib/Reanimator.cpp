@@ -194,6 +194,7 @@ constinit const ReanimationParams gLawnReanimationArray[ReanimationType::NUM_REA
 	{ .mReanimationType = ReanimationType::REANIM_BUSH3_NIGHT, .mReanimFileName = "reanim/Night_bushes3.reanim", .mReanimParamFlags = 0 },
 	{ .mReanimationType = ReanimationType::REANIM_BUSH4_NIGHT, .mReanimFileName = "reanim/Night_bushes4.reanim", .mReanimParamFlags = 0 },
 	{ .mReanimationType = ReanimationType::REANIM_BUSH5_NIGHT, .mReanimFileName = "reanim/Night_bushes5.reanim", .mReanimParamFlags = 0 },
+	{ .mReanimationType = ReanimationType::REANIM_MP_TARGET, .mReanimFileName = "reanim/MPTarget.reanim", .mReanimParamFlags = 0 },
 };
 
 ReanimatorTransform::ReanimatorTransform() :

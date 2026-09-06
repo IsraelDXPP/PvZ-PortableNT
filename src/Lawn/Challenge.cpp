@@ -435,6 +435,12 @@ void Challenge::InitLevel()
 	{
 		TreeOfWisdomInit();
 	}
+	if (mApp->IsVersusMode())
+	{
+		mMPSuddenDeathStartTick = mBoard->mMainCounter;
+		mMPSuddenDeathMessageShown = false;
+		mMPBobsledCounter = 6000;
+	}
 }
 
 void Challenge::StartLevel()
@@ -1933,6 +1939,112 @@ void Challenge::UpdateConveyorBelt()
 	mLastConveyorSeedType = aSeedType;
 }
 
+void Challenge::UpdateMPZombieBank()
+{
+	// Ported from the decompiled Challenge::UpdateMPZombieBank: the zombie side's seed
+	// bank in Versus isn't a fixed picked deck like the plant side's -- it's a conveyor
+	// belt (same idea as Board::HasConveyorBeltSeedBank's modes above), just fed from the
+	// SEED_ZOMBIE_* pool and kept on Board::mSeedBank2 instead of mSeedBank so it doesn't
+	// make the plant side's bank behave like a conveyor belt too. Not reusing
+	// SeedBank::AddSeed/RemoveSeed: both assert Board::HasConveyorBeltSeedBank(), which
+	// this deliberately leaves false (only the zombie side's bank refills this way).
+	if (!mApp->IsVersusMode() || !mBoard->mSecondPlayerActive)
+		return;
+
+	SeedBank& aBank = *mBoard->mSeedBank2;
+	mMPZombieBankCounter--;
+	if (mMPZombieBankCounter > 0)
+		return;
+
+	int aNumSeedsOnBelt = aBank.GetNumSeedsOnConveyorBelt();
+	mMPZombieBankCounter = aNumSeedsOnBelt > 8 ? 1000 : aNumSeedsOnBelt > 6 ? 500 : aNumSeedsOnBelt > 4 ? 425 : 400;
+	if (aNumSeedsOnBelt >= aBank.mNumPackets)
+		return;
+
+	// The decompiled build's weighted pool is built from raw SeedType values in the
+	// console build's own enum, which numbers seeds differently from this port's (the
+	// same cross-version drift already documented for ZombieType and
+	// Board::PickGraveRisingZombieTypeMP), so it isn't safely portable 1:1. This lists
+	// every SEED_ZOMBIE_* this port has (SEED_ZOMBIE_MOUND first, same as the fixed
+	// roster it replaces -- see the AddSecondPlayer comment), each with equal weight
+	// halved for whichever type came up last, matching the shape of the decompiled
+	// weighting (and of this port's own Challenge::UpdateConveyorBelt above) without its
+	// unrecoverable exact values.
+	static constexpr SeedType kZombieSeedPool[] = {
+		SeedType::SEED_ZOMBIE_MOUND,
+		SeedType::SEED_ZOMBIE_NORMAL,
+		SeedType::SEED_ZOMBIE_TRAFFIC_CONE,
+		SeedType::SEED_ZOMBIE_POLEVAULTER,
+		SeedType::SEED_ZOMBIE_PAIL,
+		SeedType::SEED_ZOMBIE_LADDER,
+		SeedType::SEED_ZOMBIE_DIGGER,
+		SeedType::SEED_ZOMBIE_BUNGEE,
+		SeedType::SEED_ZOMBIE_FOOTBALL,
+		SeedType::SEED_ZOMBIE_BALLOON,
+	};
+	constexpr int kZombieSeedPoolCount = sizeof(kZombieSeedPool) / sizeof(kZombieSeedPool[0]);
+	static_assert(kZombieSeedPoolCount <= SEEDBANK_MAX);
+
+	PvzpWeightedArray aSeedPickArray[kZombieSeedPoolCount];
+	for (int i = 0; i < kZombieSeedPoolCount; i++)
+	{
+		aSeedPickArray[i].mItem = kZombieSeedPool[i];
+		aSeedPickArray[i].mWeight = kZombieSeedPool[i] == mLastMPZombieSeedType ? 5 : 10;
+	}
+
+	SeedType aSeedType = (SeedType)PvzpPickFromWeightedArray(aSeedPickArray, kZombieSeedPoolCount);
+	SeedPacket& aSeedPacket = aBank.mSeedPackets[aNumSeedsOnBelt];
+	aSeedPacket.mPacketType = aSeedType;
+	aSeedPacket.mImitaterType = SeedType::SEED_NONE;
+	aSeedPacket.mIndex = aNumSeedsOnBelt;
+	aSeedPacket.mRefreshCounter = 0;
+	aSeedPacket.mRefreshTime = 0;
+	aSeedPacket.mRefreshing = false;
+	aSeedPacket.mActive = true;
+	mLastMPZombieSeedType = aSeedType;
+}
+
+bool Challenge::IsMPSuddenDeath()
+{
+	// Ported from the decompiled Challenge::IsMPSuddenDeath: true once 300 seconds (5
+	// minutes) of unpaused match time have passed in Versus. The original measures real
+	// elapsed time (Sexy::GetTickCount) minus time spent paused; this port has no
+	// wall-clock timing elsewhere; instead it counts Board::mMainCounter ticks, which
+	// already stop advancing while Board::mPaused is set (see Board::Update), so it's
+	// equivalent without needing a separate pause adjustment. Board runs its game logic
+	// at 60 ticks/second (see Board::AddAMound's comment), so 300 seconds is 18000 ticks.
+	if (!mApp->IsVersusMode() || mMPSuddenDeathStartTick == -1)
+		return false;
+	return (mBoard->mMainCounter - mMPSuddenDeathStartTick) > 18000;
+}
+
+void Challenge::UpdateMPBobsled()
+{
+	// Ported from the decompiled Challenge::Update's GameMode::GAMEMODE_VERSUS branch:
+	// unlike every other Versus zombie (all player-placed via seeds -- see
+	// UpdateMPZombieBank), a Bobsled Zombie team spawns on its own over time, the same way
+	// it does as AI-driven single-player wave content, as long as one isn't already riding
+	// (Zombie::IsBobsledTeamWithSled) and a lane is free (Board::CanAddBobSledMP, which the
+	// decompiled build shows is byte-identical to the already-ported Board::CanAddBobSled).
+	if (!mApp->IsVersusMode())
+		return;
+
+	for (Zombie* aZombie : mBoard->mZombies)
+	{
+		if (!aZombie->mDead && aZombie->IsBobsledTeamWithSled())
+			return;
+	}
+
+	if (!mBoard->CanAddBobSled())
+		return;
+
+	if (--mMPBobsledCounter > 0)
+		return;
+
+	mMPBobsledCounter = 6000;
+	mBoard->AddZombie(ZombieType::ZOMBIE_BOBSLED, Zombie::ZOMBIE_WAVE_DEBUG);
+}
+
 void Challenge::UpdateRainingSeeds()
 {
 	if (mBoard->HasLevelAwardDropped() || --mChallengeStateCounter != 0)
@@ -2166,6 +2278,17 @@ void Challenge::Update()
 	if (mBoard->HasConveyorBeltSeedBank())
 	{
 		UpdateConveyorBelt();
+	}
+	UpdateMPZombieBank();
+	UpdateMPBobsled();
+	if (mApp->IsVersusMode() && !mMPSuddenDeathMessageShown && IsMPSuddenDeath())
+	{
+		// Ported from the decompiled Challenge::Update's GameMode::GAMEMODE_VERSUS branch
+		// (its own one-shot "already shown" byte is what mMPSuddenDeathMessageShown mirrors
+		// here); AdviceType::ADVICE_NONE because that dedup is handled by this flag instead
+		// of the mHelpDisplayed[] array DisplayAdvice otherwise uses for tutorial-style hints.
+		mMPSuddenDeathMessageShown = true;
+		mBoard->DisplayAdvice("[SUDDEN_DEATH]", MessageStyle::MESSAGE_STYLE_HUGE_WAVE, AdviceType::ADVICE_NONE);
 	}
 	if (mApp->mGameMode == GAMEMODE_CHALLENGE_BEGHOULED || mApp->mGameMode == GAMEMODE_CHALLENGE_BEGHOULED_TWIST)
 	{
@@ -2454,8 +2577,10 @@ PlantingReason Challenge::CanPlantAt(int theGridX, int theGridY, SeedType theSee
 	{
 		return theGridX > 2 ? PLANTING_NOT_PASSED_LINE : PLANTING_OK;
 	}
-	else if (mApp->IsIZombieLevel())
+	else if (mApp->IsIZombieLevel() || mApp->IsVersusMode())
 	{
+		// Versus mode reuses i-Zombie's "can only plant zombies right of this column"
+		// rule rather than a rule of its own recovered from the decompiled build.
 		int aLimit = 6;
 		if (mApp->mGameMode == GAMEMODE_PUZZLE_I_ZOMBIE_1 || mApp->mGameMode == GAMEMODE_PUZZLE_I_ZOMBIE_2 || mApp->mGameMode == GAMEMODE_PUZZLE_I_ZOMBIE_3 ||
 			mApp->mGameMode == GAMEMODE_PUZZLE_I_ZOMBIE_4 || mApp->mGameMode == GAMEMODE_PUZZLE_I_ZOMBIE_5)
@@ -4272,6 +4397,12 @@ ZombieType Challenge::IZombieSeedTypeToZombieType(SeedType theSeedType)
 	case SEED_ZOMBIE_DANCER:		return ZOMBIE_DANCER;
 	case SEED_ZOMBIE_GARGANTUAR:	return ZOMBIE_GARGANTUAR;
 	case SEED_ZOMBIE_IMP:			return ZOMBIE_IMP;
+	case SEED_ZOMBIE_TRASHCAN:		return ZOMBIE_TRASHCAN;
+	// SEED_ZOMBIE_MOUND doesn't place a zombie directly (see IZombieMouseDownWithZombie,
+	// which special-cases it to Board::AddAMound before this function would ever be asked
+	// to place one) -- this mapping only matters for the seed packet's icon preview
+	// (Plant::DrawSeedPacket), which draws whatever ZombieType this returns.
+	case SEED_ZOMBIE_MOUND:		return ZOMBIE_NORMAL;
 	default:						PVZP_ASSERT(false);
 	}
 
@@ -4310,8 +4441,18 @@ void Challenge::IZombieMouseDownWithZombie(int theX, int theY, int theClickCount
 				{
 					mBoard->ClearAdvice(ADVICE_I_ZOMBIE_LEFT_OF_LINE);
 					mBoard->ClearAdvice(ADVICE_I_ZOMBIE_NOT_PASSED_LINE);
-					ZombieType aZombieType = IZombieSeedTypeToZombieType(aSeedType);
-					IZombiePlaceZombie(aZombieType, aGridX, aGridY);
+					// Versus mode's SEED_ZOMBIE_MOUND (Board::AddAMound in the decompiled
+					// build): plants a delayed marker instead of an immediate zombie. See
+					// the GRIDITEM_MP_MOUND comment in ConstEnums.h.
+					if (aSeedType == SEED_ZOMBIE_MOUND)
+					{
+						mBoard->AddAMound(aGridX, aGridY, 1);
+					}
+					else
+					{
+						ZombieType aZombieType = IZombieSeedTypeToZombieType(aSeedType);
+						IZombiePlaceZombie(aZombieType, aGridX, aGridY);
+					}
 
 					PVZP_ASSERT(mBoard->mCursorObject->mSeedBankIndex >= 0 && mBoard->mCursorObject->mSeedBankIndex < mBoard->mSeedBank->mNumPackets);
 					mBoard->mSeedBank->mSeedPackets[mBoard->mCursorObject->mSeedBankIndex].WasPlanted();
@@ -4742,7 +4883,29 @@ int Challenge::IsZombieSeedType(SeedType theSeedType)
 		theSeedType == SEED_ZOMBIE_POGO ||
 		theSeedType == SEED_ZOMBIE_DANCER ||
 		theSeedType == SEED_ZOMBIE_GARGANTUAR ||
-		theSeedType == SEED_ZOMBIE_IMP;
+		theSeedType == SEED_ZOMBIE_IMP ||
+		theSeedType == SEED_ZOMBIE_TRASHCAN ||
+		theSeedType == SEED_ZOMBIE_MOUND;
+}
+
+bool Challenge::IsMPResourceProducer(SeedType theSeedType)
+{
+	// Ported from the decompiled Challenge::IsMPResourceProducer, which checks 4 raw
+	// SeedType values (1, 9, 41, 61) against the console build's own enum. Despite the
+	// cross-version drift documented elsewhere in this file, 3 of those 4 happen to match
+	// this port's own SeedType values exactly -- SEED_SUNFLOWER == 1, SEED_SUNSHROOM == 9,
+	// SEED_TWINSUNFLOWER == 41 (see ConstEnums.h) -- which lines up with what "resource
+	// producer" means for the plant side: the 3 sun-producing plants. The 4th raw value,
+	// 61, is exactly where IsZombieSeedType/IsMPSeedType's zombie-seed range begins in the
+	// decompiled build, i.e. the FIRST zombie seed type -- the zombie side's equivalent
+	// "resource producer" seed, SEED_ZOMBIE_MOUND (Challenge::UpdateMPZombieBank lists it
+	// first in the belt's pool, same as here). So this stays a real 1:1 port, not a content
+	// re-guess: only the raw-to-symbolic mapping used this port's own already-matching enum
+	// values instead of re-deriving them.
+	return theSeedType == SeedType::SEED_SUNFLOWER ||
+		theSeedType == SeedType::SEED_SUNSHROOM ||
+		theSeedType == SeedType::SEED_TWINSUNFLOWER ||
+		theSeedType == SeedType::SEED_ZOMBIE_MOUND;
 }
 
 void Challenge::IZombieSetPlantFilterEffect(Plant* thePlant, FilterEffect theFilterEffect)

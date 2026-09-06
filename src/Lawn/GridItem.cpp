@@ -62,6 +62,32 @@ GridItem::GridItem()
 	mMotionTrailCount = 0;
 }
 
+void GridItem::TakeDamage(int theDamage)
+{
+	if (mDead || mGridItemType != GridItemType::GRIDITEM_MP_TARGET)
+		return;
+
+	mGridItemCounter -= theDamage;
+	if (mGridItemCounter <= 0)
+	{
+		GridItemDie();
+
+		// Ported from the decompiled build's GridItem::TakeDamage: once the plant side has
+		// destroyed every MP Target, they win. The decompiled version also has a
+		// Challenge::gVSWinMode == 1 variant that ends the match at <= 2 remaining rather
+		// than 0 -- that and its sibling gVSWinMode/gVSMowerCount values (2 and 3) turned
+		// out to be debug/playtesting toggles for which lawn rows get mowers (cycled by a
+		// debug key, per the decompiled source), not a shipped rule, so only the
+		// zero-remaining condition -- true regardless of gVSWinMode -- is ported here.
+		if (mApp->IsVersusMode() && mBoard->GetMPTargetCount() == 0)
+		{
+			// The real VSResultsMenu.txt screen, not the generic single-player FadeOutLevel/
+			// reward flow -- see LawnApp::ShowVersusResultsMenu's comment.
+			mApp->ShowVersusResultsMenu();
+		}
+	}
+}
+
 void GridItem::GridItemDie()
 {
 	mDead = true;
@@ -109,6 +135,13 @@ void GridItem::DrawGridItem(Graphics* g)
 	case GridItemType::GRIDITEM_SQUIRREL:                                                           break;
 	case GridItemType::GRIDITEM_STINKY:             DrawStinky(g);                                  break;
 	case GridItemType::GRIDITEM_IZOMBIE_BRAIN:      DrawIZombieBrain(g);                            break;
+	// Versus MP Targets and Mounds are created by AddMPTarget/AddAMound at every match start.
+	// Neither has shipped art in this pack (the MPTarget reanim is skipped in AddMPTarget and
+	// the mound's IMAGE_MP_TOMBSTONE doesn't exist), so like SQUIRREL they draw nothing for
+	// now -- the important part is not hitting the default assert below. They still carry real
+	// HP/hitboxes and count toward their win condition.
+	case GridItemType::GRIDITEM_MP_TARGET:                                                          break;
+	case GridItemType::GRIDITEM_MP_MOUND:                                                           break;
 	default:                                        PVZP_ASSERT(false);                                   break;
 	}
 

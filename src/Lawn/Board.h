@@ -361,7 +361,7 @@ public:
 //	inline void						MouseDownNormal(int x, int y, int theClickCount) { /* not found */; }
 	bool							CanInteractWithBoardButtons();
 	void							DrawProgressMeter(Graphics* g);
-	void							UpdateToolTip();
+	void							UpdateToolTip(const HitResult* theHitResult = nullptr);
 	Plant*							GetTopPlantAt(int theGridX, int theGridY, PlantPriority thePriority);
 	void							GetPlantsOnLawn(int theGridX, int theGridY, PlantsOnLawn* thePlantOnLawn);
 	int					CountSunFlowers();
@@ -440,14 +440,14 @@ public:
 	void							UpdateFwoosh();
 	Plant*							SpecialPlantHitTest(int x, int y);
 	void							UpdateMousePosition();
-	Plant*				ToolHitTestHelper(HitResult* theHitResult);
+	Plant*				ToolHitTestHelper(const HitResult* theHitResult);
 	Plant*				ToolHitTest(int theX, int theY);
 	bool							CanAddGraveStoneAt(int theGridX, int theGridY);
 	void							UpdateGridItems();
 	GridItem*			AddAGraveStone(int theGridX, int theGridY);
 	int								GetSurvivalFlagsCompleted();
 	bool							HasProgressMeter();
-	void							UpdateCursor();
+	void							UpdateCursor(const HitResult* theHitResult = nullptr);
 	void							UpdateTutorial();
 	SeedType						GetSeedTypeInCursor();
 	int					CountPlantByType(SeedType theSeedType);
@@ -515,7 +515,7 @@ public:
 	void				DrawPlayer2Cursor(Graphics* g);
 	void							InitLawnMowers();
 	bool					IsPlantInCursor();
-	void							HighlightPlantsForMouse(int theMouseX, int theMouseY);
+	void							HighlightPlantsForMouse(int theMouseX, int theMouseY, const HitResult* theHitResult);
 	void							ClearFogAroundPlant(Plant* thePlant, int theSize);
 	void					RemoveParticleByType(ParticleEffect theEffectType);
 	GridItem*			GetScaryPotAt(int theGridX, int theGridY);

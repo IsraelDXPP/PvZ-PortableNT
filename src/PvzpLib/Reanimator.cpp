@@ -375,12 +375,10 @@ void ReanimationCreateAtlas(ReanimatorDefinition* theDefinition, ReanimationType
 
 	PerfTimer aTimer;
 	aTimer.Start();
-	PvzpHesitationTrace("preatlas");
 	ReanimAtlas* aAtlas = new ReanimAtlas();
 	theDefinition->mReanimAtlas = aAtlas;
 	aAtlas->ReanimAtlasCreate(theDefinition);
 
-	PvzpHesitationTrace("atlas '{}'", aParam.mReanimFileName);
 	int aDuration = std::max(aTimer.GetDuration(), 0.0);
 	if (aDuration > 20 && theReanimationType != ReanimationType::REANIM_NONE)  // report slow atlas creation
 		PvzpLogLn("LOADING:Long atlas '{}' {} ms on {}", aParam.mReanimFileName, aDuration, LawnGetCurrentLevelName());
@@ -560,11 +558,15 @@ void BlendTransform(ReanimatorTransform* theResult, const ReanimatorTransform& t
 	theResult->mImage = theTransform1.mImage;
 }
 
-void Reanimation::GetCurrentTransform(int theTrackIndex, ReanimatorTransform* theTransformCurrent)
+void Reanimation::GetCurrentTransform(int theTrackIndex, ReanimatorTransform* theTransformCurrent, ReanimatorFrameTime* theFrameTime)
 {
 	ReanimatorFrameTime aFrameTime;
-	GetFrameTime(&aFrameTime);
-	GetTransformAtTime(theTrackIndex, theTransformCurrent, &aFrameTime);  // base transform interpolated between the two frames
+	if (theFrameTime == nullptr)
+	{
+		GetFrameTime(&aFrameTime);
+		theFrameTime = &aFrameTime;
+	}
+	GetTransformAtTime(theTrackIndex, theTransformCurrent, theFrameTime);  // base transform interpolated between the two frames
 
 	ReanimatorTrackInstance* aTrack = &mTrackInstances[theTrackIndex];
 	if (FloatRoundToInt(theTransformCurrent->mFrame) >= 0 && aTrack->mBlendCounter > 0)  // not a blank frame and a blend is in progress
@@ -657,11 +659,11 @@ void Reanimation::ReanimBltMatrix(Graphics* g, Image* theImage, SexyMatrix3& the
 		PvzpBltMatrix(g, theImage, theTransform, theClipRect, theColor, theDrawMode, theSrcRect);
 }
 
-bool Reanimation::DrawTrack(Graphics* g, int theTrackIndex, [[maybe_unused]] int theRenderGroup, PvzpTriangleGroup* theTriangleGroup)
+bool Reanimation::DrawTrack(Graphics* g, int theTrackIndex, [[maybe_unused]] int theRenderGroup, PvzpTriangleGroup* theTriangleGroup, ReanimatorFrameTime* theFrameTime)
 {
 	ReanimatorTransform aTransform;
 	ReanimatorTrackInstance* aTrackInstance = &mTrackInstances[theTrackIndex];
-	GetCurrentTransform(theTrackIndex, &aTransform);
+	GetCurrentTransform(theTrackIndex, &aTransform, theFrameTime);
 	int aImageFrame = FloatRoundToInt(aTransform.mFrame);  // cel index within the image
 	if (aImageFrame < 0)  // no image to draw
 		return false;
@@ -958,14 +960,18 @@ void Reanimation::DrawRenderGroup(Graphics* g, int theRenderGroup)
 {
 	if (mDead)
 		return;
+	if (mDefinition->mTracks.count == 0)
+		return;
 
 	PvzpTriangleGroup aTriangleGroup;
+	ReanimatorFrameTime aFrameTime;
+	GetFrameTime(&aFrameTime);
 	for (int aTrackIndex = 0; aTrackIndex < mDefinition->mTracks.count; aTrackIndex++)
 	{
 		ReanimatorTrackInstance* aTrackInstance = &mTrackInstances[aTrackIndex];
 		if (aTrackInstance->mRenderGroup == theRenderGroup)
 		{
-			bool aTrackDrawn = DrawTrack(g, aTrackIndex, theRenderGroup, &aTriangleGroup);
+			bool aTrackDrawn = DrawTrack(g, aTrackIndex, theRenderGroup, &aTriangleGroup, &aFrameTime);
 			if (aTrackInstance->mAttachmentID != AttachmentID::ATTACHMENTID_NULL)
 			{
 				aTriangleGroup.DrawGroup(g);

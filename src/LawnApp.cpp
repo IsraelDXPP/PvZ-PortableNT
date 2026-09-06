@@ -1766,9 +1766,7 @@ void LawnApp::LoadingThreadProc()
 	PerfTimer aTimer;
 	aTimer.Start();
 
-	PvzpHesitationTrace("start loading");
 	PvzpHesitationBracket aHesitationResources("Resources");
-	PvzpHesitationTrace("loading thread start");
 
 	LoadGroup("LoadingImages", 9);
 	LoadGroup("LoadingFonts", 54);
@@ -1797,7 +1795,6 @@ void LawnApp::LoadingThreadProc()
 	TrailLoadDefinitions(gLawnTrailArray, LENGTH(gLawnTrailArray));
 	PvzpLogLn("loading '{}' {} ms", "trail", static_cast<int>(aTimer.GetDuration()));
 	aTimer.Start();
-	PvzpHesitationTrace("trail");
 
 	PvzpParticleLoadDefinitions(gLawnParticleArray, LENGTH(gLawnParticleArray));
 	//aDuration = max(aTimer.GetDuration(), 0.0);
@@ -1814,7 +1811,6 @@ void LawnApp::LoadingThreadProc()
 
 	GetNumPreloadingTasks();
 	LoadGroup("LoadingSounds", 54);
-	PvzpHesitationTrace("finished loading");
 }
 
 void LawnApp::FastLoad(GameMode theGameMode)

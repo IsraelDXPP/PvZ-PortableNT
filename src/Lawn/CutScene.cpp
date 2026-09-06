@@ -28,6 +28,7 @@
 #include "LawnMower.h"
 #include "SeedPacket.h"
 #include "../LawnApp.h"
+#include "Widget/VersusSetupMenu.h"
 #include "System/Music.h"
 #include "../Resources.h"
 #include "MessageWidget.h"
@@ -655,7 +656,8 @@ bool CutScene::IsNonScrollingCutscene()
 		mApp->IsWhackAZombieLevel() ||
 		mApp->IsShovelLevel() ||
 		mApp->IsSquirrelLevel() ||
-		mApp->IsWallnutBowlingLevel();
+		mApp->IsWallnutBowlingLevel() ||
+		mApp->IsVersusMode();
 }
 
 bool CutScene::IsScrolledLeftAtStart()
@@ -1172,26 +1174,37 @@ void CutScene::AnimateBoard()
 		mBoard->Move(-aPanOffset, 0);
 	}
 
-	// Seed chooser animation
+	// Seed chooser animation (binary null-checks all three screens)
 	if (mBoard->ChooseSeedsOnCurrentLevel())
 	{
 		int aTimeSeedChoserSlideOnStart = TimeSeedChoserSlideOnStart + mCrazyDaveTime;
 		int aTimeSeedChoserSlideOnEnd = TimeSeedChoserSlideOnEnd + mCrazyDaveTime;
-		SeedChooserScreen* aSeedChoser = mApp->mSeedChooserScreen.get();
 		// Seed chooser slides on
 		if (mCutsceneTime > aTimeSeedChoserSlideOnStart && mCutsceneTime <= aTimeSeedChoserSlideOnEnd)
 		{
-			aSeedChoser->Move(0, CalcPosition(aTimeSeedChoserSlideOnStart, aTimeSeedChoserSlideOnEnd, SEED_CHOOSER_OFFSET_Y, 0));
-			aSeedChoser->mMenuButton->mY = CalcPosition(aTimeSeedChoserSlideOnStart, aTimeSeedChoserSlideOnEnd, -50, -10);
-			aSeedChoser->mMenuButton->mBtnNoDraw = false;
+			int aY = CalcPosition(aTimeSeedChoserSlideOnStart, aTimeSeedChoserSlideOnEnd, SEED_CHOOSER_OFFSET_Y, 0);
+			if (mApp->mSeedChooserScreen)
+			{
+				mApp->mSeedChooserScreen->Move(0, aY);
+				mApp->mSeedChooserScreen->mMenuButton->mY = CalcPosition(aTimeSeedChoserSlideOnStart, aTimeSeedChoserSlideOnEnd, -50, -10);
+				mApp->mSeedChooserScreen->mMenuButton->mBtnNoDraw = false;
+			}
+			if (mApp->mVersusSetupMenu)
+				mApp->mVersusSetupMenu->Move(0, aY);
 		}
 		// Seed chooser slides off
 		int aTimeSeedChoserSlideOffStart = TimeSeedChoserSlideOffStart + mCrazyDaveTime;
 		int aTimeSeedChoserSlideOffEnd = TimeSeedChoserSlideOffEnd + mCrazyDaveTime;
 		if (mCutsceneTime > aTimeSeedChoserSlideOffStart && mCutsceneTime <= aTimeSeedChoserSlideOffEnd)
 		{
-			aSeedChoser->Move(0, CalcPosition(aTimeSeedChoserSlideOffStart, aTimeSeedChoserSlideOffEnd, 0, SEED_CHOOSER_OFFSET_Y));
-			aSeedChoser->mMenuButton->mDisabled = true;
+			int aY = CalcPosition(aTimeSeedChoserSlideOffStart, aTimeSeedChoserSlideOffEnd, 0, SEED_CHOOSER_OFFSET_Y);
+			if (mApp->mSeedChooserScreen)
+			{
+				mApp->mSeedChooserScreen->Move(0, aY);
+				mApp->mSeedChooserScreen->mMenuButton->mDisabled = true;
+			}
+			if (mApp->mVersusSetupMenu)
+				mApp->mVersusSetupMenu->Move(0, aY);
 		}
 	}
 
@@ -1388,17 +1401,29 @@ bool CutScene::IsInShovelTutorial()
 
 void CutScene::StartSeedChooser()
 {
-	mApp->mSeedChooserScreen->mMouseVisible = true;
 	mSeedChoosing = true;
-	mApp->mWidgetManager->SetFocus(mApp->mSeedChooserScreen.get());
+	if (mApp->mSeedChooserScreen)
+		mApp->mSeedChooserScreen->mMouseVisible = true;
+	if (mApp->mVersusSetupMenu)
+		mApp->mVersusSetupMenu->mMouseVisible = true;
+	if (mApp->mSeedChooserScreen || mApp->mVersusSetupMenu)
+		mApp->mWidgetManager->SetFocus(mApp->mSeedChooserScreen ?
+			static_cast<Widget*>(mApp->mSeedChooserScreen.get()) :
+			static_cast<Widget*>(mApp->mVersusSetupMenu.get()));
 }
 
 void CutScene::EndSeedChooser()
 {
-	mApp->mSeedChooserScreen->mMouseVisible = false;
+	if (mApp->mSeedChooserScreen)
+		mApp->mSeedChooserScreen->mMouseVisible = false;
 	mSeedChoosing = false;
-	mCutsceneTime = mCrazyDaveTime + TimeSeedChoserSlideOnEnd + 10;
+	if (IsNonScrollingCutscene())
+		mCutsceneTime = TimePanLeftEnd + mCrazyDaveTime;
+	else
+		mCutsceneTime = mCrazyDaveTime + TimeSeedChoserSlideOnEnd + 10;
 	mApp->mWidgetManager->SetFocus(mBoard);
+	if (mApp->IsVersusMode())
+		mBoard->mEnableGraveStones = true;
 }
 
 bool CutScene::IsShowingCrazyDave()

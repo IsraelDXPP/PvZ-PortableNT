@@ -25,6 +25,8 @@
 #include "widget/MenuWidget.h"
 #include "ConstEnums.h"
 #include <array>
+#include <map>
+#include <string>
 #include <vector>
 
 class LawnApp;
@@ -47,6 +49,15 @@ class LawnApp;
 //   gamepad B / Back     -> Escape
 //   WaitForSecondPlayer  -> a modal dialog that accepts any key for player two
 //   per-player chooser   -> the port's single SeedChooserScreen, run once per side
+//
+// Unlike the base Sexy::MenuWidget/MenuParser (which resolves images through the resource-pack
+// index and ignores the lawn-area fan-out), this class overrides LoadMenuFile with a custom
+// parser modeled on the PVZ-QEWide-Tweaks reference port: it loads the menu/VSSetupSides.txt
+// script's widgets into custom VersusImageWidget/VersusLabelWidget classes (alpha support for
+// the controller/side-glow animation), loads every image straight from disk via
+// gSexyAppBase->GetSharedImage, shifts every Resize by BOARD_ADDITIONAL_WIDTH / BOARD_OFFSET_Y
+// (the .txt coordinates are relative to the lawn, not the screen), and localizes bracketed
+// labels through PvzpStringTranslate.
 enum VSSetupState
 {
 	VSSETUP_NONE = -1,              // pre-enter sentinel (the ctor sets mState = -1)
@@ -57,7 +68,8 @@ enum VSSetupState
 };
 
 // Mirrors VSSetupMenu::ButtonType in the decompiled source: ids 9 (quick), 10 (custom),
-// 11 (random) are the three LawnButtonWidgets of VSSetupSides.txt.
+// 11 (random) are the three LawnButtonWidgets of VSSetupSides.txt (DefineWidgetIds order
+// puts QUICK_BUTTON at 9, CUSTOM_BUTTON at 10, RANDOM_BUTTON at 11).
 enum VSSetupButton
 {
 	VSSETUP_BUTTON_QUICK = 9,
@@ -84,9 +96,11 @@ public:
 	VersusRole mMode = VERSUS_ROLE_PLANTS;             // quick/custom/random selection
 	bool mQuickPlay = false;                           // byte 332: quick-play shortcut
 	int mAnimCounter = 0;                              // byte 324 alt / draw anim counter
+	int mModeFocusId = VSSETUP_BUTTON_QUICK;           // which deck-fill button the arrow keys point at
 
 public:
 	explicit VersusSetupMenu(LawnApp* theApp);
+	~VersusSetupMenu() override;
 
 	// Faithful state machine (VSSetupMenu::GoToState / OnStateEnter / OnStateExit).
 	void GoToState(VSSetupState theState);
@@ -97,8 +111,13 @@ public:
 	void SetSecondPlayerIndex(int theGamepadIndex);
 	void CloseVSSetup(bool theAccepted);
 	void OnPlayerPickedSeed(int theGamepadIndex);
+	void PreFillVersusPlantBank(const std::vector<SeedType>& theDeck);
+	void PreFillVersusZombieBank(const std::vector<SeedType>& theDeck);
 	void PickRandomPlants(std::vector<SeedType>& thePlants, const std::vector<SeedType>& theZombies);
 	void PickRandomZombies(std::vector<SeedType>& theZombies);
+	// Remapped gamepad-button handler: button 2=left, 3=right, 6=A (confirm), 7=B (back),
+	// per player number, exactly VSSetupMenu::GameButtonDown's skeleton.
+	void GameButtonDown(int theButton, int thePlayer);
 
 	// Faithful static data (VSSetupMenu::msRandomPools[72], msQuickPlayDecks[2][6]).
 	static constexpr std::array<int, 72> msRandomPools = {
@@ -113,21 +132,39 @@ public:
 		72, 78, 79, 67, 75, 71, -1, 0
 	};
 	static const std::array<std::array<SeedType, 6>, 2>& QuickPlayDecks();
+	static int msNextFirstPick; // which player picks first in the seed chooser (toggled by binary)
 
 	// Input/UI overrides.
 	void Update() override;
 	void KeyDown(Sexy::KeyCode theKey) override;
 	void OnMenuButtonDepress(int theId) override;
+	void Draw(Sexy::Graphics* g) override;
+	void AddedToManager(Sexy::WidgetManager* theManager) override;
+	void RemovedFromManager(Sexy::WidgetManager* theManager) override;
 
 private:
-	void SetUpSidesScreen();
-	void EnsureSeedChooser();
-	void PreFillVersusPlantBank(const std::vector<SeedType>& theDeck);
-	void PreFillVersusZombieBank(const std::vector<SeedType>& theDeck);
-	// Reads a loose .txt menu script (e.g. menu/VSSetupSides.txt) straight from the app's
-	// resource folder (where main.pak lives), the 1:1 console data source. Returns the
-	// full script text on success, empty string on failure (mLastError explains why).
+	// Custom VSSetupSides.txt loader (see the class comment). Shadows MenuWidget::LoadMenuFile,
+	// which is not virtual -- this class never routes through the generic MenuParser.
+	void LoadMenuFile(const std::string& theSource);
 	std::string ReadMenuScriptFromResources(const std::string& theRelativePath);
+
+	// The custom loader registers its widgets in mWidgetsByPspId (script id -> widget),
+	// unlike the generic MenuParser, so state transitions look them up from there.
+	Sexy::Widget* GetWidgetById(int theId) const
+	{
+		if (theId < 0 || theId >= kMaxMenuWidgets)
+			return nullptr;
+		return mWidgetsByPspId[theId];
+	}
+
+	// Moves the deck-fill button selection (ids 9..11) and refocuses it.
+	void SetModeFocus(int theButtonId);
+
+	// --- Custom-parser state (PVZ-QEWide-Tweaks VSSetupMenu::mWidgetsByPspId etc.) ---
+	enum { kMaxMenuWidgets = 12 };
+	Sexy::Widget* mWidgetsByPspId[kMaxMenuWidgets] = {};      // script widget id -> widget
+	std::map<std::string, int, std::less<>> mSymbolTable;     // DefineWidgetIds/Enum/Define names
+	std::vector<Sexy::Widget*> mCreatedWidgets;               // owned children (deleted by us)
 };
 
 #endif // __VERSUSSETUPMENU_H__

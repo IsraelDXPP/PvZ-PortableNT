@@ -1765,7 +1765,7 @@ void Board::InitLawnMowers()
 
 bool Board::ChooseSeedsOnCurrentLevel()
 {
-	// Versus Quick/Random pre-fill the plant bank in VSSetupMenu and start without a chooser
+	// Versus Quick/Random pre-fill the banks in VSSetupMenu and start without a chooser
 	// (matching the console build); Custom leaves this flag clear so the chooser shows.
 	if (mApp->mVsSkipSeedChooser)
 		return false;
@@ -3386,9 +3386,9 @@ void Board::UpdateToolTip()
 		}
 
 		if (mSeedBank->ContainsPoint(mWidgetManager->mLastMouseX, mWidgetManager->mLastMouseY) ||
-			mApp->mSeedChooserScreen->mAlmanacButton->IsMouseOver() ||
-			mApp->mSeedChooserScreen->mStoreButton->IsMouseOver() ||
-			mApp->mSeedChooserScreen->mImitaterButton->IsMouseOver())
+			(mApp->mSeedChooserScreen && mApp->mSeedChooserScreen->mAlmanacButton->IsMouseOver()) ||
+			(mApp->mSeedChooserScreen && mApp->mSeedChooserScreen->mStoreButton->IsMouseOver()) ||
+			(mApp->mSeedChooserScreen && mApp->mSeedChooserScreen->mImitaterButton->IsMouseOver()))
 		{
 			mToolTip->mVisible = false;
 			return;
@@ -3425,7 +3425,8 @@ void Board::UpdateToolTip()
 		mToolTip->mCenter = true;
 
 		mToolTip->mMinLeft = IMAGE_SEEDCHOOSER_BACKGROUND->GetWidth();
-		if (mApp->mSeedChooserScreen->mAlmanacButton->mBtnNoDraw && mApp->mSeedChooserScreen->mStoreButton->mBtnNoDraw)
+		if (!mApp->mSeedChooserScreen ||
+			(mApp->mSeedChooserScreen->mAlmanacButton->mBtnNoDraw && mApp->mSeedChooserScreen->mStoreButton->mBtnNoDraw))
 		{
 			mToolTip->mMaxBottom = 600;
 		}
@@ -3433,7 +3434,7 @@ void Board::UpdateToolTip()
 		{
 			mToolTip->mMaxBottom = 570;
 		}
-		if (!mApp->mSeedChooserScreen->mImitaterButton->mBtnNoDraw)
+		if (mApp->mSeedChooserScreen && !mApp->mSeedChooserScreen->mImitaterButton->mBtnNoDraw)
 		{
 			mToolTip->CalculateSize();
 			if (mX + mToolTip->mX - mToolTip->mWidth / 2 < 524)

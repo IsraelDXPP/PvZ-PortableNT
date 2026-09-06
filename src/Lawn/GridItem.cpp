@@ -135,6 +135,13 @@ void GridItem::DrawGridItem(Graphics* g)
 	case GridItemType::GRIDITEM_SQUIRREL:                                                           break;
 	case GridItemType::GRIDITEM_STINKY:             DrawStinky(g);                                  break;
 	case GridItemType::GRIDITEM_IZOMBIE_BRAIN:      DrawIZombieBrain(g);                            break;
+	// Versus MP Targets and Mounds are created by AddMPTarget/AddAMound at every match start.
+	// Neither has shipped art in this pack (the MPTarget reanim is skipped in AddMPTarget and
+	// the mound's IMAGE_MP_TOMBSTONE doesn't exist), so like SQUIRREL they draw nothing for
+	// now -- the important part is not hitting the default assert below. They still carry real
+	// HP/hitboxes and count toward their win condition.
+	case GridItemType::GRIDITEM_MP_TARGET:                                                          break;
+	case GridItemType::GRIDITEM_MP_MOUND:                                                           break;
 	default:                                        PVZP_ASSERT(false);                                   break;
 	}
 

@@ -2175,6 +2175,9 @@ void LawnApp::DoVersusSetupDialog()
 	mVersusSetupMenu = std::make_unique<VersusSetupMenu>(this);
 	mVersusSetupMenu->Resize(0, 0, mWidth, mHeight);
 	mWidgetManager->AddWidget(mVersusSetupMenu.get());
+	// Keyboard input only routes to the focused widget (WidgetManager::KeyDown), so grab
+	// focus right away -- otherwise the gamepad/arrow navigation never reaches the menu.
+	mWidgetManager->SetFocus(mVersusSetupMenu.get());
 }
 
 // Versus is entered from GameSelector::ButtonDepress, which runs synchronously inside the
@@ -2243,8 +2246,8 @@ void LawnApp::FinishCoopSetupDialog(bool isYes)
 void LawnApp::StartMultiplayerGame(GameMode theGameMode)
 {
 	KillGameSelector();
-	PreNewGame(theGameMode, false);
-	NewGame();
+	PreNewGame(theGameMode, false); // PreNewGame already calls NewGame() (which for versus
+	                                // creates the setup menu); do not boot the level twice.
 
 	// Player two's actual input (SexyAppFramework's gamepad support merges every connected
 	// controller into one shared virtual cursor -- see platform/default/Input.cpp -- there

@@ -284,8 +284,9 @@ bool MenuParser::HandleStatement(const std::vector<std::string>& theTokens)
 			mLastError = "Invalid Number of Parameters";
 			return false;
 		}
+		int anId = 0;
 		for (const std::string& aName : SplitGroup(theTokens[1]))
-			InternSymbol(aName);
+			DefineSymbol(aName, anId++);
 		return true;
 	}
 
@@ -423,6 +424,12 @@ bool MenuParser::HandleStatement(const std::vector<std::string>& theTokens)
 			mLastError = "Invalid Parameter Type";
 			return false;
 		}
+		// BUTTON_LABEL_WRAP_CENTER (2) is used by VSSetupSides.txt for centered multi-line
+		// labels. The original binary treats 2 as left-align, but the QEWide reference
+		// project maps it to BUTTON_LABEL_CENTER (0) for proper centered rendering. Our
+		// ButtonWidget::Draw only handles CENTER (0) and RIGHT (1), so map 2 → 0.
+		if (aJustify == 2)
+			aJustify = ButtonWidget::BUTTON_LABEL_CENTER;
 		aButton->mLabelJustify = aJustify;
 		return true;
 	}
@@ -538,7 +545,11 @@ bool MenuParser::HandleStatement(const std::vector<std::string>& theTokens)
 		if (LabelWidget* aLabel = dynamic_cast<LabelWidget*>(mCurrentWidget))
 			aLabel->mAlign = anAlign;
 		else if (ButtonWidget* aButton = dynamic_cast<ButtonWidget*>(mCurrentWidget))
+		{
+			if (anAlign == 2)
+				anAlign = ButtonWidget::BUTTON_LABEL_CENTER;
 			aButton->mLabelJustify = anAlign;
+		}
 		return true;
 	}
 

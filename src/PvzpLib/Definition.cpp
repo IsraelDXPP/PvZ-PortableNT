@@ -375,7 +375,6 @@ bool DefinitionLoadImage(Image** theImage, const std::string& theName)
 			SharedImageRef aImageRef = gSexyAppBase->GetSharedImage(aPathToTry);
 			if ((Image*)aImageRef != nullptr)
 			{
-				PvzpHesitationTrace("Load Image '{}'", theName);
 				PvzpAddImageToMap(&aImageRef, theName);
 				PvzpMarkImageForSanding((Image*)aImageRef);
 				*theImage = (Image*)aImageRef;
@@ -1431,13 +1430,11 @@ bool DefinitionCompileAndLoad(const std::string& theXMLFilePath, const DefMap* t
 	const bool aRequireCompiledUpToDate = false;
 #endif
 
-	PvzpHesitationTrace("predef");
 	std::string aCompiledFilePath = DefinitionGetCompiledFilePathFromXMLFilePath(theXMLFilePath);
 
 	const bool aShouldTryCompiled = !aRequireCompiledUpToDate || DefinitionIsCompiled(theXMLFilePath);
 	if (aShouldTryCompiled && DefinitionReadCompiledFile(aCompiledFilePath, theDefMap, theDefinition))
 	{
-		PvzpHesitationTrace("loaded {}", aCompiledFilePath);
 		return true;
 	}
 
@@ -1445,7 +1442,6 @@ bool DefinitionCompileAndLoad(const std::string& theXMLFilePath, const DefMap* t
 	aTimer.Start();
 	bool aResult = DefinitionCompileFile(theXMLFilePath, aCompiledFilePath, theDefMap, theDefinition);
 	PvzpLogLn("compile {} ms:'{}'", (int)aTimer.GetDuration(), aCompiledFilePath);
-	PvzpHesitationTrace("compiled {}", aCompiledFilePath);
 	if (aResult)
 		return true;
 
@@ -1454,32 +1450,6 @@ bool DefinitionCompileAndLoad(const std::string& theXMLFilePath, const DefMap* t
 	exit(0);
 #endif
 	return false;
-}
-
-float FloatTrackEvaluate(FloatParameterTrack& theTrack, float theTimeValue, float theInterp)
-{
-	if (theTrack.mCountNodes == 0)
-		return 0.0f;
-
-	if (theTimeValue < theTrack.mNodes[0].mTime)
-		return PvzpCurveEvaluate(theInterp, theTrack.mNodes[0].mLowValue, theTrack.mNodes[0].mHighValue, theTrack.mNodes[0].mDistribution);
-
-	for (int i = 1; i < theTrack.mCountNodes; i++)
-	{
-		FloatParameterTrackNode* aNodeNxt = &theTrack.mNodes[i];
-		if (theTimeValue <= aNodeNxt->mTime)
-		{
-			FloatParameterTrackNode* aNodeCur = &theTrack.mNodes[i - 1];
-			// Progress of theTimeValue from the current node to the next
-			float aTimeFraction = (theTimeValue - aNodeCur->mTime) / (aNodeNxt->mTime - aNodeCur->mTime);
-			float aLeftValue = PvzpCurveEvaluate(theInterp, aNodeCur->mLowValue, aNodeCur->mHighValue, aNodeCur->mDistribution);
-			float aRightValue = PvzpCurveEvaluate(theInterp, aNodeNxt->mLowValue, aNodeNxt->mHighValue, aNodeNxt->mDistribution);
-			return PvzpCurveEvaluate(aTimeFraction, aLeftValue, aRightValue, aNodeCur->mCurveType);
-		}
-	}
-
-	FloatParameterTrackNode* aLastNode = &theTrack.mNodes[theTrack.mCountNodes - 1];  // theTimeValue is past the last node
-	return PvzpCurveEvaluate(theInterp, aLastNode->mLowValue, aLastNode->mHighValue, aLastNode->mDistribution);
 }
 
 void FloatTrackSetDefault(FloatParameterTrack& theTrack, float theValue)
@@ -1499,19 +1469,9 @@ void FloatTrackSetDefault(FloatParameterTrack& theTrack, float theValue)
 	}
 }
 
-bool FloatTrackIsSet(const FloatParameterTrack& theTrack)
-{
-	return theTrack.mCountNodes != 0 && theTrack.mNodes[0].mCurveType != PvzpCurves::CURVE_CONSTANT;
-}
-
 bool FloatTrackIsConstantZero(FloatParameterTrack& theTrack)
 {
 	return theTrack.mCountNodes == 0 || (theTrack.mCountNodes == 1 && theTrack.mNodes[0].mLowValue == 0.0f && theTrack.mNodes[0].mHighValue == 0.0f);
-}
-
-float FloatTrackEvaluateFromLastTime(FloatParameterTrack& theTrack, float theTimeValue, float theInterp)
-{
-	return theTimeValue < 0.0f ? 0.0f : FloatTrackEvaluate(theTrack, theTimeValue, theInterp);
 }
 
 void DefinitionFreeArrayField(DefinitionArrayDef* theArray, const DefMap* theDefMap)

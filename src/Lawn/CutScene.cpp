@@ -335,8 +335,6 @@ bool CutScene::Is2x2Zombie(ZombieType theZombieType)
 
 void CutScene::PreloadResources()
 {
-	PvzpHesitationTrace("pre-CutScene::PreloadResources()");
-
 	if (mPreloaded)
 	{
 		return;
@@ -499,7 +497,6 @@ void CutScene::PreloadResources()
 
 	mBoard->mPreloadTime = std::max(aTimer.GetDuration(), 0.0);
 	PvzpLogLn("preloading: {} ms", mBoard->mPreloadTime);
-	PvzpHesitationTrace("CutScene::PreloadResources");
 }
 
 void CutScene::PlaceStreetZombies()
